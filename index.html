@@ -98,7 +98,14 @@ td img.th{width:56px;height:42px;object-fit:cover;border-radius:6px;border:1px s
 .st.open{background:var(--bad-soft);color:var(--bad)}
 .st.track{background:var(--warn-soft);color:var(--warn)}
 .st.done{background:var(--ok-soft);color:var(--ok)}
-.st.over{background:#8a1c12;color:#fff}
+.st.over{background:#b42318;color:#fff}
+.st.soon{background:#f97316;color:#fff}
+tr.r-over td{background:#fdecea} tr.r-soon td{background:#fff4e0}
+.ccard.r-over{border-left:5px solid #b42318} .ccard.r-soon{border-left:5px solid #f97316}
+.alertbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;background:var(--card);border:1px solid var(--line);border-left:5px solid var(--bad);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-weight:700}
+.alertbar a{cursor:pointer;text-decoration:none;border-radius:999px;padding:2px 12px;font-size:14px}
+.alertbar .a1{background:var(--soft);color:var(--ink)} .alertbar .a2{background:#b42318;color:#fff} .alertbar .a3{background:#f97316;color:#fff}
+.alertbar.ok{border-left-color:var(--ok)}
 .tag{display:inline-block;background:var(--soft);border:1px solid var(--line);border-radius:6px;padding:0 7px;font-size:12px;margin:1px 2px 1px 0;white-space:nowrap}
 .tag.sup{background:#fff7d6;border-color:#e8d27a}
 .tag.fac{background:#dff3fb;border-color:#9fd3ea}
@@ -197,9 +204,10 @@ const live=()=>C.filter(c=>!c.deleted);
 /* 案件編號：發現日期 YYYYMMDD ＋ 當天流水號兩碼，例如 2026110601 */
 function genNo(date){ const pre=(date||today()).replace(/-/g,''); let mx=0; C.forEach(c=>{ if(String(c.no||'').startsWith(pre)){ const n=+String(c.no).slice(pre.length)||0; if(n>mx) mx=n; } }); return pre+p2(mx+1); }
 /* 案件狀態由內容自動判斷，不會跟資料互相矛盾 */
-function statusOf(c){ if(c.closeDate) return 'done'; const over=c.due&&c.due<today(); const tracking=[c.method,c.immediate,c.corrective,c.preventive,c.progress,c.result].some(v=>String(v||'').trim());
-  return over?'over':(tracking?'track':'open'); }
-const ST={open:['未處理','open'],track:['改善追蹤中','track'],over:['逾期未結','over'],done:['已結案','done']};
+function statusOf(c){ if(c.closeDate) return 'done'; const t=today(); if(c.due&&c.due<t) return 'over'; if(c.due&&c.due<=addDays(t,3)) return 'soon';
+  const tracking=[c.method,c.immediate,c.corrective,c.preventive,c.progress,c.result].some(v=>String(v||'').trim()); return tracking?'track':'open'; }
+const URG={over:0,soon:1,track:2,open:2,done:3};
+const ST={open:['未處理','open'],track:['改善追蹤中','track'],soon:['即將到期','soon'],over:['逾期未結','over'],done:['已結案','done']};
 function stBadge(c){ const s=ST[statusOf(c)]; return `<span class="st ${s[1]}">${s[0]}</span>`; }
 function catTag(c){ return `${c.cat1?`<span class="tag ${c.cat1==='供應商'?'sup':'fac'}">${esc(c.cat1)}</span>`:''}${c.cat2?`<span class="tag">${esc(c.cat2)}</span>`:''}`; }
 /* 常用選項：設定頁維護的＋曾經輸入過的 */
@@ -209,28 +217,30 @@ function optsOf(kind,field){ return [...new Set([...S[kind],...live().map(c=>Str
 let page='list', back='list', cur=null, dirty=false, viewId=null;
 const NAV=[['list','📋','異常案件清單'],['new','➕','新增異常案件'],['trash','🗑️','最近刪除'],['settings','⚙️','設定與資料']];
 function nav(){ $('#nav').innerHTML=NAV.map(([k,i,n])=>`<button class="${(page===k||(k==='new'&&page==='edit'&&cur&&cur._isNew))?'on':''}" onclick="go('${k}')"><span class="ic">${i}</span>${n}</button>`).join('')+
-  `<div class="foot">CASEVORA CAPA<br>個人工作台・本機資料模式<br>v1（第 1 段）</div>`; }
+  `<div class="foot">CASEVORA CAPA<br>個人工作台・本機資料模式<br>v1.1</div>`; }
 async function go(k){ if(dirty&&!(await ask('有尚未儲存的修改，確定要離開嗎？','離開，不儲存',true))) return; await dropNewPhotos(); dirty=false; cur=null; page=k;
   ({list:renderList,new:()=>openForm(null),trash:renderTrash,settings:renderSettings}[k])(); window.scrollTo(0,0); }
 window.addEventListener('beforeunload',e=>{ if(dirty){ e.preventDefault(); e.returnValue=''; } });
 
 /* ============ 清單 ============ */
-const F={q:'',year:'',month:'',station:'',vendor:'',cat1:'',cat2:'',status:'',sort:'date',dir:-1}; let SEL=new Set();
+const F={q:'',year:'',month:'',station:'',vendor:'',cat1:'',cat2:'',status:'',sort:'urgent',dir:1}; let SEL=new Set();
 function yearsOf(){ return [...new Set([today().slice(0,4),...live().map(c=>(c.date||'').slice(0,4)).filter(Boolean)])].sort().reverse(); }
 function caseText(c){ return [c.no,c.date,c.station,c.item,c.vendor,c.lot,c.expiry,c.finder,c.note,c.desc,c.cause,c.immediate,c.corrective,c.preventive,c.method,c.unit,c.owner,c.progress,c.result,c.verify,c.verifier,c.note2,c.cat1,c.cat2].join(' ').toLowerCase(); }
 function filtered(){ const ws=F.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
   let a=live().filter(c=>(!F.year||(c.date||'').startsWith(F.year))&&(!F.month||(c.date||'').slice(5,7)===F.month)&&(!F.station||c.station===F.station)&&(!F.vendor||c.vendor===F.vendor)
     &&(!F.cat1||c.cat1===F.cat1)&&(!F.cat2||c.cat2===F.cat2)&&(!F.status||statusOf(c)===F.status||(F.status==='notdone'&&statusOf(c)!=='done'))&&ws.every(w=>caseText(c).includes(w)));
-  const k=F.sort, d=F.dir; a.sort((x,y)=>{ const vx=k==='status'?statusOf(x):String(x[k]||''), vy=k==='status'?statusOf(y):String(y[k]||''); return (vx<vy?-1:vx>vy?1:0)*d||String(y.no).localeCompare(String(x.no)); });
+  const k=F.sort, d=F.dir;
+  if(k==='urgent') a.sort((x,y)=>(URG[statusOf(x)]-URG[statusOf(y)])||(URG[statusOf(x)]<2?String(x.due).localeCompare(String(y.due)):0)||String(y.date).localeCompare(String(x.date))||String(y.no).localeCompare(String(x.no)));
+  else a.sort((x,y)=>{ const vx=k==='status'?URG[statusOf(x)]:String(x[k]||''), vy=k==='status'?URG[statusOf(y)]:String(y[k]||''); return (vx<vy?-1:vx>vy?1:0)*d||String(y.no).localeCompare(String(x.no)); });
   return a; }
 const COLS=[['no','案件編號'],['date','發現日期'],['station','工作站'],['item','品項'],['vendor','廠商'],['lot','批號'],['expiry','效期'],['desc','異常描述'],['ph','照片'],['note','備註'],['method','處理辦法'],['unit','改善負責單位'],['due','預計完成'],['closeDate','結案日期'],['status','狀態'],['cat1','分類一'],['cat2','分類二']];
 function renderList(){
   page='list'; nav(); const rows=filtered(), all=live(), cnt=k=>all.filter(c=>statusOf(c)===k).length;
   const sel=(id,v,opts,ph)=>`<select onchange="F.${id}=this.value;drawList()" aria-label="${ph}"><option value="">${ph}</option>${opts.map(o=>`<option value="${esc(o[0])}" ${String(v)===String(o[0])?'selected':''}>${esc(o[1])}</option>`).join('')}</select>`;
   const chip=(k,n)=>`<button class="${F.status===k?'on':''}" onclick="F.status='${k}';renderList()">${n}</button>`;
-  $('#app').innerHTML=`<div class="ptitle"><h1>異常案件清單</h1><span>共 ${all.length} 件・未結 ${all.length-cnt('done')} 件</span><span class="sp"></span><button class="pri" onclick="go('new')">＋ 新增異常案件</button></div>
+  $('#app').innerHTML=`${alertBar()}<div class="ptitle"><h1>異常案件清單</h1><span>共 ${all.length} 件・未結 ${all.length-cnt('done')} 件</span><span class="sp"></span><button class="pri" onclick="go('new')">＋ 新增異常案件</button></div>
    <div class="card">
-    <div class="chips">${chip('','全部（'+all.length+'）')}${chip('notdone','未結案（'+(all.length-cnt('done'))+'）')}${chip('open','未處理（'+cnt('open')+'）')}${chip('track','改善追蹤中（'+cnt('track')+'）')}${chip('over','逾期未結（'+cnt('over')+'）')}${chip('done','已結案（'+cnt('done')+'）')}</div>
+    <div class="chips">${chip('','全部（'+all.length+'）')}${chip('notdone','未結案（'+(all.length-cnt('done'))+'）')}${chip('open','未處理（'+cnt('open')+'）')}${chip('track','改善追蹤中（'+cnt('track')+'）')}${chip('over','逾期未結（'+cnt('over')+'）')}${chip('soon','即將到期（'+cnt('soon')+'）')}${chip('done','已結案（'+cnt('done')+'）')}</div>
     <input type="search" id="fq" placeholder="搜尋：案件編號、品項、廠商、批號、異常描述、處理辦法…（空格可多個關鍵字）" value="${esc(F.q)}" oninput="F.q=this.value;if(!event.isComposing)drawList()" oncompositionend="F.q=this.value;drawList()" style="margin-bottom:8px">
     <div class="filters">
       ${sel('year',F.year,yearsOf().map(y=>[y,y+' 年']),'全部年度')}
@@ -243,20 +253,25 @@ function renderList(){
     <div id="lres"></div></div>`;
   drawList();
 }
+/* 一打開就看到：未結（含逾期、即將到期）、逾期、3 天內到期 */
+function alertBar(){ const a=live(), nd=a.filter(c=>statusOf(c)!=='done').length, ov=a.filter(c=>statusOf(c)==='over').length, so=a.filter(c=>statusOf(c)==='soon').length;
+  if(!a.length) return '';
+  if(!nd) return `<div class="alertbar ok">✅ 目前沒有未結案件</div>`;
+  return `<div class="alertbar" role="status">⏰ 還有<a class="a1" onclick="F.status='notdone';F.sort='urgent';go('list')">${nd} 件未結</a>${ov?`<a class="a2" onclick="F.status='over';go('list')">🔴 ${ov} 件逾期</a>`:''}${so?`<a class="a3" onclick="F.status='soon';go('list')">🟠 ${so} 件 3 天內到期</a>`:''}<span class="small muted" style="font-weight:400">（未結件數已包含逾期和即將到期）</span></div>`; }
 function drawList(){
   const rows=filtered(), el=$('#lres'); if(!el) return; SEL=new Set([...SEL].filter(id=>rows.some(c=>c.id===id)));
   const ar=k=>F.sort===k?(F.dir>0?' ▲':' ▼'):'';
   const anyF=F.q||F.year||F.month||F.station||F.vendor||F.cat1||F.cat2||F.status;
-  el.innerHTML=`<div class="row small muted" style="margin-bottom:6px"><span>符合 <b>${rows.length}</b> 件</span>${SEL.size?`<span>・已勾選 <b>${SEL.size}</b> 件（匯出功能在第 3 段加入）</span>`:''}<span class="sp"></span>${anyF?'<a href="#" onclick="clearF();return false">清除篩選</a>':''}</div>
+  el.innerHTML=`<div class="row small muted" style="margin-bottom:6px"><span>符合 <b>${rows.length}</b> 件</span>${SEL.size?`<span>・已勾選 <b>${SEL.size}</b> 件（匯出功能在第 3 段加入）</span>`:''}<span class="sp"></span><span>排序：${F.sort==='urgent'?'<b>緊急程度</b>（逾期 → 即將到期 → 其他）':`欄位排序 <a href="#" onclick="F.sort='urgent';F.dir=1;drawList();return false">改回緊急程度</a>`}</span>${anyF?'・<a href="#" onclick="clearF();return false">清除篩選</a>':''}</div>
    ${rows.length?`<div class="tw"><table><thead><tr><th class="ns"><input type="checkbox" aria-label="全選" style="width:auto" ${rows.length&&rows.every(c=>SEL.has(c.id))?'checked':''} onclick="event.stopPropagation();selAll(this.checked)"></th>
      ${COLS.map(([k,n])=>k==='ph'?`<th class="ns">${n}</th>`:`<th onclick="sortBy('${k}')">${n}${ar(k)}</th>`).join('')}</tr></thead><tbody>
-     ${rows.map(c=>`<tr onclick="openView('${c.id}')"><td onclick="event.stopPropagation()"><input type="checkbox" style="width:auto" aria-label="勾選 ${esc(c.no)}" ${SEL.has(c.id)?'checked':''} onchange="tog('${c.id}',this.checked)"></td>
+     ${rows.map(c=>`<tr class="r-${statusOf(c)}" onclick="openView('${c.id}')"><td onclick="event.stopPropagation()"><input type="checkbox" style="width:auto" aria-label="勾選 ${esc(c.no)}" ${SEL.has(c.id)?'checked':''} onchange="tog('${c.id}',this.checked)"></td>
        <td style="white-space:nowrap;font-variant-numeric:tabular-nums">${esc(c.no)}</td><td style="white-space:nowrap">${fmtD(c.date)}</td><td>${esc(c.station)}</td><td>${esc(c.item)}</td><td>${esc(c.vendor)}</td><td>${esc(c.lot)}</td><td style="white-space:nowrap">${fmtD(c.expiry)}</td>
        <td class="desc"><div class="clip">${esc(c.desc)}</div></td><td>${(c.photos||[]).length?`<img class="th" data-ph="${c.photos[0]}" alt="異常照片">${c.photos.length>1?`<div class="small muted">共 ${c.photos.length} 張</div>`:''}`:''}</td>
        <td class="desc"><div class="clip">${esc(c.note)}</div></td><td class="desc"><div class="clip">${esc(c.method)}</div></td><td>${esc(c.unit)}</td><td style="white-space:nowrap">${fmtD(c.due)}</td><td style="white-space:nowrap">${fmtD(c.closeDate)}</td>
        <td>${stBadge(c)}</td><td>${c.cat1?`<span class="tag ${c.cat1==='供應商'?'sup':'fac'}">${esc(c.cat1)}</span>`:''}</td><td>${c.cat2?`<span class="tag">${esc(c.cat2)}</span>`:''}</td></tr>`).join('')}
      </tbody></table></div>
-     <div class="cards">${rows.map(c=>`<div class="ccard" onclick="openView('${c.id}')">${(c.photos||[]).length?`<img data-ph="${c.photos[0]}" alt="異常照片">`:''}<div class="m">
+     <div class="cards">${rows.map(c=>`<div class="ccard r-${statusOf(c)}" onclick="openView('${c.id}')">${(c.photos||[]).length?`<img data-ph="${c.photos[0]}" alt="異常照片">`:''}<div class="m">
        <div class="row" style="gap:6px"><b class="small" style="font-variant-numeric:tabular-nums">${esc(c.no)}</b>${stBadge(c)}</div>
        <div class="t">${esc(c.item||'（未填品項）')}${c.vendor?'・'+esc(c.vendor):''}</div><div class="small muted">${fmtD(c.date)}${c.station?'・'+esc(c.station):''}</div>
        <div class="small" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.desc)}</div><div>${catTag(c)}</div></div></div>`).join('')}</div>`
