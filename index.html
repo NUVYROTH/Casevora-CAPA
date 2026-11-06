@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Casevora-CAPA 異常矯正追蹤</title>
+<style>
+:root{
+  /* Casevora 品牌色：深藍、米色、金色 */
+  --bg:#f5efe3; --card:#fffdf8; --ink:#16213a; --muted:#5d6779; --line:#e3d9c6;
+  --brand:#16213a; --brand2:#22304f; --soft:#f3ece0; --gold:#b8955a; --field:#c9bda6;
+  --bad:#b42318; --bad-soft:#fdecea; --ok:#167a3e; --ok-soft:#e6f5ec; --warn:#b45309; --warn-soft:#fff4e0; --info:#1d4f91; --info-soft:#e8f0fb;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans TC","Microsoft JhengHei","PingFang TC",system-ui,sans-serif;font-size:15px;line-height:1.6}
+button{font:inherit;cursor:pointer;border:1px solid var(--field);background:var(--card);color:var(--ink);border-radius:8px;padding:7px 14px}
+button:hover{background:var(--soft)}
+button.pri{background:var(--brand);border-color:var(--brand);color:#fffdf8;font-weight:700}
+button.pri:hover{background:var(--brand2)}
+button.dng{color:var(--bad);border-color:#e3a59c}
+button.sm{padding:3px 10px;font-size:13px}
+button:disabled{opacity:.45;cursor:not-allowed}
+input,select,textarea{font:inherit;color:inherit;width:100%;padding:8px 10px;border:1px solid var(--field);border-radius:8px;background:#fff}
+textarea{min-height:84px;resize:vertical}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--gold);outline-offset:0;border-color:var(--gold)}
+label.f{display:block;font-size:13px;color:var(--muted);font-weight:700;margin-bottom:3px}
+.req:after{content:" *";color:var(--bad)}
+.muted{color:var(--muted)} .small{font-size:13px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.sp{flex:1}
+/* 標題列 */
+header.top{background:var(--brand);color:#fffdf8;border-bottom:3px solid var(--gold)}
+.tin{max-width:1440px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.bname{font:700 24px/1.1 Georgia,"Times New Roman",serif;color:#e2c891;letter-spacing:.02em}
+.bsub{font-size:13.5px;letter-spacing:.12em;opacity:.92}
+.mode{margin-left:auto;font-size:12.5px;border:1px solid var(--gold);color:#e2c891;border-radius:999px;padding:2px 10px}
+main{max-width:1440px;margin:0 auto;padding:16px 16px 100px}
+.honest{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--bad-soft);color:#8a1c12;border:1px solid #e3a59c;border-left:5px solid #8a1c12;border-radius:8px;padding:9px 14px;margin-bottom:14px;font-weight:700;font-size:14px}
+.honest .tag{background:#8a1c12;color:#fff;border-radius:4px;padding:1px 8px;font-size:12px;letter-spacing:.1em}
+/* 版型：左側選單＋內容 */
+.appg{display:grid;grid-template-columns:184px minmax(0,1fr);gap:18px;align-items:start}
+.appg>*{min-width:0}
+.snav{position:sticky;top:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:4px}
+.snav button{display:flex;align-items:center;gap:10px;text-align:left;border:0;border-radius:10px;padding:10px 12px;background:none;color:var(--muted);font-weight:600}
+.snav button:hover{background:var(--soft);color:var(--ink)}
+.snav button.on{background:var(--brand);color:#fffdf8}
+.snav .ic{width:26px;height:26px;border-radius:8px;background:#efe6d5;display:inline-flex;align-items:center;justify-content:center;font-size:14px;flex:none}
+.snav button.on .ic{background:var(--gold)}
+.snav .foot{margin-top:10px;padding-top:10px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+@media (max-width:900px){
+  .appg{grid-template-columns:1fr}
+  .snav{position:static;flex-direction:row;overflow-x:auto;padding:6px}
+  .snav button{white-space:nowrap;padding:8px 10px}
+  .snav .foot{display:none}
+}
+.ptitle{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.ptitle h1{font-size:22px;margin:0}
+.ptitle span{color:var(--muted);font-size:13px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px}
+.card h2{font-size:16px;margin:0 0 10px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px 14px}
+.grid .wide{grid-column:1/-1}
+/* 表單分區 */
+details.sec{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-bottom:12px}
+details.sec>summary{cursor:pointer;list-style:none;padding:12px 16px;font-weight:800;display:flex;align-items:center;gap:10px}
+details.sec>summary::-webkit-details-marker{display:none}
+details.sec>summary .no{background:var(--brand);color:#e2c891;border-radius:6px;padding:0 8px;font-size:13px}
+details.sec>summary:after{content:"▾";margin-left:auto;color:var(--muted)}
+details.sec:not([open])>summary:after{content:"▸"}
+details.sec .body{padding:0 16px 16px}
+.savebar{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:2px solid var(--line);padding:10px 16px;z-index:20}
+.savebar .in{max-width:1440px;margin:0 auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.dirty{color:var(--warn);font-weight:700;font-size:14px}
+/* 照片 */
+.phs{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px}
+.ph{position:relative;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+.ph img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;cursor:zoom-in}
+.ph .bar{display:flex;gap:4px;padding:4px;justify-content:space-between;align-items:center;font-size:12px}
+.ph .bar span{color:var(--muted)}
+.drop{border:2px dashed var(--field);border-radius:10px;padding:14px;text-align:center;color:var(--muted);cursor:pointer;background:#fffaf0}
+/* 清單 */
+.filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:8px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.chips button{border-radius:999px;padding:4px 12px;font-size:13.5px}
+.chips button.on{background:var(--brand);color:#fffdf8;border-color:var(--brand)}
+.tw{overflow:auto;border:1px solid var(--line);border-radius:10px;background:#fff}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{border-bottom:1px solid var(--line);padding:7px 8px;text-align:left;vertical-align:top}
+th{background:var(--soft);position:sticky;top:0;white-space:nowrap;font-size:13px;cursor:pointer;user-select:none}
+th.ns{cursor:default}
+tbody tr:hover{background:#fffaf0;cursor:pointer}
+tbody td{min-width:84px}
+tbody td:first-child{min-width:0}
+td.desc{min-width:220px;max-width:360px}
+td .clip{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+td img.th{width:56px;height:42px;object-fit:cover;border-radius:6px;border:1px solid var(--line)}
+.st{display:inline-block;border-radius:999px;padding:0 9px;font-size:12.5px;font-weight:700;white-space:nowrap}
+.st.open{background:var(--bad-soft);color:var(--bad)}
+.st.track{background:var(--warn-soft);color:var(--warn)}
+.st.done{background:var(--ok-soft);color:var(--ok)}
+.st.over{background:#8a1c12;color:#fff}
+.tag{display:inline-block;background:var(--soft);border:1px solid var(--line);border-radius:6px;padding:0 7px;font-size:12px;margin:1px 2px 1px 0;white-space:nowrap}
+.tag.sup{background:#fff7d6;border-color:#e8d27a}
+.tag.fac{background:#dff3fb;border-color:#9fd3ea}
+.cards{display:none}
+@media (max-width:760px){
+  .tw{display:none} .cards{display:block}
+}
+.ccard{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px;display:flex;gap:10px;cursor:pointer}
+.ccard img{width:72px;height:54px;object-fit:cover;border-radius:6px;flex:none}
+.ccard .m{flex:1;min-width:0}
+.ccard .t{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.empty{text-align:center;color:var(--muted);padding:28px}
+/* 詳細 */
+dl.kv{display:grid;grid-template-columns:140px minmax(0,1fr);gap:4px 12px;margin:0}
+dl.kv dt{color:var(--muted);font-size:13px;font-weight:700}
+dl.kv dd{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+@media (max-width:600px){dl.kv{grid-template-columns:1fr} dl.kv dt{margin-top:6px}}
+/* 視窗 */
+.modal{position:fixed;inset:0;background:rgba(22,33,58,.55);z-index:60;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal .box{background:var(--card);border-radius:14px;padding:18px;max-width:520px;width:100%;max-height:88vh;overflow:auto}
+.modal.img .box{max-width:min(1100px,96vw);padding:8px;background:#000}
+.modal.img img{display:block;max-width:100%;max-height:82vh;margin:0 auto}
+.toast{position:fixed;top:14px;left:50%;transform:translateX(-50%);background:var(--brand);color:#fffdf8;border:1px solid var(--gold);padding:9px 20px;border-radius:999px;z-index:99;font-weight:700;max-width:92vw;text-align:center}
+.optl{list-style:none;margin:6px 0 10px;padding:0}
+.optl li{display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--line)}
+.optl li span{flex:1;min-width:0;overflow-wrap:anywhere}
+.optl li.off span{color:var(--muted);text-decoration:line-through}
+.ogrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.ogrid .card{margin:0}
+.note{background:var(--info-soft);border:1px solid #b9cdeb;border-radius:8px;padding:8px 12px;font-size:13px;color:#1d3f73}
+</style>
+</head>
+<body>
+<header class="top"><div class="tin">
+  <div><div class="bname">Casevora-CAPA</div><div class="bsub">品質管理部｜異常矯正與處理追蹤系統</div></div>
+  <span class="mode">● 本機資料模式</span>
+</div></header>
+<main>
+  <div class="honest"><span class="tag">重要</span>本機儲存 · 僅在此裝置此瀏覽器有效 · 無登入權限控管 · 請勿用無痕視窗 · 定期下載備份</div>
+  <div class="appg"><nav class="snav" id="nav"></nav><section id="app"></section></div>
+</main>
+<script>
+/* ============ 基本工具 ============ */
+const KEY_C='casevoraCAPA_v1', KEY_S='casevoraCAPA_v1_settings', PDB_NAME='casevoraCAPAPhotos';
+const $=s=>document.querySelector(s);
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+const p2=n=>String(n).padStart(2,'0');
+function today(){const d=new Date();return `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;}
+function fmtD(s){if(!s)return '';const [y,m,d]=s.split('-');return `${y}/${+m}/${+d}`;}
+function addDays(ymd,n){const [y,m,d]=ymd.split('-').map(Number);const t=new Date(y,m-1,d+n);return `${t.getFullYear()}-${p2(t.getMonth()+1)}-${p2(t.getDate())}`;}
+function newId(){return 'c'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
+function toast(t){const d=document.createElement('div');d.className='toast';d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),2400);}
+function download(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},800);}
+/* 頁面內的確認視窗（不依賴瀏覽器的 confirm） */
+function ask(msg,okText,danger){return new Promise(res=>{const m=document.createElement('div');m.className='modal';
+  m.innerHTML=`<div class="box"><div style="white-space:pre-wrap;margin-bottom:14px">${esc(msg)}</div><div class="row" style="justify-content:flex-end"><button id="aN">取消</button><button id="aY" class="${danger?'dng':'pri'}">${esc(okText||'確定')}</button></div></div>`;
+  document.body.appendChild(m); const done=v=>{m.remove();res(v);}; m.querySelector('#aN').onclick=()=>done(false); m.querySelector('#aY').onclick=()=>done(true); m.querySelector('#aY').focus();});}
+function say(msg){return new Promise(res=>{const m=document.createElement('div');m.className='modal';
+  m.innerHTML=`<div class="box"><div style="white-space:pre-wrap;margin-bottom:14px">${esc(msg)}</div><div class="row" style="justify-content:flex-end"><button class="pri" id="sY">知道了</button></div></div>`;
+  document.body.appendChild(m); m.querySelector('#sY').onclick=()=>{m.remove();res();}; m.querySelector('#sY').focus();});}
+
+/* ============ 照片：存在 IndexedDB（容量比一般儲存大很多），案件只記照片編號 ============ */
+const PDB={db:null,
+  open(){ if(this.db) return Promise.resolve(this.db); return new Promise((ok,no)=>{ const r=indexedDB.open(PDB_NAME,1);
+    r.onupgradeneeded=()=>r.result.createObjectStore('p'); r.onsuccess=()=>{this.db=r.result;ok(this.db);}; r.onerror=()=>no(r.error); }); },
+  async tx(mode,fn){ const db=await this.open(); return new Promise((ok,no)=>{ const t=db.transaction('p',mode), st=t.objectStore('p'); let out; const q=fn(st); if(q) q.onsuccess=()=>{out=q.result;}; t.oncomplete=()=>ok(out); t.onerror=()=>no(t.error); t.onabort=()=>no(t.error); }); },
+  put(id,v){return this.tx('readwrite',st=>st.put(v,id));}, get(id){return this.tx('readonly',st=>st.get(id));},
+  del(id){return this.tx('readwrite',st=>st.delete(id));}, keys(){return this.tx('readonly',st=>st.getAllKeys());}, clear(){return this.tx('readwrite',st=>st.clear());}
+};
+const PHC={}; /* 記憶體快取：照片編號 → 圖片資料 */
+async function phGet(id){ if(PHC[id]) return PHC[id]; try{ const v=await PDB.get(id); if(v) PHC[id]=v; return v||''; }catch(e){ return ''; } }
+/* 壓縮照片：最長邊 1600px、JPEG 品質 0.78 */
+function compress(file){ return new Promise((ok,no)=>{ const fr=new FileReader(); fr.onerror=()=>no(new Error('read'));
+  fr.onload=()=>{ const img=new Image(); img.onerror=()=>no(new Error('img')); img.onload=()=>{ const s=Math.min(1,1600/Math.max(img.width,img.height)), c=document.createElement('canvas');
+    c.width=Math.round(img.width*s); c.height=Math.round(img.height*s); const g=c.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,c.width,c.height); g.drawImage(img,0,0,c.width,c.height); ok(c.toDataURL('image/jpeg',0.78)); }; img.src=fr.result; };
+  fr.readAsDataURL(file); }); }
+/* 頁面上的 <img data-ph="編號"> 會自動從 IndexedDB 填入 */
+async function fillPhotos(root){ for(const el of (root||document).querySelectorAll('img[data-ph]')){ const v=await phGet(el.dataset.ph); if(v) el.src=v; else el.alt='（照片遺失）'; } }
+function viewPhoto(id){ phGet(id).then(v=>{ if(!v) return; const m=document.createElement('div'); m.className='modal img'; m.innerHTML=`<div class="box"><img src="${v}" alt="異常照片"></div>`; m.onclick=()=>m.remove(); document.body.appendChild(m); }); }
+async function savePhotoFile(id,name){ const v=await phGet(id); if(!v) return; const b=await (await fetch(v)).blob(); download(b,name+'.jpg'); }
+
+/* ============ 資料 ============ */
+const CAT1_DEF=['供應商','廠內異常'];
+const CAT2_DEF=['天然異物','非天然異物','規格不符','風味口感不良','其它品質因素（含包裝／標示不良）','其它異常原因'];
+function defaultS(){ return {cat1:CAT1_DEF.map(n=>({n,on:true})),cat2:CAT2_DEF.map(n=>({n,on:true})),stations:[],vendors:[],units:[]}; }
+function loadC(){ try{ const a=JSON.parse(localStorage.getItem(KEY_C)); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
+function loadS(){ try{ return fixS(Object.assign(defaultS(),JSON.parse(localStorage.getItem(KEY_S))||{})); }catch(e){ return defaultS(); } }
+function fixS(s){ const ol=a=>Array.isArray(a)?a.filter(x=>x&&String(x.n||'').trim()).map(x=>({n:String(x.n).trim().slice(0,40),on:x.on!==false})):[];
+  const sl=a=>Array.isArray(a)?[...new Set(a.map(x=>String(x||'').trim()).filter(Boolean).map(x=>x.slice(0,40)))]:[];
+  s.cat1=ol(s.cat1); s.cat2=ol(s.cat2); if(!s.cat1.length) s.cat1=defaultS().cat1; if(!s.cat2.length) s.cat2=defaultS().cat2;
+  s.stations=sl(s.stations); s.vendors=sl(s.vendors); s.units=sl(s.units); return s; }
+let C=loadC(), S=loadS();
+function persist(){ try{ localStorage.setItem(KEY_C,JSON.stringify(C)); localStorage.setItem(KEY_S,JSON.stringify(S)); return true; }
+  catch(e){ say('儲存失敗！瀏覽器的儲存空間可能已滿。請先「下載備份」，再刪除部分案件。'); return false; } }
+const live=()=>C.filter(c=>!c.deleted);
+/* 案件編號：發現日期 YYYYMMDD ＋ 當天流水號兩碼，例如 2026110601 */
+function genNo(date){ const pre=(date||today()).replace(/-/g,''); let mx=0; C.forEach(c=>{ if(String(c.no||'').startsWith(pre)){ const n=+String(c.no).slice(pre.length)||0; if(n>mx) mx=n; } }); return pre+p2(mx+1); }
+/* 案件狀態由內容自動判斷，不會跟資料互相矛盾 */
+function statusOf(c){ if(c.closeDate) return 'done'; const over=c.due&&c.due<today(); const tracking=[c.method,c.immediate,c.corrective,c.preventive,c.progress,c.result].some(v=>String(v||'').trim());
+  return over?'over':(tracking?'track':'open'); }
+const ST={open:['未處理','open'],track:['改善追蹤中','track'],over:['逾期未結','over'],done:['已結案','done']};
+function stBadge(c){ const s=ST[statusOf(c)]; return `<span class="st ${s[1]}">${s[0]}</span>`; }
+function catTag(c){ return `${c.cat1?`<span class="tag ${c.cat1==='供應商'?'sup':'fac'}">${esc(c.cat1)}</span>`:''}${c.cat2?`<span class="tag">${esc(c.cat2)}</span>`:''}`; }
+/* 常用選項：設定頁維護的＋曾經輸入過的 */
+function optsOf(kind,field){ return [...new Set([...S[kind],...live().map(c=>String(c[field]||'').trim()).filter(Boolean)])]; }
+
+/* ============ 版面 ============ */
+let page='list', back='list', cur=null, dirty=false, viewId=null;
+const NAV=[['list','📋','異常案件清單'],['new','➕','新增異常案件'],['trash','🗑️','最近刪除'],['settings','⚙️','設定與資料']];
+function nav(){ $('#nav').innerHTML=NAV.map(([k,i,n])=>`<button class="${(page===k||(k==='new'&&page==='edit'&&cur&&cur._isNew))?'on':''}" onclick="go('${k}')"><span class="ic">${i}</span>${n}</button>`).join('')+
+  `<div class="foot">CASEVORA CAPA<br>個人工作台・本機資料模式<br>v1（第 1 段）</div>`; }
+async function go(k){ if(dirty&&!(await ask('有尚未儲存的修改，確定要離開嗎？','離開，不儲存',true))) return; await dropNewPhotos(); dirty=false; cur=null; page=k;
+  ({list:renderList,new:()=>openForm(null),trash:renderTrash,settings:renderSettings}[k])(); window.scrollTo(0,0); }
+window.addEventListener('beforeunload',e=>{ if(dirty){ e.preventDefault(); e.returnValue=''; } });
+
+/* ============ 清單 ============ */
+const F={q:'',year:'',month:'',station:'',vendor:'',cat1:'',cat2:'',status:'',sort:'date',dir:-1}; let SEL=new Set();
+function yearsOf(){ return [...new Set([today().slice(0,4),...live().map(c=>(c.date||'').slice(0,4)).filter(Boolean)])].sort().reverse(); }
+function caseText(c){ return [c.no,c.date,c.station,c.item,c.vendor,c.lot,c.expiry,c.finder,c.note,c.desc,c.cause,c.immediate,c.corrective,c.preventive,c.method,c.unit,c.owner,c.progress,c.result,c.verify,c.verifier,c.note2,c.cat1,c.cat2].join(' ').toLowerCase(); }
+function filtered(){ const ws=F.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  let a=live().filter(c=>(!F.year||(c.date||'').startsWith(F.year))&&(!F.month||(c.date||'').slice(5,7)===F.month)&&(!F.station||c.station===F.station)&&(!F.vendor||c.vendor===F.vendor)
+    &&(!F.cat1||c.cat1===F.cat1)&&(!F.cat2||c.cat2===F.cat2)&&(!F.status||statusOf(c)===F.status||(F.status==='notdone'&&statusOf(c)!=='done'))&&ws.every(w=>caseText(c).includes(w)));
+  const k=F.sort, d=F.dir; a.sort((x,y)=>{ const vx=k==='status'?statusOf(x):String(x[k]||''), vy=k==='status'?statusOf(y):String(y[k]||''); return (vx<vy?-1:vx>vy?1:0)*d||String(y.no).localeCompare(String(x.no)); });
+  return a; }
+const COLS=[['no','案件編號'],['date','發現日期'],['station','工作站'],['item','品項'],['vendor','廠商'],['lot','批號'],['expiry','效期'],['desc','異常描述'],['ph','照片'],['note','備註'],['method','處理辦法'],['unit','改善負責單位'],['due','預計完成'],['closeDate','結案日期'],['status','狀態'],['cat1','分類一'],['cat2','分類二']];
+function renderList(){
+  page='list'; nav(); const rows=filtered(), all=live(), cnt=k=>all.filter(c=>statusOf(c)===k).length;
+  const sel=(id,v,opts,ph)=>`<select onchange="F.${id}=this.value;drawList()" aria-label="${ph}"><option value="">${ph}</option>${opts.map(o=>`<option value="${esc(o[0])}" ${String(v)===String(o[0])?'selected':''}>${esc(o[1])}</option>`).join('')}</select>`;
+  const chip=(k,n)=>`<button class="${F.status===k?'on':''}" onclick="F.status='${k}';renderList()">${n}</button>`;
+  $('#app').innerHTML=`<div class="ptitle"><h1>異常案件清單</h1><span>共 ${all.length} 件・未結 ${all.length-cnt('done')} 件</span><span class="sp"></span><button class="pri" onclick="go('new')">＋ 新增異常案件</button></div>
+   <div class="card">
+    <div class="chips">${chip('','全部（'+all.length+'）')}${chip('notdone','未結案（'+(all.length-cnt('done'))+'）')}${chip('open','未處理（'+cnt('open')+'）')}${chip('track','改善追蹤中（'+cnt('track')+'）')}${chip('over','逾期未結（'+cnt('over')+'）')}${chip('done','已結案（'+cnt('done')+'）')}</div>
+    <input type="search" id="fq" placeholder="搜尋：案件編號、品項、廠商、批號、異常描述、處理辦法…（空格可多個關鍵字）" value="${esc(F.q)}" oninput="F.q=this.value;if(!event.isComposing)drawList()" oncompositionend="F.q=this.value;drawList()" style="margin-bottom:8px">
+    <div class="filters">
+      ${sel('year',F.year,yearsOf().map(y=>[y,y+' 年']),'全部年度')}
+      ${sel('month',F.month,[...Array(12)].map((_,i)=>[p2(i+1),(i+1)+' 月']),'全部月份')}
+      ${sel('station',F.station,optsOf('stations','station').map(x=>[x,x]),'全部工作站')}
+      ${sel('vendor',F.vendor,optsOf('vendors','vendor').map(x=>[x,x]),'全部廠商')}
+      ${sel('cat1',F.cat1,[...new Set([...S.cat1.map(x=>x.n),...all.map(c=>c.cat1).filter(Boolean)])].map(x=>[x,x]),'分類一：全部')}
+      ${sel('cat2',F.cat2,[...new Set([...S.cat2.map(x=>x.n),...all.map(c=>c.cat2).filter(Boolean)])].map(x=>[x,x]),'分類二：全部')}
+    </div>
+    <div id="lres"></div></div>`;
+  drawList();
+}
+function drawList(){
+  const rows=filtered(), el=$('#lres'); if(!el) return; SEL=new Set([...SEL].filter(id=>rows.some(c=>c.id===id)));
+  const ar=k=>F.sort===k?(F.dir>0?' ▲':' ▼'):'';
+  const anyF=F.q||F.year||F.month||F.station||F.vendor||F.cat1||F.cat2||F.status;
+  el.innerHTML=`<div class="row small muted" style="margin-bottom:6px"><span>符合 <b>${rows.length}</b> 件</span>${SEL.size?`<span>・已勾選 <b>${SEL.size}</b> 件（匯出功能在第 3 段加入）</span>`:''}<span class="sp"></span>${anyF?'<a href="#" onclick="clearF();return false">清除篩選</a>':''}</div>
+   ${rows.length?`<div class="tw"><table><thead><tr><th class="ns"><input type="checkbox" aria-label="全選" style="width:auto" ${rows.length&&rows.every(c=>SEL.has(c.id))?'checked':''} onclick="event.stopPropagation();selAll(this.checked)"></th>
+     ${COLS.map(([k,n])=>k==='ph'?`<th class="ns">${n}</th>`:`<th onclick="sortBy('${k}')">${n}${ar(k)}</th>`).join('')}</tr></thead><tbody>
+     ${rows.map(c=>`<tr onclick="openView('${c.id}')"><td onclick="event.stopPropagation()"><input type="checkbox" style="width:auto" aria-label="勾選 ${esc(c.no)}" ${SEL.has(c.id)?'checked':''} onchange="tog('${c.id}',this.checked)"></td>
+       <td style="white-space:nowrap;font-variant-numeric:tabular-nums">${esc(c.no)}</td><td style="white-space:nowrap">${fmtD(c.date)}</td><td>${esc(c.station)}</td><td>${esc(c.item)}</td><td>${esc(c.vendor)}</td><td>${esc(c.lot)}</td><td style="white-space:nowrap">${fmtD(c.expiry)}</td>
+       <td class="desc"><div class="clip">${esc(c.desc)}</div></td><td>${(c.photos||[]).length?`<img class="th" data-ph="${c.photos[0]}" alt="異常照片">${c.photos.length>1?`<div class="small muted">共 ${c.photos.length} 張</div>`:''}`:''}</td>
+       <td class="desc"><div class="clip">${esc(c.note)}</div></td><td class="desc"><div class="clip">${esc(c.method)}</div></td><td>${esc(c.unit)}</td><td style="white-space:nowrap">${fmtD(c.due)}</td><td style="white-space:nowrap">${fmtD(c.closeDate)}</td>
+       <td>${stBadge(c)}</td><td>${c.cat1?`<span class="tag ${c.cat1==='供應商'?'sup':'fac'}">${esc(c.cat1)}</span>`:''}</td><td>${c.cat2?`<span class="tag">${esc(c.cat2)}</span>`:''}</td></tr>`).join('')}
+     </tbody></table></div>
+     <div class="cards">${rows.map(c=>`<div class="ccard" onclick="openView('${c.id}')">${(c.photos||[]).length?`<img data-ph="${c.photos[0]}" alt="異常照片">`:''}<div class="m">
+       <div class="row" style="gap:6px"><b class="small" style="font-variant-numeric:tabular-nums">${esc(c.no)}</b>${stBadge(c)}</div>
+       <div class="t">${esc(c.item||'（未填品項）')}${c.vendor?'・'+esc(c.vendor):''}</div><div class="small muted">${fmtD(c.date)}${c.station?'・'+esc(c.station):''}</div>
+       <div class="small" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.desc)}</div><div>${catTag(c)}</div></div></div>`).join('')}</div>`
+   :`<div class="empty">${live().length?'沒有符合條件的案件':'目前還沒有案件，請按「＋ 新增異常案件」開始'}</div>`}`;
+  fillPhotos(el);
+}
+function sortBy(k){ if(F.sort===k) F.dir=-F.dir; else { F.sort=k; F.dir=['date','no','due','closeDate','expiry'].includes(k)?-1:1; } drawList(); }
+function tog(id,v){ v?SEL.add(id):SEL.delete(id); drawList(); }
+function selAll(v){ const rows=filtered(); rows.forEach(c=>v?SEL.add(c.id):SEL.delete(c.id)); drawList(); }
+function clearF(){ Object.assign(F,{q:'',year:'',month:'',station:'',vendor:'',cat1:'',cat2:'',status:''}); renderList(); }
+
+/* ============ 詳細內容 ============ */
+function openView(id){ const c=C.find(x=>x.id===id); if(!c||c.deleted) return; viewId=id; back=page==='view'?back:page; page='view'; nav();
+  const kv=(rows)=>`<dl class="kv">${rows.map(([k,v])=>`<dt>${k}</dt><dd>${v===''||v==null?'<span class="muted">—</span>':v}</dd>`).join('')}</dl>`, t=v=>esc(v||'');
+  $('#app').innerHTML=`<div class="ptitle"><button onclick="go('${back==='view'?'list':back}')">← 返回清單</button><h1>案件 ${esc(c.no)}</h1>${stBadge(c)}<span class="sp"></span><button class="pri" onclick="openForm('${c.id}')">編輯</button><button class="dng" onclick="delCase('${c.id}')">刪除</button></div>
+   <div class="card"><h2>A. 基本資料</h2>${kv([['案件編號',t(c.no)],['發現日期',fmtD(c.date)],['工作站／發生部門',t(c.station)],['品項名稱',t(c.item)],['廠商名稱',t(c.vendor)],['批號',t(c.lot)],['有效日期',fmtD(c.expiry)],['異常發現人員',t(c.finder)],['分類一：異常來源',t(c.cat1)],['分類二：異常原因',t(c.cat2)],['備註',t(c.note)]])}</div>
+   <div class="card"><h2>B. 異常內容</h2>${kv([['異常描述',t(c.desc)]])}
+     <div class="phs" style="margin-top:10px">${(c.photos||[]).map((p,i)=>`<div class="ph"><img data-ph="${p}" alt="異常照片 ${i+1}" onclick="viewPhoto('${p}')"><div class="bar"><span>照片 ${i+1}</span><button class="sm" onclick="savePhotoFile('${p}','${esc(c.no)}_照片${i+1}')">下載</button></div></div>`).join('')||'<span class="muted small">沒有照片</span>'}</div></div>
+   <div class="card"><h2>C. 原因分析及處理</h2>${kv([['異常原因分析',t(c.cause)],['立即處置方式',t(c.immediate)],['矯正措施',t(c.corrective)],['預防再發措施',t(c.preventive)],['處理辦法',t(c.method)],['改善負責單位',t(c.unit)],['改善負責人',t(c.owner)],['預計完成日期',fmtD(c.due)]])}</div>
+   <div class="card"><h2>D. 改善追蹤</h2>${kv([['改善進度',t(c.progress)],['改善結果',t(c.result)],['成效確認',t(c.verify)],['確認人員',t(c.verifier)],['結案日期',fmtD(c.closeDate)],['追蹤備註',t(c.note2)]])}</div>
+   <div class="small muted">建立：${new Date(c.createdAt).toLocaleString('zh-TW')}・最後修改：${new Date(c.updatedAt).toLocaleString('zh-TW')}</div>`;
+  fillPhotos($('#app')); window.scrollTo(0,0); }
+
+/* ============ 新增／編輯表單 ============ */
+const FIELDS=['date','station','item','vendor','lot','expiry','finder','note','desc','cause','immediate','corrective','preventive','method','unit','owner','due','progress','result','verify','verifier','closeDate','note2','cat1','cat2'];
+function blankCase(){ const o={id:newId(),no:'',photos:[]}; FIELDS.forEach(k=>o[k]=''); o.date=today(); return o; }
+function openForm(id){
+  const src=id?C.find(x=>x.id===id):null; if(id&&!src) return;
+  if(page!=='edit'&&page!=='new') back=page==='view'?'view':page;
+  cur=JSON.parse(JSON.stringify(src||blankCase())); cur._isNew=!src; cur._added=[]; cur._removed=[]; dirty=false; page='edit'; nav(); drawForm(); window.scrollTo(0,0); }
+function inp(k,label,type,o){ o=o||{}; const v=esc(cur[k]); const on=`oninput="setF('${k}',this.value)"`;
+  if(type==='ta') return `<div class="${o.wide?'wide':''}"><label class="f ${o.req?'req':''}" for="f_${k}">${label}</label><textarea id="f_${k}" ${on} ${o.big?'style="min-height:130px"':''} placeholder="${esc(o.ph||'')}">${v}</textarea></div>`;
+  if(type==='list') return `<div><label class="f" for="f_${k}">${label}</label><input id="f_${k}" list="dl_${k}" value="${v}" ${on} placeholder="${esc(o.ph||'可選擇或直接輸入')}"><datalist id="dl_${k}">${o.opts.map(x=>`<option value="${esc(x)}">`).join('')}</datalist></div>`;
+  if(type==='sel') return `<div><label class="f" for="f_${k}">${label}</label><select id="f_${k}" onchange="setF('${k}',this.value)"><option value="">（未分類）</option>${o.opts.map(x=>`<option ${x===cur[k]?'selected':''}>${esc(x)}</option>`).join('')}${cur[k]&&!o.opts.includes(cur[k])?`<option selected>${esc(cur[k])}</option>`:''}</select></div>`;
+  return `<div><label class="f ${o.req?'req':''}" for="f_${k}">${label}</label><input id="f_${k}" type="${type}" value="${v}" ${on} ${type==='date'?`onchange="setF('${k}',this.value)"`:''}></div>`; }
+function drawForm(){
+  const c=cur, on1=S.cat1.filter(x=>x.on).map(x=>x.n), on2=S.cat2.filter(x=>x.on).map(x=>x.n);
+  $('#app').innerHTML=`<div class="ptitle"><button onclick="cancelForm()">← 返回</button><h1>${c._isNew?'新增異常案件':'編輯案件 '+esc(c.no)}</h1><span>${c._isNew?'案件編號會在儲存時自動產生（發現日期＋流水號）':''}</span></div>
+   <div class="note" style="margin-bottom:12px">只有「發現日期」必填，另外「品項名稱」或「異常描述」至少填一個。其他欄位還沒拿到資料可以先空白，之後再回來補。</div>
+   <details class="sec" open><summary><span class="no">A</span>基本資料</summary><div class="body"><div class="grid">
+     ${c._isNew?'':`<div><label class="f">案件編號</label><input value="${esc(c.no)}" disabled></div>`}
+     ${inp('date','發現日期','date',{req:true})}${inp('station','工作站／發生部門','list',{opts:optsOf('stations','station')})}${inp('item','品項名稱','text')}
+     ${inp('vendor','廠商名稱','list',{opts:optsOf('vendors','vendor')})}${inp('lot','批號','text')}${inp('expiry','有效日期','date')}${inp('finder','異常發現人員','text')}
+     ${inp('cat1','分類一：異常來源','sel',{opts:on1})}${inp('cat2','分類二：異常原因','sel',{opts:on2})}
+     <div class="wide small muted">分類二：如有兩項以上異常原因，以較多或較嚴重之問題歸類。</div>
+     ${inp('note','備註','ta',{wide:true})}</div></div></details>
+   <details class="sec" open><summary><span class="no">B</span>異常內容</summary><div class="body"><div class="grid">
+     ${inp('desc','異常描述','ta',{wide:true,big:true,ph:'例：外箱破損，內袋可見黑色異物約 0.5cm'})}</div>
+     <label class="f" style="margin-top:10px">異常照片（可一次選多張；會自動壓縮）</label>
+     <div class="phs" id="phbox"></div>
+     <div class="drop" style="margin-top:8px" onclick="$('#phIn').click()">📷 點這裡選擇照片或拍照</div><input type="file" id="phIn" accept="image/*" multiple hidden onchange="addPhotos(this)">
+   </div></details>
+   <details class="sec" ${[c.cause,c.immediate,c.corrective,c.preventive,c.method,c.unit,c.owner,c.due].some(Boolean)?'open':''}><summary><span class="no">C</span>原因分析及處理</summary><div class="body"><div class="grid">
+     ${inp('cause','異常原因分析','ta',{wide:true})}${inp('immediate','立即處置方式','ta',{wide:true})}${inp('corrective','矯正措施','ta',{wide:true})}${inp('preventive','預防再發措施','ta',{wide:true})}
+     ${inp('method','處理辦法','ta',{wide:true})}${inp('unit','改善負責單位','list',{opts:optsOf('units','unit')})}${inp('owner','改善負責人','text')}${inp('due','預計完成日期','date')}</div></div></details>
+   <details class="sec" ${[c.progress,c.result,c.verify,c.verifier,c.closeDate,c.note2].some(Boolean)?'open':''}><summary><span class="no">D</span>改善追蹤</summary><div class="body"><div class="grid">
+     ${inp('progress','改善進度','ta',{wide:true})}${inp('result','改善結果','ta',{wide:true})}${inp('verify','成效確認','ta',{wide:true})}${inp('verifier','確認人員','text')}${inp('closeDate','結案日期','date')}
+     <div class="small muted" style="align-self:end">填了「結案日期」，狀態就會變成「已結案」。</div>${inp('note2','追蹤備註','ta',{wide:true})}</div></div></details>
+   <div class="savebar"><div class="in"><button class="pri" onclick="saveForm()">儲存</button><button onclick="cancelForm()">取消</button><span id="dm"></span></div></div>`;
+  drawPhotos(); markDirty(false);
+}
+function setF(k,v){ cur[k]=v; markDirty(true); }
+function markDirty(v){ if(v) dirty=true; const el=$('#dm'); if(el) el.innerHTML=dirty?'<span class="dirty">● 有尚未儲存的修改</span>':''; }
+function drawPhotos(){ const box=$('#phbox'); if(!box) return;
+  box.innerHTML=cur.photos.map((p,i)=>`<div class="ph"><img data-ph="${p}" alt="照片 ${i+1}" onclick="viewPhoto('${p}')"><div class="bar"><span>照片 ${i+1}${i<2?'':'（不進原格式表）'}</span><span style="display:flex;gap:4px">
+    ${i>0?`<button class="sm" title="往前移" aria-label="往前移" onclick="movePh(${i})">◀</button>`:''}<button class="sm" onclick="savePhotoFile('${p}','照片${i+1}')">下載</button><button class="sm dng" onclick="rmPhoto(${i})">刪除</button></span></div></div>`).join('');
+  fillPhotos(box); }
+async function addPhotos(inpEl){ const files=[...inpEl.files]; inpEl.value=''; if(!files.length) return; let bad=0;
+  for(const f of files){ if(!/^image\//.test(f.type)){bad++;continue;} try{ const data=await compress(f), id='ph_'+newId(); await PDB.put(id,data); PHC[id]=data; cur.photos.push(id); cur._added.push(id); }catch(e){ bad++; } }
+  drawPhotos(); markDirty(true); if(bad) say(`有 ${bad} 個檔案不是圖片或讀不出來，已略過。`); }
+async function rmPhoto(i){ if(!(await ask('確定要刪除這張照片嗎？（按「儲存」後才會真的刪除）','刪除',true))) return; const id=cur.photos.splice(i,1)[0]; cur._removed.push(id); drawPhotos(); markDirty(true); }
+function movePh(i){ const a=cur.photos; [a[i-1],a[i]]=[a[i],a[i-1]]; drawPhotos(); markDirty(true); }
+async function dropNewPhotos(){ if(cur&&cur._added&&cur._added.length){ for(const id of cur._added){ try{ await PDB.del(id); }catch(e){} delete PHC[id]; } cur._added=[]; } }
+async function cancelForm(){ if(dirty&&!(await ask('有尚未儲存的修改，確定要放棄嗎？','放棄修改',true))) return; await dropNewPhotos(); const wasNew=cur._isNew, id=cur.id; dirty=false; cur=null;
+  if(!wasNew&&back==='view') openView(id); else { page=back==='view'?'list':back; ({list:renderList,trash:renderTrash,settings:renderSettings}[page]||renderList)(); } }
+async function saveForm(){
+  const c=cur; ['item','desc','station','vendor','lot','finder','unit','owner','verifier'].forEach(k=>c[k]=String(c[k]||'').trim());
+  if(!c.date){ await say('請先填寫：發現日期'); return; } if(!c.item&&!c.desc){ await say('「品項名稱」或「異常描述」至少要填一個。'); return; }
+  if(c.closeDate&&c.closeDate<c.date){ await say('結案日期不能早於發現日期。'); return; }
+  if(c.due&&c.due<c.date){ await say('預計完成日期不能早於發現日期。'); return; }
+  const now=new Date().toISOString(), old=C.findIndex(x=>x.id===c.id), rec={id:c.id,no:c.no||genNo(c.date),photos:c.photos.slice(),createdAt:c.createdAt||now,updatedAt:now};
+  FIELDS.forEach(k=>rec[k]=c[k]||''); const prev=old>=0?C[old]:null;
+  if(old>=0) C[old]=rec; else C.push(rec);
+  /* 新輸入的工作站／廠商／負責單位，自動加進常用選項 */
+  const oS=JSON.stringify(S); [['stations','station'],['vendors','vendor'],['units','unit']].forEach(([k,f])=>{ if(rec[f]&&!S[k].includes(rec[f])) S[k].push(rec[f]); });
+  if(!persist()){ if(prev) C[old]=prev; else C.pop(); S=JSON.parse(oS); return; }
+  for(const id of c._removed){ try{ await PDB.del(id); }catch(e){} delete PHC[id]; }
+  dirty=false; cur=null; toast(old>=0?'已儲存 ✦':`已新增案件 ${rec.no} ✦`); back='list'; openView(rec.id);
+}
+
+/* ============ 刪除與最近刪除（保留 30 天） ============ */
+async function delCase(id){ const c=C.find(x=>x.id===id); if(!c) return;
+  if(!(await ask(`確定要刪除案件 ${c.no} 嗎？\n會先移到「最近刪除」，30 天內可以還原。`,'刪除',true))) return;
+  c.deleted=true; c.deletedAt=today(); if(!persist()){ c.deleted=false; delete c.deletedAt; return; } toast('已移到「最近刪除」'); page='list'; renderList(); }
+let TSEL=new Set();
+function renderTrash(){ page='trash'; nav(); const rs=C.filter(c=>c.deleted).sort((a,b)=>(b.deletedAt||'').localeCompare(a.deletedAt||''));
+  $('#app').innerHTML=`<div class="ptitle"><h1>最近刪除</h1><span>保留 30 天，超過的會在下次打開系統時永久刪除（照片一起刪除）</span></div>
+   <div class="card"><div class="row" style="margin-bottom:8px"><button onclick="TSEL=new Set(C.filter(c=>c.deleted).map(c=>c.id));renderTrash()" ${rs.length?'':'disabled'}>全選</button><button onclick="TSEL=new Set();renderTrash()" ${TSEL.size?'':'disabled'}>全部不選</button>
+     <button class="pri" onclick="trashRestore()" ${TSEL.size?'':'disabled'}>還原</button><button class="dng" onclick="trashPurge()" ${TSEL.size?'':'disabled'}>永久刪除</button><span class="small muted">${TSEL.size?'已勾選 '+TSEL.size+' 件':'請先勾選'}</span></div>
+   ${rs.length?rs.map(c=>`<label class="ccard" style="display:flex;cursor:default"><input type="checkbox" style="width:auto" ${TSEL.has(c.id)?'checked':''} onchange="this.checked?TSEL.add('${c.id}'):TSEL.delete('${c.id}');renderTrash()">
+     <div class="m"><div class="t">${esc(c.no)}・${esc(c.item||c.desc||'')}</div><div class="small muted">發現 ${fmtD(c.date)}・${fmtD(c.deletedAt)} 刪除・剩 ${Math.max(30-daysBetween(c.deletedAt,today()),0)} 天</div></div></label>`).join(''):'<div class="empty">目前沒有刪除的案件</div>'}</div>`; }
+function daysBetween(a,b){const [y1,m1,d1]=a.split('-').map(Number),[y2,m2,d2]=b.split('-').map(Number);return Math.round((new Date(y2,m2-1,d2)-new Date(y1,m1-1,d1))/86400000);}
+function trashRestore(){ const ids=[...TSEL]; const back_=[]; C.forEach(c=>{ if(ids.includes(c.id)&&c.deleted){ back_.push([c,c.deletedAt]); c.deleted=false; delete c.deletedAt; } });
+  if(!persist()){ back_.forEach(([c,d])=>{c.deleted=true;c.deletedAt=d;}); return; } TSEL=new Set(); renderTrash(); toast('已還原 ✦'); }
+async function trashPurge(){ const n=TSEL.size; if(!(await ask(`確定要永久刪除選取的 ${n} 件嗎？照片也會一起刪除，無法復原。`,'永久刪除',true))) return;
+  const gone=C.filter(c=>TSEL.has(c.id)), old=C; C=C.filter(c=>!TSEL.has(c.id)); if(!persist()){ C=old; return; }
+  for(const c of gone) for(const p of (c.photos||[])){ try{ await PDB.del(p); }catch(e){} delete PHC[p]; } TSEL=new Set(); renderTrash(); toast('已永久刪除'); }
+async function purgeExpired(){ const lim=addDays(today(),-30), gone=C.filter(c=>c.deleted&&c.deletedAt&&c.deletedAt<lim); if(!gone.length) return;
+  C=C.filter(c=>!gone.includes(c)); if(persist()) for(const c of gone) for(const p of (c.photos||[])){ try{ await PDB.del(p); }catch(e){} } }
+
+/* ============ 設定：分類與常用選項 ============ */
+function renderSettings(){ page='settings'; nav();
+  const catBox=(k,title,tip)=>`<div class="card"><h2>${title}</h2><div class="small muted">${tip}</div><ul class="optl">${S[k].map((x,i)=>`<li class="${x.on?'':'off'}"><span>${esc(x.n)}</span><span class="small muted">${live().filter(c=>c[k]===x.n).length} 件</span>
+      <button class="sm" onclick="renCat('${k}',${i})">改名</button><button class="sm" onclick="togCat('${k}',${i})">${x.on?'停用':'啟用'}</button></li>`).join('')}</ul>
+    <div class="row"><input id="new_${k}" placeholder="新增選項" style="flex:1;min-width:120px" onkeydown="if(event.key==='Enter')addCat('${k}')"><button onclick="addCat('${k}')">新增</button></div></div>`;
+  const listBox=(k,title)=>`<div class="card"><h2>${title}</h2><ul class="optl">${S[k].length?S[k].map((x,i)=>`<li><span>${esc(x)}</span><button class="sm dng" onclick="delOpt('${k}',${i})">移除</button></li>`).join(''):'<li><span class="muted small">還沒有，新增案件時輸入過的會自動加進來</span></li>'}</ul>
+    <div class="row"><input id="new_${k}" placeholder="新增" style="flex:1;min-width:120px" onkeydown="if(event.key==='Enter')addOpt('${k}')"><button onclick="addOpt('${k}')">新增</button></div></div>`;
+  $('#app').innerHTML=`<div class="ptitle"><h1>設定與資料</h1></div>
+   <div class="ogrid">${catBox('cat1','分類一：異常來源','停用後，新增案件時不會出現，但舊案件保留原本的分類。')}${catBox('cat2','分類二：異常原因','兩項以上原因時，以較多或較嚴重之問題歸類。')}</div>
+   <div class="ogrid" style="margin-top:14px">${listBox('stations','常用工作站／發生部門')}${listBox('vendors','常用廠商')}${listBox('units','常用改善負責單位')}</div>
+   <div class="card" style="margin-top:14px"><h2>📦 備份與還原</h2>
+     <div class="row"><button class="pri" onclick="backup()">下載備份（含照片）</button><button onclick="$('#rsIn').click()">從備份還原</button><input type="file" id="rsIn" accept=".json" hidden onchange="restore(this)"></div>
+     <div class="small muted" style="margin-top:8px" id="usage">正在計算使用空間…</div>
+     <ul class="small" style="margin:8px 0 0;padding-left:18px">
+       <li><b>本機儲存 · 僅在此裝置此瀏覽器有效。</b>換電腦、換瀏覽器、用無痕視窗都看不到；清除瀏覽資料會讓案件和照片全部消失，且無法復原。</li>
+       <li>請定期「下載備份」，把備份檔存在這台電腦以外的地方（公司雲端硬碟、隨身碟）。</li>
+       <li>沒有登入與權限控管：坐在這台電腦前的人都能看到、修改。請用電腦本身的開機密碼保護。</li>
+       <li>這是公司內部資料，是否可以存在這台電腦的瀏覽器裡，請依公司規定。</li></ul></div>`;
+  if(navigator.storage&&navigator.storage.estimate) navigator.storage.estimate().then(e=>{ const el=$('#usage'); if(el) el.textContent=`這個網站目前用了約 ${(e.usage/1048576).toFixed(1)} MB（瀏覽器允許約 ${(e.quota/1048576/1024).toFixed(1)} GB）。`; }).catch(()=>{});
+  else { const el=$('#usage'); if(el) el.textContent=''; } }
+async function addCat(k){ const el=$('#new_'+k), v=el.value.trim(); if(!v) return; if(S[k].some(x=>x.n===v)){ await say('已經有這個選項了'); return; } S[k].push({n:v.slice(0,40),on:true}); if(persist()) renderSettings(); }
+function togCat(k,i){ S[k][i].on=!S[k][i].on; if(!persist()) S[k][i].on=!S[k][i].on; renderSettings(); }
+async function renCat(k,i){ const old=S[k][i].n, m=document.createElement('div'); m.className='modal';
+  m.innerHTML=`<div class="box"><h2 style="margin:0 0 8px;font-size:16px">改名</h2><input id="rnI" value="${esc(old)}"><div class="small muted" style="margin:6px 0 12px">已經用這個分類的 ${live().filter(c=>c[k]===old).length} 件案件會一起改成新名稱。</div><div class="row" style="justify-content:flex-end"><button id="rnN">取消</button><button class="pri" id="rnY">儲存</button></div></div>`;
+  document.body.appendChild(m); m.querySelector('#rnN').onclick=()=>m.remove();
+  m.querySelector('#rnY').onclick=async()=>{ const v=m.querySelector('#rnI').value.trim(); if(!v) return; if(v!==old&&S[k].some(x=>x.n===v)){ await say('已經有這個名稱了'); return; }
+    const oC=JSON.stringify(C), oS=JSON.stringify(S); S[k][i].n=v.slice(0,40); C.forEach(c=>{ if(c[k]===old) c[k]=S[k][i].n; });
+    if(!persist()){ C=JSON.parse(oC); S=JSON.parse(oS); return; } m.remove(); renderSettings(); toast('已改名 ✦'); }; }
+function addOpt(k){ const el=$('#new_'+k), v=el.value.trim(); if(!v||S[k].includes(v)) return; S[k].push(v.slice(0,40)); if(persist()) renderSettings(); }
+async function delOpt(k,i){ if(!(await ask(`從常用選項移除「${S[k][i]}」嗎？（不會影響已經填好的案件）`,'移除'))) return; S[k].splice(i,1); persist(); renderSettings(); }
+
+/* ============ 備份與還原（照片一起放進備份檔） ============ */
+async function backup(){ toast('正在打包備份…'); const photos={}; const ids=new Set(C.flatMap(c=>c.photos||[]));
+  for(const id of ids){ const v=await phGet(id); if(v) photos[id]=v; }
+  const blob=new Blob([JSON.stringify({app:'casevoraCAPA',version:1,exportedAt:new Date().toISOString(),cases:C,settings:S,photos})],{type:'application/json'});
+  download(blob,`CAPA_backup_${today()}.json`); }
+async function restore(inp){ const f=inp.files[0]; inp.value=''; if(!f) return; let d;
+  try{ d=JSON.parse(await f.text()); if(!d||d.app!=='casevoraCAPA'||!Array.isArray(d.cases)) throw 0; }catch(e){ await say('無法讀取：這不是本系統的備份檔。'); return; }
+  const ok=d.cases.every(c=>c&&/^[\w-]{1,40}$/.test(String(c.id))&&/^\d{4}-\d{2}-\d{2}$/.test(String(c.date||''))); if(!ok){ await say('無法還原：備份檔內有格式不正確的案件。'); return; }
+  if(!(await ask(`備份檔內有 ${d.cases.filter(c=>!c.deleted).length} 件案件、${Object.keys(d.photos||{}).length} 張照片。\n還原會「取代」這台電腦目前的 ${live().length} 件案件和所有照片，確定嗎？`,'取代並還原',true))) return;
+  const cases=d.cases.map(c=>{ const o={id:String(c.id),no:String(c.no||'').slice(0,30),photos:(Array.isArray(c.photos)?c.photos:[]).filter(p=>/^ph_[\w-]{1,40}$/.test(String(p))),createdAt:String(c.createdAt||''),updatedAt:String(c.updatedAt||'')};
+    FIELDS.forEach(k=>o[k]=String(c[k]??'')); if(c.deleted){ o.deleted=true; o.deletedAt=/^\d{4}-\d{2}-\d{2}$/.test(String(c.deletedAt))?c.deletedAt:today(); } return o; });
+  try{ await PDB.clear(); for(const [id,v] of Object.entries(d.photos||{})){ if(/^ph_[\w-]{1,40}$/.test(id)&&/^data:image\//.test(String(v))) await PDB.put(id,v); } }catch(e){ await say('照片還原失敗，瀏覽器空間可能不夠。'); return; }
+  Object.keys(PHC).forEach(k=>delete PHC[k]); const oC=C, oS=S; C=cases; S=fixS(Object.assign(defaultS(),d.settings||{}));
+  if(!persist()){ C=oC; S=oS; return; } toast('還原完成 ✦'); page='list'; renderList(); }
+
+/* ============ 啟動 ============ */
+(async function init(){
+  let ok=true; try{ localStorage.setItem('__t','1'); localStorage.removeItem('__t'); await PDB.open(); }catch(e){ ok=false; }
+  if(!ok) say('注意：目前瀏覽器無法保存資料（可能是無痕模式或已封鎖網站資料），關閉後資料會遺失。');
+  await purgeExpired(); renderList();
+})();
+</script>
+</body>
+</html>
