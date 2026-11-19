@@ -293,6 +293,7 @@ function renderList(){
   const sel=(id,v,opts,ph)=>`<select onchange="F.${id}=this.value;drawList()" aria-label="${ph}"><option value="">${ph}</option>${opts.map(o=>`<option value="${esc(o[0])}" ${String(v)===String(o[0])?'selected':''}>${esc(o[1])}</option>`).join('')}</select>`;
   const chip=(k,n)=>`<button class="${F.status===k?'on':''}" onclick="F.status='${k}';renderList()">${n}</button>`;
   $('#app').innerHTML=`${alertBar()}<div class="ptitle"><h1>異常案件清單</h1><span>共 ${all.length} 件・未結 ${all.length-cnt('done')} 件</span><span class="sp"></span><button class="pri" onclick="go('new')">＋ 新增異常案件</button></div>
+   ${listGuide()}
    <div class="card">
     <div class="chips">${chip('','全部（'+all.length+'）')}${chip('notdone','未結案（'+(all.length-cnt('done'))+'）')}${chip('open','未處理（'+cnt('open')+'）')}${chip('track','改善追蹤中（'+cnt('track')+'）')}${chip('over','逾期未結（'+cnt('over')+'）')}${chip('soon','即將到期（'+cnt('soon')+'）')}${chip('done','已結案（'+cnt('done')+'）')}</div>
     <input type="search" id="fq" placeholder="搜尋：案件編號、品項、廠商、批號、異常描述、處理辦法…（空格可多個關鍵字）" value="${esc(F.q)}" oninput="F.q=this.value;if(!event.isComposing)drawList()" oncompositionend="F.q=this.value;drawList()" style="margin-bottom:8px">
@@ -364,6 +365,7 @@ function inp(k,label,type,o){ o=o||{}; const v=esc(cur[k]); const on=`oninput="s
 function drawForm(){
   const c=cur, on1=S.cat1.filter(x=>x.on).map(x=>x.n), on2=S.cat2.filter(x=>x.on).map(x=>x.n);
   $('#app').innerHTML=`<div class="ptitle"><button onclick="cancelForm()">← 返回</button><h1>${c._isNew?'新增異常案件':'編輯案件 '+esc(c.no)}</h1><span>${c._isNew?'案件編號會在儲存時自動產生（發現日期＋流水號）':''}</span></div>
+   ${formGuide()}
    <div class="note" style="margin-bottom:12px">只有「發現日期」必填，另外「品項名稱」或「異常描述」至少填一個。其他欄位還沒拿到資料可以先空白，之後再回來補。</div>
    <details class="sec" open><summary><span class="no">A</span>基本資料</summary><div class="body"><div class="grid">
      ${c._isNew?'':`<div><label class="f">案件編號</label><input value="${esc(c.no)}" disabled></div>`}
@@ -442,6 +444,52 @@ function statsGuide(){ let open=false; try{ open=localStorage.getItem(GUIDE_KEY)
     ${gS(8,'資料從哪裡來',`<span class="small" style="color:#8a1c12;font-weight:700">本機儲存 · 僅在此裝置此瀏覽器有效</span>`,
       `<p>統計只算<b>這台電腦、這個瀏覽器</b>裡的案件，「最近刪除」裡的不算。換電腦看到的數字會不一樣，要合併請用「設定與資料」的備份與還原。</p>`)}
    </div></details></div>`; }
+/* ---------- 各分頁的使用說明（打開／收起會記住） ---------- */
+function guideBox(k,title,body){ const key='casevoraCAPA_v1_guide_'+k; let open=false; try{ open=localStorage.getItem(key)==='1'; }catch(e){}
+  return `<div class="card gcard noprint"><details id="guide_${k}" ${open?'open':''} ontoggle="try{localStorage.setItem('${key}',this.open?'1':'0')}catch(e){}"><summary>📖 ${title} <span class="small muted">（點這裡打開／收起）</span></summary><div class="gwrap">${body}</div></details></div>`; }
+const gBadge=(t,c)=>`<span class="st ${c}">${t}</span>`, gIn=t=>`<span class="gin">${t}</span>`, gBtn=t=>`<span class="gin dk">${t}</span>`;
+function listGuide(){ return guideBox('list','異常案件清單使用說明',
+  gS(1,'一打開先看提醒',`<span class="small"><b>⏰ 還有</b></span>${gIn('5 件未結')}${gN(1)}<span class="gin" style="background:#b42318;color:#fff">🔴 2 件逾期</span><span class="gin" style="background:#f97316;color:#fff">🟠 1 件 3 天內到期</span>`,
+    `<p>最上面的提醒列會告訴你還有幾件沒結、幾件逾期、幾件 3 天內到期。</p><p>點任一個${gN(1)}，清單就只列出那些案件。</p>`)+
+  gS(2,'依狀態切換',`${gIn('全部')}${gIn('未結案')}${gIn('未處理')}${gIn('改善追蹤中')}${gIn('逾期未結')}${gIn('即將到期')}${gIn('已結案')}`,
+    `<p>狀態是系統<b>自動判斷</b>的，不用自己改：</p><p>${gBadge('已結案','done')} 有填結案日期<br>${gBadge('逾期未結','over')} 過了預計完成日期還沒結案<br>${gBadge('即將到期','soon')} 3 天內到期<br>${gBadge('改善追蹤中','track')} 有填處置、矯正、進度等內容<br>${gBadge('未處理','open')} 其他</p>`)+
+  gS(3,'搜尋與篩選',`${gIn('🔍 包裝區 黑色異物')}${gN(1)}${gIn('全部年度 ▾')}${gIn('全部廠商 ▾')}${gN(2)}`,
+    `<p>搜尋欄${gN(1)}可以打案件編號、品項、廠商、批號、異常描述、處理辦法等；用<b>空格</b>分開可以同時找多個關鍵字。</p><p>下拉選單${gN(2)}可以依年度、月份、工作站、廠商、分類一、分類二篩選。按「清除篩選」回到全部。</p>`)+
+  gS(4,'排序',`<span class="small">預設：<b>緊急程度</b>（逾期 → 即將到期 → 其他）</span>${gN(1)}`,
+    `<p>預設依緊急程度排，最急的在最上面。</p><p>電腦版可以點表格的<b>欄位標題</b>${gN(1)}改成依那一欄排序，再點一次反過來；要回到緊急程度，按「改回緊急程度」。</p>`)+
+  gS(5,'看案件、編輯、刪除',`${gBtn('編輯')}${gIn('刪除')}<span class="small muted">→ 最近刪除（30 天）</span>`,
+    `<p>點任一列（手機是點卡片）會打開案件的完整內容和照片，右上角可以「編輯」或「刪除」。</p><p>刪除會先跳出確認，並移到「最近刪除」，30 天內都能救回來。</p>`)+
+  gS(6,'電腦和手機',`<span class="small">電腦：表格　手機：卡片</span>`,
+    `<p>電腦看到的是表格，紅底是逾期、橘底是即將到期；手機會自動改成卡片，左邊的色條代表一樣的意思。</p>`)); }
+function formGuide(){ return guideBox('form','新增／編輯案件使用說明',
+  gS(1,'最少要填什麼',`${gIn('發現日期 *')}<span class="small">＋</span>${gIn('品項名稱')}<span class="small">或</span>${gIn('異常描述')}`,
+    `<p>只有<b>發現日期</b>必填，另外「品項名稱」或「異常描述」至少填一個。其他欄位可以先空白，之後再回來補。</p><p><b>案件編號</b>在第一次儲存時自動產生：發現日期＋當天流水號，例如 2026111901。</p>`)+
+  gS(2,'四個區塊',`${gBtn('A')}<span class="small">基本資料</span>${gBtn('B')}<span class="small">異常內容</span>${gBtn('C')}<span class="small">原因分析及處理</span>${gBtn('D')}<span class="small">改善追蹤</span>`,
+    `<p>點區塊標題可以打開或收起。工作站、廠商、負責單位可以從清單選，也可以直接打字，打過的會自動加進常用選項。</p><p>分類二如果有兩項以上原因，以<b>較多或較嚴重</b>的問題歸類。</p>`)+
+  gS(3,'照片',`<span class="gin">📷 點這裡選擇照片或拍照</span>${gN(1)}${gIn('◀')}${gIn('下載')}${gIn('刪除')}`,
+    `<p>可以一次選多張${gN(1)}，手機可以直接拍照；照片會自動壓縮。</p><p>按 ◀ 可以調整順序。照片只存在這台電腦的瀏覽器裡，不會上傳到網路。</p>`)+
+  gS(4,'日期決定狀態',`${gIn('預計完成日期')}<span class="small">→</span>${gBadge('即將到期','soon')}${gBadge('逾期未結','over')}<br>${gIn('結案日期')}<span class="small">→</span>${gBadge('已結案','done')}`,
+    `<p>填了<b>預計完成日期</b>，到期前 3 天會變「即將到期」，過了還沒結案會變「逾期未結」。</p><p>填了<b>結案日期</b>，狀態就會變成「已結案」。結案日期、預計完成日期都不能早於發現日期。</p>`)+
+  gS(5,'儲存',`${gBtn('儲存')}${gIn('取消')}<span class="dirty small">● 有尚未儲存的修改</span>`,
+    `<p>儲存按鈕固定在畫面最下面。改了東西還沒存，會顯示「● 有尚未儲存的修改」；這時離開頁面，系統會先問你確定要離開嗎。</p>`)); }
+function trashGuide(){ return guideBox('trash','最近刪除使用說明',
+  gS(1,'刪除的案件會先放這裡',`<span class="small">保留 <b>30 天</b>・剩 12 天</span>`,
+    `<p>在案件裡按「刪除」，不會馬上消失，會先移到這裡保留 30 天，按錯了還能救回來。超過 30 天的會在下次打開系統時永久刪除，照片一起刪除。</p>`)+
+  gS(2,'還原',`<span class="small">☑ 勾選</span>${gN(1)}${gBtn('還原')}${gN(2)}`,
+    `<p>先勾選要救回來的案件${gN(1)}（可以按「全選」），再按「還原」${gN(2)}，案件會回到清單，內容和照片都在。</p>`)+
+  gS(3,'永久刪除',`<span class="gin" style="color:#b42318">永久刪除</span>`,
+    `<p>勾選後按「永久刪除」會再問一次，確定後就<b>無法復原</b>，照片也一起刪除。不確定的話，先到「設定與資料」下載一份備份。</p>`)+
+  gS(4,'不算進統計',`<span class="small">📊 統計分析 ✕</span>`,
+    `<p>這裡的案件不會出現在清單，也不會算進統計分析；還原之後才會算。</p>`)); }
+function settingsGuide(){ return guideBox('settings','設定與資料使用說明',
+  gS(1,'分類一、分類二',`${gIn('改名')}${gN(1)}${gIn('停用')}${gN(2)}${gIn('新增')}${gN(3)}`,
+    `<p><b>改名</b>${gN(1)}：已經用這個分類的案件會一起改成新名稱，統計也會跟著合在一起。</p><p><b>停用</b>${gN(2)}：新增案件時不會出現，但舊案件保留原本的分類；停用的可以再啟用。</p><p><b>新增</b>${gN(3)}：在下面輸入框打字按「新增」。</p>`)+
+  gS(2,'常用選項',`${gIn('常用工作站')}${gIn('常用廠商')}${gIn('常用負責單位')}`,
+    `<p>新增案件時打過的工作站、廠商、負責單位會自動加進來，下次可以直接選。打錯的可以按「移除」，不會影響已經填好的案件。</p>`)+
+  gS(3,'備份（每兩週到一個月一次）',`${gBtn('下載備份（含照片）')}${gN(1)}${gIn('從備份還原')}${gN(2)}`,
+    `<p>「下載備份」${gN(1)}會存成一個檔案（CAPA_backup_日期.json），裡面有全部案件、照片、分類和常用選項，包含「最近刪除」裡的。請存到<b>這台電腦以外的地方</b>，例如公司雲端硬碟或隨身碟。</p><p>「從備份還原」${gN(2)}會<b>取代</b>這台電腦目前所有資料，按之前會再問一次。換電腦時也是用這個方法搬資料。</p>`)+
+  gS(4,'資料存在哪裡',`<span class="small" style="color:#8a1c12;font-weight:700">本機儲存 · 僅在此裝置此瀏覽器有效</span>`,
+    `<p>所有資料只存在<b>這台電腦、這個瀏覽器</b>：換電腦、換瀏覽器、用無痕視窗都看不到；清除瀏覽資料會全部消失。</p><p>沒有登入和權限控管，請用電腦的開機密碼保護。下面會顯示目前用了多少空間。</p>`)); }
 /* ============ 統計分析（月／季／年），版面比照衛生追蹤 ============ */
 let stV='month', stY=null, stM=null, stQ=null, STB=[];
 const lastDay=(y,m)=>new Date(y,m,0).getDate();
@@ -581,6 +629,7 @@ async function delCase(id){ const c=C.find(x=>x.id===id); if(!c) return;
 let TSEL=new Set();
 function renderTrash(){ page='trash'; nav(); const rs=C.filter(c=>c.deleted).sort((a,b)=>(b.deletedAt||'').localeCompare(a.deletedAt||''));
   $('#app').innerHTML=`<div class="ptitle"><h1>最近刪除</h1><span>保留 30 天，超過的會在下次打開系統時永久刪除（照片一起刪除）</span></div>
+   ${trashGuide()}
    <div class="card"><div class="row" style="margin-bottom:8px"><button onclick="TSEL=new Set(C.filter(c=>c.deleted).map(c=>c.id));renderTrash()" ${rs.length?'':'disabled'}>全選</button><button onclick="TSEL=new Set();renderTrash()" ${TSEL.size?'':'disabled'}>全部不選</button>
      <button class="pri" onclick="trashRestore()" ${TSEL.size?'':'disabled'}>還原</button><button class="dng" onclick="trashPurge()" ${TSEL.size?'':'disabled'}>永久刪除</button><span class="small muted">${TSEL.size?'已勾選 '+TSEL.size+' 件':'請先勾選'}</span></div>
    ${rs.length?rs.map(c=>`<label class="ccard" style="display:flex;cursor:default"><input type="checkbox" style="width:auto" ${TSEL.has(c.id)?'checked':''} onchange="this.checked?TSEL.add('${c.id}'):TSEL.delete('${c.id}');renderTrash()">
@@ -602,6 +651,7 @@ function renderSettings(){ page='settings'; nav();
   const listBox=(k,title)=>`<div class="card"><h2>${title}</h2><ul class="optl">${S[k].length?S[k].map((x,i)=>`<li><span>${esc(x)}</span><button class="sm dng" onclick="delOpt('${k}',${i})">移除</button></li>`).join(''):'<li><span class="muted small">還沒有，新增案件時輸入過的會自動加進來</span></li>'}</ul>
     <div class="row"><input id="new_${k}" placeholder="新增" style="flex:1;min-width:120px" onkeydown="if(event.key==='Enter')addOpt('${k}')"><button onclick="addOpt('${k}')">新增</button></div></div>`;
   $('#app').innerHTML=`<div class="ptitle"><h1>設定與資料</h1></div>
+   ${settingsGuide()}
    <div class="ogrid">${catBox('cat1','分類一：異常來源','停用後，新增案件時不會出現，但舊案件保留原本的分類。')}${catBox('cat2','分類二：異常原因','兩項以上原因時，以較多或較嚴重之問題歸類。')}</div>
    <div class="ogrid" style="margin-top:14px">${listBox('stations','常用工作站／發生部門')}${listBox('vendors','常用廠商')}${listBox('units','常用改善負責單位')}</div>
    <div class="card" style="margin-top:14px"><h2>📦 備份與還原</h2>
