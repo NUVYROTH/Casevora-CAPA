@@ -609,7 +609,7 @@ function drawForm(){
      <label class="f" style="margin-top:10px">圖片(1)、圖片(2)（原因分析、處理過程也可以拍照或截圖放這裡；超過 2 張的會列在「其他圖片」）</label>
      <div class="photos" id="phbox"></div>
      <div class="row" style="margin-top:6px"><button onclick="this.nextElementSibling.click()">＋ 加入照片</button><input type="file" id="phIn" accept="image/*" multiple hidden onchange="addPhotos(this)"><span class="muted small">照片會自動壓縮後保存；前 2 張就是 Excel 的圖片(1)、圖片(2)。</span></div>
-     <div class="pzone" tabindex="0" role="button" aria-label="貼上或拖曳照片">📋 點這裡，再按 <b>Ctrl+V</b> 貼上照片（也可以把照片拖進來）</div>
+     <div class="pzone" tabindex="0" role="button" aria-label="貼上或拖曳照片">📋 在表單任何地方直接按 <b>Ctrl+V</b> 就能貼上照片（也可以把照片拖進這個框）</div>
    </div></details>
    <details class="sec" open><summary><span class="no">C</span>處理與結案</summary><div class="body"><div class="grid">
      ${inp('note','備註','ta',{wide:true})}${inp('method','處理辦法','ta',{wide:true})}${inp('closeDate','結案日期','date')}<div><label class="f">處理天數（自動計算）</label><div class="pdays" id="pdays">${daysTxt(c)}</div></div>
@@ -656,14 +656,13 @@ async function addPhotoFiles(files){ if(!files.length||!cur) return; let bad=0;
   for(const f of files){ if(!/^image\//.test(f.type)){bad++;continue;} try{ const data=await compress(f), id='ph_'+newId(); await PDB.put(id,data); PHC[id]=data; cur.photos.push(id); cur._added.push(id); }catch(e){ bad++; } }
   drawPhotos(); markDirty(true); if(bad) say(`有 ${bad} 個檔案不是圖片或讀不出來，已略過。`); }
 function rmPhoto(i){ const id=cur.photos.splice(i,1)[0]; cur._removed.push(id); drawPhotos(); markDirty(true); toast('已移除，按「儲存」才會生效；按「取消」可以復原'); }
-/* 貼上（Ctrl+V）與拖曳：跟衛生追蹤一樣，先點照片區下方的貼上框，再貼上 */
+/* 貼上（Ctrl+V）：在新增／編輯表單任何地方直接貼上圖片（不用先點貼上框）；拖曳仍可拖進虛線框 */
 document.addEventListener('paste',e=>{ if(page!=='edit'||!cur) return; const dt=e.clipboardData; if(!dt) return;
   const imgs=[...dt.items].filter(it=>it.kind==='file'&&/^image\//.test(it.type)).map(it=>it.getAsFile()).filter(Boolean); if(!imgs.length) return;
   const z=document.activeElement&&document.activeElement.closest&&document.activeElement.closest('.pzone');
   const t=e.target, inText=t&&(t.tagName==='TEXTAREA'||(t.tagName==='INPUT'&&!/^(file|checkbox|radio|button)$/.test(t.type)));
   if(!z&&inText&&dt.getData('text/plain')) return;   /* 文字欄位貼文字：照常貼 */
   e.preventDefault();
-  if(!z){ say('請先點一下照片下方的「📋 點這裡，再按 Ctrl+V」貼上框，再按 Ctrl+V。'); return; }
   addPhotoFiles(imgs).then(()=>toast(`已貼上 ${imgs.length} 張照片 ✦`)); });
 document.addEventListener('dragover',e=>{ const z=e.target.closest&&e.target.closest('.pzone'); if(z){ e.preventDefault(); z.classList.add('over'); } });
 document.addEventListener('dragleave',e=>{ const z=e.target.closest&&e.target.closest('.pzone'); if(z) z.classList.remove('over'); });
@@ -736,8 +735,8 @@ function formGuide(){ return guideBox('form','新增／編輯案件使用說明'
     `<p>只有<b>發現日期</b>必填，另外「產品品項」或「異常描述」至少填一個。其他欄位可以先空白，之後再回來補。</p><p><b>案件編號</b>：新增時會<b>自動帶出</b>，改發現日期會跟著變；也可以自己改（例如照 Excel 的編號），自己改過就不會再自動換。編號規則是<b>發現日期 YYYYMMDD＋三碼流水號</b>，例如 11/20 發現的第 1 件是 20261120001、第 2 件是 20261120002，依「發現日期」那天編。以前匯入的編號不會改。編號不能跟別的案件重複。</p>`)+
   gS(2,'跟 Excel 一樣的格子',`${gBtn('A')}<span class="small">案件編號～效期</span>${gBtn('B')}<span class="small">異常、圖片(1)(2)</span>${gBtn('C')}<span class="small">備註～分類二＋預計完成日期</span>`,
     `<p>表單欄位的順序跟 Excel 一樣：案件編號、發現日期、工作站、<b>產品品項</b>、廠商、批號、<b>有效日期</b>、<b>異常描述</b>、圖片(1)、圖片(2)、備註、處理辦法、結案日期、分類一、分類二；只多一格<b>預計完成日期</b>（藍底）。其中產品品項＝Excel 的「品項」、有效日期＝「效期」、異常描述＝「異常」。</p><p>廠商可以從下拉選，也可以直接打字，打過的會自動加進常用選項；<b>工作站、分類二用點選，而且可以選兩個以上</b>（見第 5 步）。</p>`)+
-  gS(3,'加照片、貼上、刪除',`<span class="gdonut" style="border-radius:6px;-webkit-mask:none;mask:none;background:#cfe3d6;width:40px;height:30px"></span><span class="gin">＋ 加入照片</span>${gN(1)}</div><div class="gx-row"><span class="gin" style="border:2px dashed #b8955a;background:#fff4e0;color:#7a3d06">📋 點這裡，再按 Ctrl+V 貼上</span>${gN(2)}`,
-    `<p>「＋ 加入照片」${gN(1)}選照片；電腦上也可以先點虛線框${gN(2)}（會出現「✔ 已選取」），再按 <b>Ctrl+V</b> 貼上截圖，或把照片直接拖進框裡。</p><p><b>點照片看大圖</b>；要刪掉就點照片右上角的 <b>✕</b>（按「儲存」才會真的刪除，按「取消」可以復原）。前 2 張就是 Excel 的<b>圖片(1)、圖片(2)</b>，按 ◀ 調整順序。照片只存在這台電腦的瀏覽器裡。</p>`)+
+  gS(3,'加照片、貼上、刪除',`<span class="gdonut" style="border-radius:6px;-webkit-mask:none;mask:none;background:#cfe3d6;width:40px;height:30px"></span><span class="gin">＋ 加入照片</span>${gN(1)}</div><div class="gx-row"><span class="gin" style="border:2px dashed #b8955a;background:#fff4e0;color:#7a3d06">📋 直接按 Ctrl+V 貼上</span>${gN(2)}`,
+    `<p>「＋ 加入照片」${gN(1)}選照片；電腦上截圖或複製圖片後，<b>在表單任何地方直接按 Ctrl+V</b> 就能貼上，不用先點虛線框${gN(2)}；也可以把照片拖進虛線框。游標在文字欄位、剪貼簿裡又有文字時（例如從 Excel 複製），會照常貼文字。</p><p><b>點照片看大圖</b>；要刪掉就點照片右上角的 <b>✕</b>（按「儲存」才會真的刪除，按「取消」可以復原）。前 2 張就是 Excel 的<b>圖片(1)、圖片(2)</b>，按 ◀ 調整順序。照片只存在這台電腦的瀏覽器裡。</p>`)+
   gS(4,'日期決定狀態',`${gIn('預計完成日期')}<span class="small">→</span>${gBadge('即將到期','soon')}${gBadge('逾期未結','over')}<br>${gIn('結案日期')}<span class="small">→</span>${gBadge('已結案','done')}`,
     `<p><b>預計完成日期</b>預設是發現日期＋15 天（改發現日期會跟著變，也可以自己改）。到期前 3 天會變「即將到期」，過了還沒結案會變「逾期未結」。</p><p>填了<b>結案日期</b>，狀態就會變成「已結案」，旁邊的<b>處理天數</b>會自動算出發現日期到結案日期幾天（例：11/1 發現、11/13 結案＝12 天；同一天結案＝0 天；還沒結案就顯示已經過幾天）；清單的結案日期下面也會顯示天數。結案日期、預計完成日期都不能早於發現日期。</p>`)+
   gS(5,'工作站、分類二可以選兩個以上',`${gBtn('✓ 打漿組')}${gIn('包裝組')}${gBtn('✓ 倉儲組')}</div><div class="gx-row">${gBtn('✓ 天然異物')}${gBtn('✓ 規格不符')}${gIn('風味口感不良')}</div><div class="gx-row">${gIn('其它：自己打字')}<span class="small">☑ 也加入常用</span>${gIn('＋ 加入')}`,
