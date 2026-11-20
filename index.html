@@ -271,6 +271,7 @@ img.zoom{cursor:zoom-in}
 .lccard{margin-top:16px}
 .lcgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 24px}
 .lcgrid>*{min-width:0}
+.lcone{max-width:900px;margin:0 auto}.lcone>*{min-width:0}
 .st-head{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
 .st-title{font-size:20px;font-weight:700;margin:4px 0 0}
 .st-sum{border-radius:8px;padding:12px 14px;font-size:16px;font-weight:700;margin:8px 0 14px;line-height:1.5}
@@ -702,11 +703,11 @@ function statsGuide(){ const k=(n,l,c)=>`<span class="gx-k ${c||''}">${n}<small>
     gS(2,'看四個數字、點開案件',`${k(12,'新增')}${k(5,'已結案','ok')}${k(5,'尚未結案','b')}${gN(1)}${k(2,'逾期未結','rd')}`,
       `<p>新增 ＝ 已結案 ＋ 尚未結案 ＋ 逾期未結，都是看本期新增的案件「到今天」的狀態。下面的虛線框是<b>平均處理天數</b>（發現日期 → 結案日期），也會跟上期比多幾天、少幾天。</p><p>點任一格${gN(1)}，下面會列出是哪幾件；再點案件就能直接打開編輯。</p>`)+
     gS(3,'逾期明細、各分類排行',`<div style="flex:1">${bar('包裝組',80,1)}${bar('打漿組',45)}${bar('生產',25)}</div>`,
-      `<p>「逾期未結明細」列出本期逾期的案件和逾期幾天，最久的在最上面。</p><p>下面依<b>工作站、分類一、分類二、廠商</b>排行（廠商沒填的＝公司內部，不列入廠商排行）；<b>分類一、分類二</b>下面還有<b>圓餅圖</b>（本期各分類佔多少，前 5 名＋其它）和<b>曲線圖</b>（所選年份每月件數），同一個分類兩張圖同一個顏色，點圓餅或旁邊清單也能看案件；點任一列${gN(1)}會跳出那幾件案件，再點案件就直接打開編輯。工作站、分類二一件選了兩個以上的，會各算一件。</p>`)+
+      `<p>「逾期未結明細」列出本期逾期的案件和逾期幾天，最久的在最上面。</p><p>下面依<b>工作站、分類一、分類二、廠商</b>排行（廠商沒填的＝公司內部，不列入廠商排行）；<b>工作站、分類一、分類二</b>下面還有<b>圓餅圖</b>（本期各分類佔多少，前 5 名＋其它）和<b>曲線圖</b>（所選年份每月件數），同一個分類兩張圖同一個顏色，點圓餅或旁邊清單也能看案件；點任一列${gN(1)}會跳出那幾件案件，再點案件就直接打開編輯。工作站、分類二一件選了兩個以上的，會各算一件。</p>`)+
     gS(4,'右側三張卡',`<span class="gdonut"></span><div style="flex:1">${bar('天然異物',70)}${bar('規格不符',40)}</div>`,
       `<p>右邊跟衛生追蹤一樣是<b>所選年份</b>的處理狀態（圓餅圖）、異常原因（分類二）、<b>工作站件數</b>，旁邊的 ▲▼ 是跟<b>去年同期</b>比；點任一列會跳出那幾件。一件寫兩個工作站（用「、」隔開）會各算一件。</p>`)+
     gS(5,'📈 每月趨勢',`<span class="small"><b style="color:#16213a">── 新增</b>　<b style="color:#167a3e">- - 結案</b></span>`,
-      `<p>最下面的折線圖看所選年份 1～12 月：<b>每月異常總數</b>（新增、結案）、<b>各工作站每月件數</b>（前 5 名）。分類一、分類二的每月曲線在左邊排行下面。還沒到的月份不畫；手機上可以左右滑動。</p>`)+
+      `<p>最下面的折線圖看所選年份 1～12 月的<b>每月異常總數</b>（新增、結案）。工作站、分類一、分類二的每月曲線在左邊各自的排行下面。還沒到的月份不畫；手機上可以左右滑動。</p>`)+
     gS(6,'▲▼ 跟上期比幾 %',`${k(12,'新增 <b style="color:#b42318">▲ +20%</b>')}${k(5,'已結案 <b style="color:#167a3e">▲ +8%</b>','ok')}`,
       `<p><b style="color:#b42318">紅色＝變差</b>（異常、逾期變多，或結案變少）；<b style="color:#167a3e">綠色＝變好</b>。本期還沒過完時，上期只算到<b>同一天</b>（例：11/1～11/19 比 10/1～10/19）。</p>`)+
     gS(7,'下載 Word 報表、列印',`<span class="gx-b">下載 Word 報表</span><span class="gx-b">列印／存成 PDF</span>`,
@@ -831,14 +832,14 @@ function renderStats(){ page='stats'; nav(); stInit(); const D=stData(), {rg,pr,
   const bars=g=>{ const top=g.rows.slice(0,10), rest=g.rows.slice(10), mx=Math.max(1,...g.rows.map(r=>r.v));
     return `<div class="st-sec">${g.n}</div>${top.length?top.map(r=>{ const i=STB.push({t:`${g.n.replace(/（.*$|排行$|哪個|異常最多/g,'')||g.f}：${r.k||'（未填）'}`,scope:rg.label,list:cur.cases.filter(c=>valsOf(c,g.f).includes(r.k))})-1, can=true;
       return `<div class="st-bar ${can?'click':''}" ${can?`onclick="stShow(${i})" title="點開看是哪些案件"`:''}><span>${r.k?esc(r.k):'<span class="muted">（未填）</span>'}</span><span class="b"><i style="width:${Math.max(2,Math.round(r.v/mx*100))}%"></i></span><span class="v">${r.v}</span><span class="c">${chg(r.v,r.pv)}</span></div>`; }).join('')
-      +(rest.length?`<div class="st-note">其他 ${rest.length} 項，共 ${rest.reduce((s,r)=>s+r.v,0)} 件</div>`:''):'<div class="st-note">尚無資料</div>'}${g.f==='vendor'?`<div class="st-note">廠商空白＝公司內部，不列入廠商排行（本期 ${g.skip} 件）。</div>`:''}${(g.f==='cat1'||g.f==='cat2')&&g.rows.length?catCharts(g):''}`; };
-  const catCharts=g=>{ const ser=g.f==='cat1'?D.c1Series:D.c2Series, top=g.rows.slice(0,5), rest=g.rows.slice(5), restV=rest.reduce((a,r)=>a+r.v,0);
-    const cm=colorMap([...top.map(r=>r.k||'（未填）'),...ser.map(x=>x.name)]), nm=g.f==='cat1'?'分類一':'分類二';
+      +(rest.length?`<div class="st-note">其他 ${rest.length} 項，共 ${rest.reduce((s,r)=>s+r.v,0)} 件</div>`:''):'<div class="st-note">尚無資料</div>'}${g.f==='vendor'?`<div class="st-note">廠商空白＝公司內部，不列入廠商排行（本期 ${g.skip} 件）。</div>`:''}${(g.f==='cat1'||g.f==='cat2'||g.f==='station')&&g.rows.length?catCharts(g):''}`; };
+  const catCharts=g=>{ const ser=g.f==='cat1'?D.c1Series:g.f==='station'?D.stSeries:D.c2Series, top=g.rows.slice(0,5), rest=g.rows.slice(5), restV=rest.reduce((a,r)=>a+r.v,0);
+    const cm=colorMap([...top.map(r=>r.k||'（未填）'),...ser.map(x=>x.name)]), nm=g.f==='cat1'?'分類一':g.f==='station'?'工作站':'分類二';
     const items=top.map(r=>{ const n=r.k||'（未填）'; return {n,v:r.v,c:cm.get(n),i:STB.push({t:`${nm}：${n}`,scope:rg.label,list:cur.cases.filter(c=>valsOf(c,g.f).includes(r.k))})-1}; });
     if(restV) items.push({n:'其它',v:restV,c:'#9aa3b2',i:STB.push({t:`${nm}：其它`,scope:rg.label,list:cur.cases.filter(c=>valsOf(c,g.f).some(v=>rest.some(r=>r.k===v)))})-1});
     const tot=items.reduce((a,x)=>a+x.v,0), lser=ser.map(x=>({...x,color:cm.get(x.name)}));
     return `<div class="st-charts"><div><div class="st-sub">${nm}分布（${esc(rg.label)}）</div><div class="pie"><figure data-title="${nm}分布（${esc(rg.label)}）" data-legend='${esc(JSON.stringify(items.map(x=>[x.n+' '+x.v,x.c])))}'>${pieGen(items)}</figure><ul class="leg">${items.map(x=>`<li class="click" onclick="stShow(${x.i})" title="點開看是哪些案件"><i style="background:${x.c}"></i>${esc(x.n)}<b>${x.v}</b><span class="muted small">${tot?Math.round(x.v/tot*100):0}%</span></li>`).join('')}</ul></div></div>
-      <div><div class="st-sub">${nm}每月件數（${stY} 年，前 5 名）</div>${lser.length?`<figure class="trend" data-title="${nm}每月件數（${stY} 年）" data-legend='${esc(JSON.stringify(lser.map(x=>[x.name,x.color])))}'>${multiSVG(lser,D.months)}</figure><div class="leg3">${lser.map(x=>`<span><i style="background:${x.color}"></i>${esc(x.name)}</span>`).join('')}</div>`:'<div class="st-note">這一年還沒有資料。</div>'}</div></div>${tot<g.rows.reduce((a,r)=>a+r.v,0)||g.f==='cat2'?`<div class="st-note">${g.f==='cat2'?'一件選了兩個以上原因，會各算一件，所以圓餅圖加起來可能比件數多。':''}</div>`:''}`; };
+      <div><div class="st-sub">${nm}每月件數（${stY} 年，前 5 名）</div>${lser.length?`<figure class="trend" data-title="${nm}每月件數（${stY} 年）" data-legend='${esc(JSON.stringify(lser.map(x=>[x.name,x.color])))}'>${multiSVG(lser,D.months)}</figure><div class="leg3">${lser.map(x=>`<span><i style="background:${x.color}"></i>${esc(x.name)}</span>`).join('')}</div>`:'<div class="st-note">這一年還沒有資料。</div>'}</div></div>${g.f==='cat2'?'<div class="st-note">一件選了兩個以上原因，會各算一件，所以圓餅圖加起來可能比件數多。</div>':g.f==='station'?'<div class="st-note">一件寫兩個工作站（用「、」隔開）會各算一件，所以圓餅圖加起來可能比件數多。</div>':''}`; };
   const yCases=stCompute(D.YR.cur).cases;
   const side=(title,sub,rows,note)=>{ const mx=Math.max(1,...rows.map(r=>r.v)); return `<div class="card"><div class="phd"><b>${title}</b><span class="small muted">${sub}</span></div>${rows.length?rows.map(r=>{ const i=STB.push({t:`${title.replace(/（.*）/,'')}：${r.k||'（未填）'}`,scope:`${stY} 年`,list:yCases.filter(c=>valsOf(c,r.f).includes(r.k))})-1;
       return `<div class="hb hc click" role="button" tabindex="0" title="點開看是哪些案件" onclick="stShow(${i})" onkeydown="if(event.key==='Enter')this.click()"><span>${r.k?esc(r.k):'（未填）'}</span><span class="b"><i style="width:${Math.max(2,Math.round(r.v/mx*100))}%"></i></span><span class="v">${r.v}</span><span class="c">${chg(r.v,r.pv)}</span></div>`; }).join(''):`<div class="small muted">${stY} 年還沒有案件。</div>`}${note?`<div class="muted small" style="margin-top:6px">${note}</div>`:''}</div>`; };
@@ -879,9 +880,8 @@ function renderStats(){ page='stats'; nav(); stInit(); const D=stData(), {rg,pr,
     </div>
    </div>
    <div class="card lccard"><div class="phd"><b>📈 每月趨勢</b><span class="small muted">${stY} 年・依發現日期（結案依結案日期）</span></div>
-    <div class="lcgrid">
+    <div class="lcone">
      <div><div class="st-sec">每月異常總數</div><figure class="trend" id="trendMain" data-title="${stY} 年每月新增與結案件數">${lineSVG(D.months)}</figure><div class="leg2"><span><i style="background:#16213a"></i>新增件數</span><span><i class="dash"></i>結案件數</span></div></div>
-     <div><div class="st-sec">各工作站每月件數（前 5 名）</div>${multiHTML(D.stSeries,D.months)}</div>
     </div></div>
    ${statsGuide()}`;
 }
