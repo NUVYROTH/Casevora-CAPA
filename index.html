@@ -321,7 +321,10 @@ const live=()=>C.filter(c=>!c.deleted);
 /* 案件編號：發現日期 YYYYMMDD ＋ 當天流水號兩碼，例如 2026110601 */
 function genNo(date){ const pre=(date||today()).replace(/-/g,''); let mx=0; C.forEach(c=>{ if(String(c.no||'').startsWith(pre)){ const n=+String(c.no).slice(pre.length)||0; if(n>mx) mx=n; } }); return pre+p2(mx+1); }
 /* 案件狀態由內容自動判斷，不會跟資料互相矛盾 */
-function statusOf(c){ if(c.closeDate) return 'done'; const t=today(); if(c.due&&c.due<t) return 'over'; if(c.due&&c.due<=addDays(t,3)) return 'soon';
+/* 預計完成日期：沒填就用「發現日期＋15 天」 */
+const DUE_DAYS=15;
+function dueOf(c){ return c.due||(c.date?addDays(c.date,DUE_DAYS):''); }
+function statusOf(c){ if(c.closeDate) return 'done'; const t=today(), du=dueOf(c); if(du&&du<t) return 'over'; if(du&&du<=addDays(t,3)) return 'soon';
   const tracking=[c.method,c.immediate,c.corrective,c.preventive,c.progress,c.result].some(v=>String(v||'').trim()); return tracking?'track':'open'; }
 const URG={over:0,soon:1,track:2,open:2,done:3};
 const ST={open:['未處理','open'],track:['改善追蹤中','track'],soon:['即將到期','soon'],over:['逾期未結','over'],done:['已結案','done']};
@@ -361,10 +364,10 @@ function filtered(){ const ws=F.q.trim().toLowerCase().split(/\s+/).filter(Boole
   let a=live().filter(c=>(!F.year||(c.date||'').startsWith(F.year))&&(!F.month||(c.date||'').slice(5,7)===F.month)&&(!F.station||c.station===F.station)&&(!F.vendor||c.vendor===F.vendor)
     &&(!F.cat1||c.cat1===F.cat1)&&(!F.cat2||c.cat2===F.cat2)&&(!F.status||statusOf(c)===F.status||(F.status==='notdone'&&statusOf(c)!=='done'))&&ws.every(w=>caseText(c).includes(w)));
   const k=F.sort, d=F.dir;
-  if(k==='urgent') a.sort((x,y)=>(URG[statusOf(x)]-URG[statusOf(y)])||(URG[statusOf(x)]<2?String(x.due).localeCompare(String(y.due)):0)||String(y.date).localeCompare(String(x.date))||String(y.no).localeCompare(String(x.no)));
-  else a.sort((x,y)=>{ const vx=k==='status'?URG[statusOf(x)]:String(x[k]||''), vy=k==='status'?URG[statusOf(y)]:String(y[k]||''); return (vx<vy?-1:vx>vy?1:0)*d||String(y.no).localeCompare(String(x.no)); });
+  if(k==='urgent') a.sort((x,y)=>(URG[statusOf(x)]-URG[statusOf(y)])||(URG[statusOf(x)]<2?String(dueOf(x)).localeCompare(String(dueOf(y))):0)||String(y.date).localeCompare(String(x.date))||String(y.no).localeCompare(String(x.no)));
+  else a.sort((x,y)=>{ const vx=k==='status'?URG[statusOf(x)]:k==='due'?dueOf(x):String(x[k]||''), vy=k==='status'?URG[statusOf(y)]:k==='due'?dueOf(y):String(y[k]||''); return (vx<vy?-1:vx>vy?1:0)*d||String(y.no).localeCompare(String(x.no)); });
   return a; }
-const COLS=[['no','案件編號'],['date','發現日期'],['station','工作站'],['item','品項'],['vendor','廠商'],['lot','批號'],['expiry','效期'],['desc','異常描述'],['ph','照片'],['note','備註'],['method','處理辦法'],['unit','改善負責單位'],['due','預計完成'],['closeDate','結案日期'],['status','狀態'],['cat1','分類一'],['cat2','分類二']];
+const COLS=[['no','案件編號'],['date','發現日期'],['station','工作站'],['item','品項'],['vendor','廠商'],['lot','批號'],['expiry','效期'],['desc','異常描述'],['ph','照片'],['note','備註'],['method','處理辦法'],['due','預計完成'],['closeDate','結案日期'],['status','狀態'],['cat1','分類一'],['cat2','分類二']];
 function renderList(){
   page='list'; nav(); const rows=filtered(), all=live(), cnt=k=>all.filter(c=>statusOf(c)===k).length;
   const sel=(id,v,opts,ph)=>`<select onchange="F.${id}=this.value;drawList()" aria-label="${ph}"><option value="">${ph}</option>${opts.map(o=>`<option value="${esc(o[0])}" ${String(v)===String(o[0])?'selected':''}>${esc(o[1])}</option>`).join('')}</select>`;
@@ -413,7 +416,7 @@ function drawList(){
      ${rows.map(c=>`<tr class="r-${statusOf(c)}" onclick="openForm('${c.id}')"><td onclick="event.stopPropagation()"><input type="checkbox" style="width:auto" aria-label="勾選 ${esc(c.no)}" ${SEL.has(c.id)?'checked':''} onchange="tog('${c.id}',this.checked)"></td>
        <td style="white-space:nowrap;font-variant-numeric:tabular-nums">${esc(c.no)}</td><td style="white-space:nowrap">${fmtD(c.date)}</td><td>${esc(c.station)}</td><td>${esc(c.item)}</td><td>${esc(c.vendor)}</td><td>${esc(c.lot)}</td><td style="white-space:nowrap">${fmtD(c.expiry)}</td>
        <td class="desc"><div class="clip">${esc(c.desc)}</div></td><td>${(c.photos||[]).length?`<img class="th" data-ph="${c.photos[0]}" alt="異常照片">${c.photos.length>1?`<div class="small muted">共 ${c.photos.length} 張</div>`:''}`:''}</td>
-       <td class="desc"><div class="clip">${esc(c.note)}</div></td><td class="desc"><div class="clip">${esc(c.method)}</div></td><td>${esc(c.unit)}</td><td style="white-space:nowrap">${fmtD(c.due)}</td><td style="white-space:nowrap">${fmtD(c.closeDate)}</td>
+       <td class="desc"><div class="clip">${esc(c.note)}</div></td><td class="desc"><div class="clip">${esc(c.method)}</div></td><td style="white-space:nowrap">${fmtD(dueOf(c))}</td><td style="white-space:nowrap">${fmtD(c.closeDate)}</td>
        <td>${stBadge(c)}</td><td>${c.cat1?`<span class="tag ${c.cat1==='供應商'?'sup':'fac'}">${esc(c.cat1)}</span>`:''}</td><td>${c.cat2?`<span class="tag">${esc(c.cat2)}</span>`:''}</td></tr>`).join('')}
      </tbody></table></div>
      <div class="cards">${rows.map(c=>`<div class="ccard r-${statusOf(c)}" onclick="openForm('${c.id}')">${(c.photos||[]).length?`<img data-ph="${c.photos[0]}" alt="異常照片">`:''}<div class="m">
@@ -434,21 +437,23 @@ function openView(id){ const c=C.find(x=>x.id===id); if(!c||c.deleted) return; v
   $('#app').innerHTML=`${headHTML(`案件 ${esc(c.no)} ${stBadge(c)}`,'CASE DETAIL',esc(c.item||'（未填品項）')+(c.vendor?'・'+esc(c.vendor):'')+'・發現日期 '+fmtD(c.date),'案件 '+esc(c.no),
      `<button class="lite" onclick="go('${back==='view'?'list':back}')">← 返回清單</button><button class="pri pnew" onclick="openForm('${c.id}')">編輯</button><button class="dng" onclick="delCase('${c.id}')">刪除</button>`)}
    ${viewGuide()}
-   <div class="card"><h2>A. 基本資料</h2>${kv([['案件編號',t(c.no)],['發現日期',fmtD(c.date)],['工作站／發生部門',t(c.station)],['品項名稱',t(c.item)],['廠商名稱',t(c.vendor)],['批號',t(c.lot)],['有效日期',fmtD(c.expiry)],['異常發現人員',t(c.finder)],['分類一：異常來源',t(c.cat1)],['分類二：異常原因',t(c.cat2)],['備註',t(c.note)]])}</div>
+   <div class="card"><h2>A. 基本資料</h2>${kv([['案件編號',t(c.no)],['發現日期',fmtD(c.date)],['工作站／發生部門',t(c.station)],['品項名稱',t(c.item)],['廠商名稱',t(c.vendor)],['批號',t(c.lot)],['有效日期',fmtD(c.expiry)],['分類一：異常來源',t(c.cat1)],['分類二：異常原因',t(c.cat2)],['備註',t(c.note)]])}</div>
    <div class="card"><h2>B. 異常內容</h2>${kv([['異常描述',t(c.desc)]])}
      <div class="phs" style="margin-top:10px">${(c.photos||[]).map((p,i)=>`<div class="ph"><img data-ph="${p}" alt="異常照片 ${i+1}" onclick="viewPhoto('${p}')"><div class="bar"><span>照片 ${i+1}</span><button class="sm" onclick="savePhotoFile('${p}','${esc(c.no)}_照片${i+1}')">下載</button></div></div>`).join('')||'<span class="muted small">沒有照片</span>'}</div></div>
-   <div class="card"><h2>C. 原因分析及處理</h2>${kv([['異常原因分析',t(c.cause)],['立即處置方式',t(c.immediate)],['矯正措施',t(c.corrective)],['預防再發措施',t(c.preventive)],['處理辦法',t(c.method)],['改善負責單位',t(c.unit)],['改善負責人',t(c.owner)],['預計完成日期',fmtD(c.due)]])}</div>
-   <div class="card"><h2>D. 改善追蹤</h2>${kv([['改善進度',t(c.progress)],['改善結果',t(c.result)],['成效確認',t(c.verify)],['確認人員',t(c.verifier)],['結案日期',fmtD(c.closeDate)],['追蹤備註',t(c.note2)]])}</div>
+   <div class="card"><h2>C. 處理與結案</h2>${kv([['處理辦法',t(c.method)],['預計完成日期',fmtD(dueOf(c))+(c.due?'':' <span class="small muted">（沒填，以發現日期＋15 天計）</span>')],['結案日期',fmtD(c.closeDate)]])}</div>
+   ${(()=>{ const old=OLD_F.filter(([k])=>String(c[k]||'').trim()); return old.length?`<div class="card"><h2>其他（舊欄位，表單已不使用）</h2><div class="small muted" style="margin-bottom:6px">這些是以前填過的內容，資料都還在、也在備份裡；表單已經不再顯示這些欄位。</div>${kv(old.map(([k,n])=>[n,t(c[k])]))}</div>`:''; })()}
    <div class="small muted">建立：${new Date(c.createdAt).toLocaleString('zh-TW')}・最後修改：${new Date(c.updatedAt).toLocaleString('zh-TW')}</div>`;
   fillPhotos($('#app')); window.scrollTo(0,0); }
 
 /* ============ 新增／編輯表單 ============ */
+/* 表單已不使用、但保留舊資料的欄位 */
+const OLD_F=[['finder','異常發現人員'],['cause','異常原因分析'],['immediate','立即處置方式'],['corrective','矯正措施'],['preventive','預防再發措施'],['unit','改善負責單位'],['owner','改善負責人'],['progress','改善進度'],['result','改善結果'],['verify','成效確認'],['verifier','確認人員'],['note2','追蹤備註']];
 const FIELDS=['date','station','item','vendor','lot','expiry','finder','note','desc','cause','immediate','corrective','preventive','method','unit','owner','due','progress','result','verify','verifier','closeDate','note2','cat1','cat2'];
-function blankCase(){ const o={id:newId(),no:'',photos:[]}; FIELDS.forEach(k=>o[k]=''); o.date=today(); return o; }
+function blankCase(){ const o={id:newId(),no:'',photos:[]}; FIELDS.forEach(k=>o[k]=''); o.date=today(); o.due=addDays(o.date,DUE_DAYS); o._autoDue=true; return o; }
 function openForm(id){
   const src=id?C.find(x=>x.id===id):null; if(id&&!src) return;
   if(page!=='edit'&&page!=='new') back=page==='view'?'view':page;
-  cur=JSON.parse(JSON.stringify(src||blankCase())); cur._isNew=!src; cur._added=[]; cur._removed=[]; dirty=false; page='edit'; nav(); drawForm(); window.scrollTo(0,0); }
+  cur=JSON.parse(JSON.stringify(src||blankCase())); if(!cur.due&&cur.date){ cur.due=addDays(cur.date,DUE_DAYS); cur._autoDue=true; } cur._isNew=!src; cur._added=[]; cur._removed=[]; dirty=false; page='edit'; nav(); drawForm(); window.scrollTo(0,0); }
 function inp(k,label,type,o){ o=o||{}; const v=esc(cur[k]); const on=`oninput="setF('${k}',this.value)"`;
   if(type==='ta') return `<div class="${o.wide?'wide':''}"><label class="f ${o.req?'req':''}" for="f_${k}">${label}</label><textarea id="f_${k}" ${on} ${o.big?'style="min-height:130px"':''} placeholder="${esc(o.ph||'')}">${v}</textarea></div>`;
   if(type==='list') return `<div><label class="f" for="f_${k}">${label}</label><input id="f_${k}" list="dl_${k}" value="${v}" ${on} placeholder="${esc(o.ph||'可選擇或直接輸入')}"><datalist id="dl_${k}">${o.opts.map(x=>`<option value="${esc(x)}">`).join('')}</datalist></div>`;
@@ -462,26 +467,24 @@ function drawForm(){
    <details class="sec" open><summary><span class="no">A</span>基本資料</summary><div class="body"><div class="grid">
      ${c._isNew?'':`<div><label class="f">案件編號</label><input value="${esc(c.no)}" disabled></div>`}
      ${inp('date','發現日期','date',{req:true})}${inp('station','工作站／發生部門','list',{opts:optsOf('stations','station')})}${inp('item','品項名稱','text')}
-     ${inp('vendor','廠商名稱','list',{opts:optsOf('vendors','vendor')})}${inp('lot','批號','text')}${inp('expiry','有效日期','date')}${inp('finder','異常發現人員','text')}
+     ${inp('vendor','廠商名稱','list',{opts:optsOf('vendors','vendor')})}${inp('lot','批號','text')}${inp('expiry','有效日期','date')}
      ${inp('cat1','分類一：異常來源','sel',{opts:on1})}${inp('cat2','分類二：異常原因','sel',{opts:on2})}
      <div class="wide small muted">分類二：如有兩項以上異常原因，以較多或較嚴重之問題歸類。</div>
      ${inp('note','備註','ta',{wide:true})}</div></div></details>
-   <details class="sec" open><summary><span class="no">B</span>異常內容</summary><div class="body"><div class="grid">
+   <details class="sec" open><summary><span class="no">B</span>異常內容與照片</summary><div class="body"><div class="grid">
      ${inp('desc','異常描述','ta',{wide:true,big:true,ph:'例：外箱破損，內袋可見黑色異物約 0.5cm'})}</div>
-     <label class="f" style="margin-top:10px">異常照片（可一次選多張；會自動壓縮）</label>
+     <label class="f" style="margin-top:10px">異常照片（前 2 張對應 Excel 的圖片(1)、圖片(2)；原因分析、處理過程也可以拍照或截圖放這裡）</label>
      <div class="phs" id="phbox"></div>
      <div class="drop" style="margin-top:8px" onclick="$('#phIn').click()">📷 點這裡選擇照片或拍照</div><input type="file" id="phIn" accept="image/*" multiple hidden onchange="addPhotos(this)">
    </div></details>
-   <details class="sec" ${[c.cause,c.immediate,c.corrective,c.preventive,c.method,c.unit,c.owner,c.due].some(Boolean)?'open':''}><summary><span class="no">C</span>原因分析及處理</summary><div class="body"><div class="grid">
-     ${inp('cause','異常原因分析','ta',{wide:true})}${inp('immediate','立即處置方式','ta',{wide:true})}${inp('corrective','矯正措施','ta',{wide:true})}${inp('preventive','預防再發措施','ta',{wide:true})}
-     ${inp('method','處理辦法','ta',{wide:true})}${inp('unit','改善負責單位','list',{opts:optsOf('units','unit')})}${inp('owner','改善負責人','text')}${inp('due','預計完成日期','date')}</div></div></details>
-   <details class="sec" ${[c.progress,c.result,c.verify,c.verifier,c.closeDate,c.note2].some(Boolean)?'open':''}><summary><span class="no">D</span>改善追蹤</summary><div class="body"><div class="grid">
-     ${inp('progress','改善進度','ta',{wide:true})}${inp('result','改善結果','ta',{wide:true})}${inp('verify','成效確認','ta',{wide:true})}${inp('verifier','確認人員','text')}${inp('closeDate','結案日期','date')}
-     <div class="small muted" style="align-self:end">填了「結案日期」，狀態就會變成「已結案」。</div>${inp('note2','追蹤備註','ta',{wide:true})}</div></div></details>
+   <details class="sec" open><summary><span class="no">C</span>處理與結案</summary><div class="body"><div class="grid">
+     ${inp('method','處理辦法','ta',{wide:true})}${inp('due','預計完成日期','date')}${inp('closeDate','結案日期','date')}
+     <div class="wide small muted">預計完成日期預設是發現日期＋15 天，可以改。填了「結案日期」，狀態就會變成「已結案」。</div></div></div></details>
    <div class="savebar"><div class="in"><button class="pri" onclick="saveForm()">儲存</button><button onclick="cancelForm()">取消</button><span id="dm"></span></div></div>`;
   drawPhotos(); markDirty(false);
 }
-function setF(k,v){ cur[k]=v; markDirty(true); }
+function setF(k,v){ cur[k]=v; if(k==='due') cur._autoDue=false;
+  if(k==='date'&&cur._autoDue&&v){ cur.due=addDays(v,DUE_DAYS); const el=$('#f_due'); if(el) el.value=cur.due; } markDirty(true); }
 function markDirty(v){ if(v) dirty=true; const el=$('#dm'); if(el) el.innerHTML=dirty?'<span class="dirty">● 有尚未儲存的修改</span>':''; }
 function drawPhotos(){ const box=$('#phbox'); if(!box) return;
   box.innerHTML=cur.photos.map((p,i)=>`<div class="ph"><img data-ph="${p}" alt="照片 ${i+1}" onclick="viewPhoto('${p}')"><div class="bar"><span>照片 ${i+1}${i<2?'':'（不進原格式表）'}</span><span style="display:flex;gap:4px">
@@ -549,7 +552,7 @@ function listGuide(){ return guideBox('list','異常案件清單使用說明',
   gS(1,'一打開先看四格數字',`<span class="gk">5<small>未結案</small></span>${gN(1)}<span class="gk bad">2<small>逾期未結</small></span><span class="gk warn">1<small>3 天內到期</small></span><span class="gk">3<small>本月新增</small></span>`,
     `<p>最上面四格告訴你：還有幾件沒結、幾件逾期、幾件 3 天內到期、這個月新增幾件。</p><p>點任一格${gN(1)}，清單就只列出那些案件。</p>`)+
   gS(2,'依狀態切換',`${gIn('全部')}${gIn('未結案')}${gIn('未處理')}${gIn('改善追蹤中')}${gIn('逾期未結')}${gIn('即將到期')}${gIn('已結案')}`,
-    `<p>狀態是系統<b>自動判斷</b>的，不用自己改：</p><p>${gBadge('已結案','done')} 有填結案日期<br>${gBadge('逾期未結','over')} 過了預計完成日期還沒結案<br>${gBadge('即將到期','soon')} 3 天內到期<br>${gBadge('改善追蹤中','track')} 有填處置、矯正、進度等內容<br>${gBadge('未處理','open')} 其他</p>`)+
+    `<p>狀態是系統<b>自動判斷</b>的，不用自己改：</p><p>${gBadge('已結案','done')} 有填結案日期<br>${gBadge('逾期未結','over')} 過了預計完成日期還沒結案<br>${gBadge('即將到期','soon')} 3 天內到期<br>${gBadge('改善追蹤中','track')} 有填處理辦法<br>${gBadge('未處理','open')} 其他</p>`)+
   gS(3,'搜尋與篩選',`${gIn('🔍 包裝區 黑色異物')}${gN(1)}${gIn('全部年度 ▾')}${gIn('全部廠商 ▾')}${gN(2)}`,
     `<p>搜尋欄${gN(1)}可以打案件編號、品項、廠商、批號、異常描述、處理辦法等；用<b>空格</b>分開可以同時找多個關鍵字。</p><p>下拉選單${gN(2)}可以依年度、月份、工作站、廠商、分類一、分類二篩選。按「清除篩選」回到全部。</p>`)+
   gS(4,'排序',`<span class="small">預設：<b>緊急程度</b>（逾期 → 即將到期 → 其他）</span>${gN(1)}`,
@@ -563,19 +566,19 @@ function listGuide(){ return guideBox('list','異常案件清單使用說明',
 function formGuide(){ return guideBox('form','新增／編輯案件使用說明',
   gS(1,'最少要填什麼',`${gIn('發現日期 *')}<span class="small">＋</span>${gIn('品項名稱')}<span class="small">或</span>${gIn('異常描述')}`,
     `<p>只有<b>發現日期</b>必填，另外「品項名稱」或「異常描述」至少填一個。其他欄位可以先空白，之後再回來補。</p><p><b>案件編號</b>在第一次儲存時自動產生：發現日期＋當天流水號，例如 2026111901。</p>`)+
-  gS(2,'四個區塊',`${gBtn('A')}<span class="small">基本資料</span>${gBtn('B')}<span class="small">異常內容</span>${gBtn('C')}<span class="small">原因分析及處理</span>${gBtn('D')}<span class="small">改善追蹤</span>`,
-    `<p>點區塊標題可以打開或收起。工作站、廠商、負責單位可以從清單選，也可以直接打字，打過的會自動加進常用選項。</p><p>分類二如果有兩項以上原因，以<b>較多或較嚴重</b>的問題歸類。</p>`)+
+  gS(2,'三個區塊（跟 Excel 同樣的格子）',`${gBtn('A')}<span class="small">基本資料</span>${gBtn('B')}<span class="small">異常內容與照片</span>${gBtn('C')}<span class="small">處理與結案</span>`,
+    `<p>表單只放 Excel 有的格子，再加一格「預計完成日期」。點區塊標題可以打開或收起。工作站、廠商可以從清單選，也可以直接打字，打過的會自動加進常用選項。</p><p>分類二如果有兩項以上原因，以<b>較多或較嚴重</b>的問題歸類。</p>`)+
   gS(3,'照片',`<span class="gin">📷 點這裡選擇照片或拍照</span>${gN(1)}${gIn('◀')}${gIn('下載')}${gIn('刪除')}`,
-    `<p>可以一次選多張${gN(1)}，手機可以直接拍照；照片會自動壓縮。</p><p>按 ◀ 可以調整順序。照片只存在這台電腦的瀏覽器裡，不會上傳到網路。</p>`)+
+    `<p>可以一次選多張${gN(1)}，手機可以直接拍照；照片會自動壓縮。</p><p>前 2 張對應 Excel 的圖片(1)、圖片(2)。<b>原因分析、處理過程</b>請拍照或截圖放在照片裡。按 ◀ 可以調整順序。照片只存在這台電腦的瀏覽器裡，不會上傳到網路。</p>`)+
   gS(4,'日期決定狀態',`${gIn('預計完成日期')}<span class="small">→</span>${gBadge('即將到期','soon')}${gBadge('逾期未結','over')}<br>${gIn('結案日期')}<span class="small">→</span>${gBadge('已結案','done')}`,
-    `<p>填了<b>預計完成日期</b>，到期前 3 天會變「即將到期」，過了還沒結案會變「逾期未結」。</p><p>填了<b>結案日期</b>，狀態就會變成「已結案」。結案日期、預計完成日期都不能早於發現日期。</p>`)+
+    `<p><b>預計完成日期</b>預設是發現日期＋15 天（改發現日期會跟著變，也可以自己改）。到期前 3 天會變「即將到期」，過了還沒結案會變「逾期未結」。</p><p>填了<b>結案日期</b>，狀態就會變成「已結案」。結案日期、預計完成日期都不能早於發現日期。</p>`)+
   gS(5,'看案件內容、刪除',`${gIn('看案件內容')}<span class="gin" style="color:#b42318">刪除</span>`,
     `<p>編輯舊案件時，上方有「看案件內容」和「刪除」。有沒存的修改時，系統會先問你要不要放棄。</p><p>刪除會移到「最近刪除」，30 天內可以還原。</p>`)+
   gS(6,'儲存',`${gBtn('儲存')}${gIn('取消')}<span class="dirty small">● 有尚未儲存的修改</span>`,
     `<p>儲存按鈕固定在畫面最下面。改了東西還沒存，會顯示「● 有尚未儲存的修改」；這時離開頁面，系統會先問你確定要離開嗎。</p>`)); }
 function viewGuide(){ return guideBox('view','案件內容使用說明',
-  gS(1,'看完整內容',`${gBtn('A')}<span class="small">基本資料</span>${gBtn('B')}<span class="small">異常內容</span>${gBtn('C')}<span class="small">原因分析</span>${gBtn('D')}<span class="small">改善追蹤</span>`,
-    `<p>這一頁列出這件案件的所有欄位，沒填的顯示「—」。最下面有建立和最後修改的時間。</p>`)+
+  gS(1,'看完整內容',`${gBtn('A')}<span class="small">基本資料</span>${gBtn('B')}<span class="small">異常內容與照片</span>${gBtn('C')}<span class="small">處理與結案</span>`,
+    `<p>這一頁列出這件案件的所有欄位，沒填的顯示「—」。最下面有建立和最後修改的時間。</p><p>如果以前填過現在表單已經不用的欄位（例如原因分析），會另外列在「其他（舊欄位）」，資料不會不見。</p>`)+
   gS(2,'看照片、下載照片',`<span class="gdonut" style="border-radius:6px;-webkit-mask:none;mask:none;background:#c9bda6"></span>${gIn('下載')}${gN(1)}`,
     `<p>點照片可以放大看，再點一下關掉。每張照片下面的「下載」${gN(1)}可以存成 JPG。</p>`)+
   gS(3,'狀態標籤',`${gBadge('改善追蹤中','track')}${gBadge('即將到期','soon')}${gBadge('逾期未結','over')}${gBadge('已結案','done')}`,
@@ -743,24 +746,12 @@ const IMP_MAP=[
   ['vendor','廠商名稱',['廠商','廠商名稱','供應商名稱']],
   ['lot','批號',['批號']],
   ['expiry','有效日期',['效期','校期','有效日期','有效期限']],
-  ['finder','異常發現人員',['發現人員','異常發現人員']],
   ['desc','異常描述',['異常','異常描述','異常內容']],
   ['ph','異常照片',['圖片','照片','異常照片']],
   ['note','備註',['備註']],
-  ['cause','異常原因分析',['異常原因分析','原因分析']],
-  ['immediate','立即處置方式',['立即處置方式','立即處置']],
-  ['corrective','矯正措施',['矯正措施']],
-  ['preventive','預防再發措施',['預防再發措施','預防措施']],
   ['method','處理辦法',['處理辦法','處理方式']],
-  ['unit','改善負責單位',['改善負責單位','負責單位']],
-  ['owner','改善負責人',['改善負責人','負責人']],
   ['due','預計完成日期',['預計完成日期','預計完成']],
-  ['progress','改善進度',['改善進度']],
-  ['result','改善結果',['改善結果']],
-  ['verify','成效確認',['成效確認']],
-  ['verifier','確認人員',['確認人員']],
   ['closeDate','結案日期',['結案日期']],
-  ['note2','追蹤備註',['追蹤備註']],
   ['cat1','分類一：異常來源',['分類一']],
   ['cat2','分類二：異常原因',['分類二']]];
 const IMP_DATE=['date','expiry','due','closeDate'];
@@ -892,7 +883,7 @@ function impCard(){ const show=['no','date','station','item','vendor','lot','exp
    ${show.map(k=>{ const m=IMP_MAP.find(x=>x[0]===k); const tip={no:'自訂編號照 Excel；空白就自動產生；跟現有案件重複的會略過',date:'空白就用匯入當天',expiry:'看得懂的日期才放進效期，看不懂的原文放進備註',ph:'圖片(1)、圖片(2) 兩格，插在格子上的圖片會一起匯入（最多 2 張）',closeDate:'有填就變成「已結案」',cat1:'跟設定裡的選項比對，沒有的會自動新增',cat2:'例：「其它品質因素」會對到「其它品質因素（含包裝／標示不良）」'}[k]||'';
      return `<tr style="cursor:default"><td>${m[2].slice(0,3).map(esc).join('、')}${k==='ph'?'（圖片(1)、圖片(2)）':''}</td><td><b>${esc(m[1])}</b></td><td class="small muted">${tip}</td></tr>`; }).join('')}
    </tbody></table></div>
-   <div class="small muted" style="margin-top:6px">其他欄位（原因分析、矯正措施、改善負責單位、預計完成日期…）用系統上的欄位名稱當 Excel 欄名，也會一起匯入。</div></div>`; }
+   <div class="small muted" style="margin-top:6px">另外可以加一欄「預計完成日期」；沒有這一欄或沒填，就以發現日期＋15 天計算逾期。</div></div>`; }
 /* ============ 刪除與最近刪除（保留 30 天） ============ */
 async function delCase(id){ const c=C.find(x=>x.id===id); if(!c) return;
   if(!(await ask(`確定要刪除案件 ${c.no} 嗎？\n會先移到「最近刪除」，30 天內可以還原。`,'刪除',true))) return;
@@ -924,7 +915,7 @@ function renderSettings(){ page='settings'; nav();
   $('#app').innerHTML=`${headHTML('設定與資料','SETTINGS &amp; DATA','管理分類與常用選項，以及備份與還原。','設定與資料',backupTools())}
    ${settingsGuide()}
    <div class="ogrid">${catBox('cat1','分類一：異常來源','停用後，新增案件時不會出現，但舊案件保留原本的分類。')}${catBox('cat2','分類二：異常原因','兩項以上原因時，以較多或較嚴重之問題歸類。')}</div>
-   <div class="ogrid" style="margin-top:14px">${listBox('stations','常用工作站／發生部門')}${listBox('vendors','常用廠商')}${listBox('units','常用改善負責單位')}</div>
+   <div class="ogrid" style="margin-top:14px">${listBox('stations','常用工作站／發生部門')}${listBox('vendors','常用廠商')}</div>
    ${impCard()}
    <div class="card" style="margin-top:14px"><h2>📦 備份與還原</h2>
      <div class="row"><button class="pri" onclick="backup()">下載備份（含照片）</button><button onclick="$('#rsIn').click()">從備份還原</button><input type="file" id="rsIn" accept=".json" hidden onchange="restore(this)"></div>
