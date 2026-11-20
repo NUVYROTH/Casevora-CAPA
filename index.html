@@ -367,7 +367,8 @@ async function go(k){ if(dirty&&!(await ask('有尚未儲存的修改，確定�
 window.addEventListener('beforeunload',e=>{ if(dirty){ e.preventDefault(); e.returnValue=''; } });
 
 /* ============ 清單 ============ */
-const F={q:'',year:'',month:'',station:'',vendor:'',cat1:'',cat2:'',status:'',sort:'urgent',dir:1}; let SEL=new Set();
+/* 打開清單預設只看「未結案」（跟衛生追蹤一樣） */
+const F={q:'',year:'',month:'',station:'',vendor:'',cat1:'',cat2:'',status:'notdone',sort:'urgent',dir:1}; let SEL=new Set();
 function yearsOf(){ return [...new Set([today().slice(0,4),...live().map(c=>(c.date||'').slice(0,4)).filter(Boolean)])].sort().reverse(); }
 function caseText(c){ return [c.no,c.date,c.station,c.item,c.vendor,c.lot,c.expiry,c.finder,c.note,c.desc,c.cause,c.immediate,c.corrective,c.preventive,c.method,c.unit,c.owner,c.progress,c.result,c.verify,c.verifier,c.note2,c.cat1,c.cat2].join(' ').toLowerCase(); }
 function filtered(){ const ws=F.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
@@ -390,7 +391,7 @@ function renderList(){
    ${listKpis()}
    ${listGuide()}
    <div class="card"><div class="phd"><b>異常案件清單</b><span class="small muted">共 ${all.length} 件・未結 ${all.length-cnt('done')} 件</span></div>
-    <div class="chips">${chip('','全部（'+all.length+'）')}${chip('notdone','未結案（'+(all.length-cnt('done'))+'）')}${chip('open','未處理（'+cnt('open')+'）')}${chip('track','改善追蹤中（'+cnt('track')+'）')}${chip('over','逾期未結（'+cnt('over')+'）')}${chip('soon','即將到期（'+cnt('soon')+'）')}${chip('done','已結案（'+cnt('done')+'）')}</div>
+    <div class="chips">${chip('notdone','未結案（'+(all.length-cnt('done'))+'）')}${chip('open','未處理（'+cnt('open')+'）')}${chip('track','改善追蹤中（'+cnt('track')+'）')}${chip('over','逾期未結（'+cnt('over')+'）')}${chip('soon','即將到期（'+cnt('soon')+'）')}${chip('done','已結案（'+cnt('done')+'）')}${chip('','全部（'+all.length+'）')}</div>
     <input type="search" id="fq" placeholder="搜尋：案件編號、品項、廠商、批號、異常描述、處理辦法…（空格可多個關鍵字）" value="${esc(F.q)}" oninput="F.q=this.value;if(!event.isComposing)drawList()" oncompositionend="F.q=this.value;drawList()" style="margin-bottom:8px">
     <div class="filters">
       ${sel('year',F.year,yearsOf().map(y=>[y,y+' 年']),'全部年度')}
@@ -422,7 +423,7 @@ function listKpis(){ const a=live(), nd=a.filter(c=>statusOf(c)!=='done').length
 function drawList(){
   const rows=filtered(), el=$('#lres'); if(!el) return; SEL=new Set([...SEL].filter(id=>rows.some(c=>c.id===id)));
   const ar=k=>F.sort===k?(F.dir>0?' ▲':' ▼'):'';
-  const anyF=F.q||F.year||F.month||F.station||F.vendor||F.cat1||F.cat2||F.status;
+  const anyF=F.q||F.year||F.month||F.station||F.vendor||F.cat1||F.cat2||F.status!=='notdone';
   el.innerHTML=`<div class="row small muted" style="margin-bottom:6px"><span>符合 <b>${rows.length}</b> 件</span>${SEL.size?`<span>・已勾選 <b>${SEL.size}</b> 件（匯出功能在第 3 段加入）</span>`:''}<span class="sp"></span><span>排序：${F.sort==='urgent'?`<b>緊急程度</b>（<span class="st over">逾期未結</span> → <span class="st soon">即將到期</span> → 其他）`:`欄位排序 <a href="#" onclick="F.sort='urgent';F.dir=1;drawList();return false">改回緊急程度</a>`}</span>${anyF?'・<a href="#" onclick="clearF();return false">清除篩選</a>':''}</div>
    ${rows.length?`<div class="tw"><table class="lt"><colgroup>${COLS.map(([k])=>`<col style="width:${COLW[k]||'auto'}">`).join('')}</colgroup><thead><tr>
      ${COLS.map(([k,n])=>k.startsWith('ph')?`<th class="ns">${n}</th>`:`<th onclick="sortBy('${k}')">${n}${ar(k)}</th>`).join('')}</tr></thead><tbody>
@@ -437,13 +438,13 @@ function drawList(){
        <div class="row" style="gap:6px"><b class="small" style="font-variant-numeric:tabular-nums">${esc(c.no)}</b>${stBadge(c)}</div>
        <div class="t">${esc(c.item||'（未填品項）')}${c.vendor?'・'+esc(c.vendor):''}</div><div class="small muted">${fmtD(c.date)}${c.station?'・'+esc(c.station):''}</div>
        <div class="small" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.desc)}</div><div>${catTag(c)}</div></div></div>`).join('')}</div>`
-   :`<div class="empty">${live().length?'沒有符合條件的案件':'目前還沒有案件，請按「＋ 新增異常案件」開始；已經有 Excel 紀錄的，可以按上面的「從 Excel 匯入」'}</div>`}`;
+   :`<div class="empty">${live().length?(F.status==='notdone'&&!anyF?'✅ 目前沒有未結案的案件（要看已結案的，請按「已結案」或「全部」）':'沒有符合條件的案件'):'目前還沒有案件，請按「＋ 新增異常案件」開始；已經有 Excel 紀錄的，可以按上面的「從 Excel 匯入」'}</div>`}`;
   fillPhotos(el);
 }
 function sortBy(k){ if(F.sort===k) F.dir=-F.dir; else { F.sort=k; F.dir=['date','no','due','closeDate','expiry'].includes(k)?-1:1; } drawList(); }
 function tog(id,v){ v?SEL.add(id):SEL.delete(id); drawList(); }
 function selAll(v){ const rows=filtered(); rows.forEach(c=>v?SEL.add(c.id):SEL.delete(c.id)); drawList(); }
-function clearF(){ Object.assign(F,{q:'',year:'',month:'',station:'',vendor:'',cat1:'',cat2:'',status:''}); renderList(); }
+function clearF(){ Object.assign(F,{q:'',year:'',month:'',station:'',vendor:'',cat1:'',cat2:'',status:'notdone'}); renderList(); }
 
 /* ============ 詳細內容 ============ */
 function openView(id){ const c=C.find(x=>x.id===id); if(!c||c.deleted) return; viewId=id; back=page==='view'?back:page; page='view'; nav();
@@ -565,8 +566,8 @@ const gBadge=(t,c)=>`<span class="st ${c}">${t}</span>`, gIn=t=>`<span class="gi
 function listGuide(){ return guideBox('list','異常案件清單使用說明',
   gS(1,'一打開先看四格數字',`<span class="gk">5<small>未結案</small></span>${gN(1)}<span class="gk bad">2<small>逾期未結</small></span><span class="gk warn">1<small>3 天內到期</small></span><span class="gk">3<small>本月新增</small></span>`,
     `<p>最上面四格告訴你：還有幾件沒結、幾件逾期、幾件 3 天內到期、這個月新增幾件。</p><p>點任一格${gN(1)}，清單就只列出那些案件。</p>`)+
-  gS(2,'依狀態切換',`${gIn('全部')}${gIn('未結案')}${gIn('未處理')}${gIn('改善追蹤中')}${gIn('逾期未結')}${gIn('即將到期')}${gIn('已結案')}`,
-    `<p>狀態是系統<b>自動判斷</b>的，不用自己改：</p><p>${gBadge('已結案','done')} 有填結案日期<br>${gBadge('逾期未結','over')} 過了預計完成日期還沒結案<br>${gBadge('即將到期','soon')} 3 天內到期<br>${gBadge('改善追蹤中','track')} 有填處理辦法<br>${gBadge('未處理','open')} 其他</p>`)+
+  gS(2,'依狀態切換',`${gBtn('未結案')}${gIn('未處理')}${gIn('改善追蹤中')}${gIn('逾期未結')}${gIn('即將到期')}${gIn('已結案')}${gIn('全部')}`,
+    `<p>一打開清單<b>預設只顯示「未結案」</b>（跟衛生追蹤一樣），要看全部請按最右邊的「全部」；按「清除篩選」也會回到未結案。</p><p>狀態是系統<b>自動判斷</b>的，不用自己改：</p><p>${gBadge('已結案','done')} 有填結案日期<br>${gBadge('逾期未結','over')} 過了預計完成日期還沒結案<br>${gBadge('即將到期','soon')} 3 天內到期<br>${gBadge('改善追蹤中','track')} 有填處理辦法<br>${gBadge('未處理','open')} 其他</p>`)+
   gS(3,'搜尋與篩選',`${gIn('🔍 包裝區 黑色異物')}${gN(1)}${gIn('全部年度 ▾')}${gIn('全部廠商 ▾')}${gN(2)}`,
     `<p>搜尋欄${gN(1)}可以打案件編號、品項、廠商、批號、異常描述、處理辦法等；用<b>空格</b>分開可以同時找多個關鍵字。</p><p>下拉選單${gN(2)}可以依年度、月份、工作站、廠商、分類一、分類二篩選。按「清除篩選」回到全部。</p>`)+
   gS(4,'排序',`<span class="small">預設：<b>緊急程度</b>（逾期 → 即將到期 → 其他）</span>${gN(1)}`,
