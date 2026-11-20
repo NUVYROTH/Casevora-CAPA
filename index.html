@@ -143,6 +143,16 @@ table.lt td{min-width:0;padding:7px 5px;overflow-wrap:anywhere}
 table.lt td.desc{min-width:0;max-width:none}
 table.lt td.nw{white-space:nowrap;font-variant-numeric:tabular-nums}
 table.lt img.th{width:38px;height:30px}
+table.lt .ths{display:flex;gap:3px;flex-wrap:wrap}
+.stpick{display:flex;gap:6px;flex-wrap:wrap}
+.stpick button{border-radius:999px;padding:4px 12px;font-size:13.5px}
+.stpick button.on{background:var(--brand);border-color:var(--brand);color:#fffdf8}
+.optl li button{padding:2px 9px;font-size:13px}
+button.danger{background:var(--bad);border-color:var(--bad);color:#fff;font-weight:700}
+button.danger:hover{background:#8f1c13}
+.oadd{display:flex;gap:6px}.oadd input{flex:1;min-width:0}
+.ogrid4{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:14px}.ogrid4 .card{margin:0}
+@media (max-width:899px){.ogrid4{grid-template-columns:1fr}}
 table.lt .tag{font-size:11.5px;padding:0 4px}
 table.lt .st{font-size:12px;padding:0 7px}
 table.lt .tag{white-space:normal}
@@ -408,7 +418,13 @@ const ST={open:['未處理','open'],track:['改善追蹤中','track'],soon:['即
 function stBadge(c){ const s=ST[statusOf(c)]; return `<span class="st ${s[1]}">${s[0]}</span>`; }
 function catTag(c){ return `${c.cat1?`<span class="tag ${c.cat1==='供應商'?'sup':'fac'}">${esc(c.cat1)}</span>`:''}${c.cat2?`<span class="tag">${esc(c.cat2)}</span>`:''}`; }
 /* 常用選項：設定頁維護的＋曾經輸入過的 */
-function optsOf(kind,field){ return [...new Set([...S[kind],...live().map(c=>String(c[field]||'').trim()).filter(Boolean)])]; }
+function optsOf(kind,field){ if(field==='station') return [...new Set([...S.stations,...live().flatMap(c=>stTok(c.station))])]; return [...new Set([...S[kind],...live().map(c=>String(c[field]||'').trim()).filter(Boolean)])]; }
+/* 工作站：同一個單位的不同寫法統一成一個名稱；一件可以有兩個以上工作站（用「、」分開） */
+const ST_ALIAS={'生產包裝組':'包裝組','生產課包裝組':'包裝組','生產課-包裝組':'包裝組','打漿':'打漿組','生產':'生產課','生產課-儲運組':'儲運組','生產課儲運組':'儲運組','儲運':'儲運組'};
+function normStation(x){ const t=String(x||'').replace(/\s+/g,'').replace(/[－—–‐]/g,'-'); return ST_ALIAS[t]||t; }
+function stTok(v){ return [...new Set(String(v||'').split(/[、,，;；\/／]+/).map(normStation).filter(Boolean))]; }
+const stJoin=a=>[...new Set(a)].join('、');
+function valsOf(c,f){ if(f==='station'){ const t=stTok(c.station); return t.length?t:['']; } return [String(c[f]||'').trim()]; }
 
 /* ============ 版面 ============ */
 let page='list', back='list', cur=null, dirty=false, viewId=null;
@@ -439,7 +455,7 @@ const F={q:'',year:'',month:'',station:'',vendor:'',cat1:'',cat2:'',status:'notd
 function yearsOf(){ return [...new Set([today().slice(0,4),...live().map(c=>(c.date||'').slice(0,4)).filter(Boolean)])].sort().reverse(); }
 function caseText(c){ return [c.no,c.date,c.station,c.item,c.vendor,c.lot,c.expiry,c.finder,c.note,c.desc,c.cause,c.immediate,c.corrective,c.preventive,c.method,c.unit,c.owner,c.progress,c.result,c.verify,c.verifier,c.note2,c.cat1,c.cat2].join(' ').toLowerCase(); }
 function filtered(){ const ws=F.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
-  let a=live().filter(c=>(!F.year||(c.date||'').startsWith(F.year))&&(!F.month||(c.date||'').slice(5,7)===F.month)&&(!F.station||c.station===F.station)&&(!F.vendor||c.vendor===F.vendor)
+  let a=live().filter(c=>(!F.year||(c.date||'').startsWith(F.year))&&(!F.month||(c.date||'').slice(5,7)===F.month)&&(!F.station||stTok(c.station).includes(F.station))&&(!F.vendor||c.vendor===F.vendor)
     &&(!F.cat1||c.cat1===F.cat1)&&(!F.cat2||c.cat2===F.cat2)&&(!F.status||statusOf(c)===F.status||(F.status==='notdone'&&statusOf(c)!=='done'))&&ws.every(w=>caseText(c).includes(w)));
   const k=F.sort, d=F.dir;
   if(k==='urgent') a.sort((x,y)=>(URG[statusOf(x)]-URG[statusOf(y)])||(URG[statusOf(x)]<2?String(dueOf(x)).localeCompare(String(dueOf(y))):0)||String(y.date).localeCompare(String(x.date))||String(y.no).localeCompare(String(x.no)));
@@ -447,8 +463,8 @@ function filtered(){ const ws=F.q.trim().toLowerCase().split(/\s+/).filter(Boole
   return a; }
 /* 清單表頭：跟 Excel 一樣的順序和名稱；最後加系統用的「預計完成日期」「狀態」 */
 /* 欄寬（沒寫的＝自動分剩下的空間：異常描述） */
-const COLW={no:'98px',date:'72px',station:'50px',item:'92px',vendor:'56px',lot:'84px',expiry:'72px',ph1:'46px',ph2:'46px',note:'70px',method:'96px',closeDate:'72px',cat1:'52px',cat2:'76px',due:'72px',status:'70px'};
-const COLS=[['no','案件編號'],['date','發現日期'],['station','工作站'],['item','產品品項'],['vendor','廠商'],['lot','批號'],['expiry','有效日期'],['desc','異常描述'],['ph1','圖片(1)'],['ph2','圖片(2)'],['note','備註'],['method','處理辦法'],['closeDate','結案日期'],['cat1','分類一'],['cat2','分類二'],['due','預計完成日期'],['status','狀態']];
+const COLW={no:'98px',date:'72px',station:'50px',item:'92px',vendor:'56px',lot:'84px',expiry:'72px',ph:'86px',note:'70px',method:'96px',closeDate:'72px',cat1:'52px',cat2:'76px',due:'72px',status:'70px'};
+const COLS=[['no','案件編號'],['date','發現日期'],['station','工作站'],['item','產品品項'],['vendor','廠商'],['lot','批號'],['expiry','有效日期'],['desc','異常描述'],['ph','圖片'],['note','備註'],['method','處理辦法'],['closeDate','結案日期'],['cat1','分類一'],['cat2','分類二'],['due','預計完成日期'],['status','狀態']];
 function renderList(){
   page='list'; nav(); const rows=filtered(), all=live(), cnt=k=>all.filter(c=>statusOf(c)===k).length;
   const sel=(id,v,opts,ph)=>`<select onchange="F.${id}=this.value;drawList()" aria-label="${ph}"><option value="">${ph}</option>${opts.map(o=>`<option value="${esc(o[0])}" ${String(v)===String(o[0])?'selected':''}>${esc(o[1])}</option>`).join('')}</select>`;
@@ -496,7 +512,7 @@ function drawList(){
      ${COLS.map(([k,n])=>k.startsWith('ph')?`<th class="ns">${n}</th>`:`<th onclick="sortBy('${k}')">${n}${ar(k)}</th>`).join('')}</tr></thead><tbody>
      ${rows.map(c=>`<tr class="r-${statusOf(c)}" onclick="openForm('${c.id}')">
        <td style="white-space:nowrap;font-variant-numeric:tabular-nums">${esc(c.no)}</td><td style="white-space:nowrap">${fmtD(c.date)}</td><td>${esc(c.station)}</td><td>${esc(c.item)}</td><td>${esc(c.vendor)}</td><td>${esc(c.lot)}</td><td style="white-space:nowrap">${fmtD(c.expiry)}</td>
-       <td class="desc"><div class="clip">${esc(c.desc)}</div></td>${[0,1].map(i=>`<td>${(c.photos||[])[i]?`<img class="th" data-ph="${c.photos[i]}" alt="圖片(${i+1})">`:''}</td>`).join('')}
+       <td class="desc"><div class="clip">${esc(c.desc)}</div></td><td><div class="ths">${(c.photos||[]).slice(0,2).map((p,i)=>`<img class="th" data-ph="${p}" alt="圖片(${i+1})">`).join('')}</div></td>
        <td class="desc"><div class="clip">${esc(c.note)}</div></td><td class="desc"><div class="clip">${esc(c.method)}</div></td><td style="white-space:nowrap">${fmtD(c.closeDate)}</td>
        <td>${c.cat1?`<span class="tag ${c.cat1==='供應商'?'sup':'fac'}">${esc(c.cat1)}</span>`:''}</td><td>${c.cat2?`<span class="tag">${esc(c.cat2)}</span>`:''}</td>
        <td style="white-space:nowrap">${fmtD(dueOf(c))}</td><td>${stBadge(c)}${(c.photos||[]).length>2?`<div class="small muted">另有 ${c.photos.length-2} 張圖</div>`:''}</td></tr>`).join('')}
@@ -551,10 +567,10 @@ function inp(k,label,type,o){ o=o||{}; const v=esc(cur[k]); const on=`oninput="s
   return `<div><label class="f ${o.req?'req':''}" for="f_${k}">${label}</label><input id="f_${k}" type="${type}" value="${v}" ${on} ${type==='date'?`onchange="setF('${k}',this.value)"`:''}></div>`; }
 function drawForm(){
   const c=cur, on1=S.cat1.filter(x=>x.on).map(x=>x.n), on2=S.cat2.filter(x=>x.on).map(x=>x.n);
-  $('#app').innerHTML=`${headHTML(c._isNew?'新增異常案件':'編輯案件 '+esc(c.no),c._isNew?'NEW CASE':'EDIT CASE',c._isNew?'案件編號可以自己填，空白就自動產生（發現日期＋流水號）。':'修改後記得按最下面的「儲存」。',c._isNew?'新增異常案件':'編輯案件',`<button class="lite" onclick="cancelForm()">← 返回</button>${c._isNew?'':`<button class="lite" onclick="formView()">看案件內容</button><button class="dng" onclick="formDel()">刪除</button>`}`)}
+  $('#app').innerHTML=`${headHTML(c._isNew?'新增異常案件':'編輯案件 '+esc(c.no),c._isNew?'NEW CASE':'EDIT CASE',c._isNew?'案件編號可以自己填，空白就自動產生（發現日期＋流水號）。':'修改後記得按最下面的「儲存」。',c._isNew?'新增異常案件':'編輯案件',`<button class="lite" onclick="cancelForm()">← 返回</button>${c._isNew?'':`<button class="dng" onclick="formDel()">刪除</button>`}`)}
    <div class="note" style="margin-bottom:12px">欄位跟 Excel 一樣，只多一格「預計完成日期」。只有「發現日期」必填，另外「產品品項」或「異常描述」至少填一個；其他還沒拿到資料可以先空白。</div>
    <details class="sec" open><summary><span class="no">A</span>基本資料</summary><div class="body"><div class="grid">
-     ${inp('no','案件編號','text',{ph:'空白會自動產生（發現日期＋流水號）'})}${inp('date','發現日期','date',{req:true})}${inp('station','工作站','list',{opts:optsOf('stations','station')})}${inp('item','產品品項','text')}
+     ${inp('no','案件編號','text',{ph:'空白會自動產生（發現日期＋流水號）'})}${inp('date','發現日期','date',{req:true})}${stationPicker()}${inp('item','產品品項','text')}
      ${inp('vendor','廠商','list',{opts:optsOf('vendors','vendor')})}${inp('lot','批號','text')}${inp('expiry','有效日期','date')}</div></div></details>
    <details class="sec" open><summary><span class="no">B</span>異常與圖片</summary><div class="body"><div class="grid">
      ${inp('desc','異常描述','ta',{wide:true,big:true,ph:'例：外箱破損，內袋可見黑色異物約 0.5cm'})}</div>
@@ -566,13 +582,24 @@ function drawForm(){
    <details class="sec" open><summary><span class="no">C</span>處理與結案</summary><div class="body"><div class="grid">
      ${inp('note','備註','ta',{wide:true})}${inp('method','處理辦法','ta',{wide:true})}${inp('closeDate','結案日期','date')}
      ${inp('cat1','分類一：供應商、廠內異常','sel',{opts:on1})}${inp('cat2','分類二：異常原因','sel',{opts:on2})}
-     <div class="wide small muted">分類二：天然異物、非天然異物、規格不符、風味口感不良、其它品質因素（含包裝／標示不良）、其它異常原因。2 項以上之原因時，以較多或較嚴重之問題歸類。</div>
+     <div class="wide small muted">分類二：天然異物、非天然異物、<b>規格不符（可為數量／重量／配方）</b>、風味口感不良、其它品質因素（含包裝／標示不良）、其它異常原因。2 項以上之原因時，以較多或較嚴重之問題歸類。</div>
      <div style="background:var(--info-soft);border-radius:8px;padding:6px 10px">${inp('due','預計完成日期（Excel 沒有，系統用）','date')}</div>
      <div class="small muted" style="align-self:end">預計完成日期預設是發現日期＋15 天，可以改；過了還沒結案會變「逾期未結」。填了「結案日期」，狀態就會變成「已結案」。</div></div></div></details>
+   ${(()=>{ const old=OLD_F.filter(([k])=>String(c[k]||'').trim()); return old.length?`<div class="card"><h2>其他（舊欄位，表單已不使用）</h2><div class="small muted" style="margin-bottom:6px">這些是以前填過的內容，資料都還在、也在備份裡，只能看不能改。</div><dl class="kv">${old.map(([k,n])=>`<dt>${n}</dt><dd>${esc(c[k])}</dd>`).join('')}</dl></div>`:''; })()}
    ${formGuide()}
    <div class="savebar"><div class="in"><button class="pri" onclick="saveForm()">儲存</button><button onclick="cancelForm()">取消</button><span id="dm"></span></div></div>`;
   drawPhotos(); markDirty(false);
 }
+/* 工作站選擇：點選常用的（可以選兩個以上），不在清單上的用「其它」自己打字 */
+let STO=[];
+function stationPicker(){ const sel=stTok(cur.station); STO=[...new Set([...S.stations,...sel])];
+  return `<div class="wide"><label class="f">工作站（可以選兩個以上）</label><div class="stpick" id="stpick">${STO.map((n,i)=>`<button type="button" class="${sel.includes(n)?'on':''}" onclick="stToggle(${i})">${sel.includes(n)?'✓ ':''}${esc(n)}</button>`).join('')||'<span class="small muted">還沒有常用工作站，請用下面的「其它」新增</span>'}</div>
+    <div class="row" style="margin-top:6px"><input id="stOther" placeholder="其它：自己打字（例：倉儲組）" style="flex:1;min-width:150px" onkeydown="if(event.key==='Enter'){event.preventDefault();stAddOther()}"><label class="small" style="display:inline-flex;gap:4px;align-items:center"><input type="checkbox" id="stKeep" checked style="width:auto">也加入常用選項</label><button type="button" onclick="stAddOther()">＋ 加入</button></div></div>`; }
+function stRedraw(){ const box=$('#stpick'); if(!box) return; const w=document.createElement('div'); w.innerHTML=stationPicker(); box.replaceWith(w.querySelector('#stpick')); }
+function stToggle(i){ const n=STO[i]; if(!n) return; const sel=stTok(cur.station); setF('station',stJoin(sel.includes(n)?sel.filter(x=>x!==n):[...sel,n])); stRedraw(); }
+function stAddOther(){ const el=$('#stOther'), v=normStation(el.value).slice(0,40); if(!v) return;
+  if($('#stKeep').checked&&!S.stations.includes(v)){ S.stations.push(v); persist(); }
+  setF('station',stJoin([...stTok(cur.station),v])); el.value=''; stRedraw(); toast(`已加入「${v}」`); }
 function setF(k,v){ cur[k]=v; if(k==='due') cur._autoDue=false;
   if(k==='date'&&cur._autoDue&&v){ cur.due=addDays(v,DUE_DAYS); const el=$('#f_due'); if(el) el.value=cur.due; } markDirty(true); }
 function markDirty(v){ if(v) dirty=true; const el=$('#dm'); if(el) el.innerHTML=dirty?'<span class="dirty">● 有尚未儲存的修改</span>':''; }
@@ -599,15 +626,14 @@ document.addEventListener('dragleave',e=>{ const z=e.target.closest&&e.target.cl
 document.addEventListener('drop',e=>{ const z=e.target.closest&&e.target.closest('.pzone'); if(!z||page!=='edit'||!cur) return; e.preventDefault(); z.classList.remove('over'); addPhotoFiles([...e.dataTransfer.files]); });
 function movePh(i){ const a=cur.photos; [a[i-1],a[i]]=[a[i],a[i-1]]; drawPhotos(); markDirty(true); }
 async function dropNewPhotos(){ if(cur&&cur._added&&cur._added.length){ for(const id of cur._added){ try{ await PDB.del(id); }catch(e){} delete PHC[id]; } cur._added=[]; } }
-/* 編輯中：看案件內容、刪除（有沒存的修改會先問） */
-async function formView(){ if(dirty&&!(await ask('有尚未儲存的修改，確定要離開嗎？','離開，不儲存',true))) return; await dropNewPhotos(); const id=cur.id; dirty=false; cur=null; back='list'; openView(id); }
+/* 編輯中：刪除（有沒存的修改會先問） */
 async function formDel(){ if(dirty&&!(await ask('有尚未儲存的修改，確定要放棄修改並刪除這件嗎？','放棄修改',true))) return;
   const id=cur.id; await delCase(id); const c=C.find(x=>x.id===id);
   if(c&&c.deleted){ await dropNewPhotos(); dirty=false; cur=null; } }
 async function cancelForm(){ if(dirty&&!(await ask('有尚未儲存的修改，確定要放棄嗎？','放棄修改',true))) return; await dropNewPhotos(); const wasNew=cur._isNew, id=cur.id; dirty=false; cur=null;
   if(!wasNew&&back==='view') openView(id); else { page=back==='view'?'list':back; ({list:renderList,trash:renderTrash,settings:renderSettings,stats:renderStats}[page]||renderList)(); } }
 async function saveForm(){
-  const c=cur; ['no','item','desc','station','vendor','lot'].forEach(k=>c[k]=String(c[k]||'').trim()); c.no=c.no.slice(0,30);
+  const c=cur; ['no','item','desc','station','vendor','lot'].forEach(k=>c[k]=String(c[k]||'').trim()); c.no=c.no.slice(0,30); c.station=stJoin(stTok(c.station));
   if(c.no&&C.some(x=>x.id!==c.id&&String(x.no)===c.no)){ await say(`案件編號「${c.no}」已經有別的案件在用了（也可能在「最近刪除」裡），請換一個，或留空白自動產生。`); return; }
   if(!c.date){ await say('請先填寫：發現日期'); return; } if(!c.item&&!c.desc){ await say('「產品品項」或「異常描述」至少要填一個。'); return; }
   if(c.closeDate&&c.closeDate<c.date){ await say('結案日期不能早於發現日期。'); return; }
@@ -616,10 +642,10 @@ async function saveForm(){
   FIELDS.forEach(k=>rec[k]=c[k]||''); const prev=old>=0?C[old]:null;
   if(old>=0) C[old]=rec; else C.push(rec);
   /* 新輸入的工作站／廠商／負責單位，自動加進常用選項 */
-  const oS=JSON.stringify(S); [['stations','station'],['vendors','vendor'],['units','unit']].forEach(([k,f])=>{ if(rec[f]&&!S[k].includes(rec[f])) S[k].push(rec[f]); });
+  const oS=JSON.stringify(S); if(rec.vendor&&!S.vendors.includes(rec.vendor)) S.vendors.push(rec.vendor);
   if(!persist()){ if(prev) C[old]=prev; else C.pop(); S=JSON.parse(oS); return; }
   for(const id of c._removed){ try{ await PDB.del(id); }catch(e){} delete PHC[id]; }
-  dirty=false; cur=null; toast(old>=0?'已儲存 ✦':`已新增案件 ${rec.no} ✦`); back='list'; openView(rec.id);
+  dirty=false; cur=null; toast(old>=0?'已儲存 ✦':`已新增案件 ${rec.no} ✦`); const to=back==='stats'?'stats':'list'; back='list'; page=to; (to==='stats'?renderStats:renderList)(); window.scrollTo(0,0);
 }
 
 /* ---------- 統計分析使用說明（打開／收起會記住） ---------- */
@@ -655,8 +681,8 @@ function listGuide(){ return guideBox('list','異常案件清單使用說明',
     `<p>搜尋欄${gN(1)}可以打案件編號、品項、廠商、批號、異常描述、處理辦法等；用<b>空格</b>分開可以同時找多個關鍵字。</p><p>下拉選單${gN(2)}可以依年度、月份、工作站、廠商、分類一、分類二篩選。按「清除篩選」回到全部。</p>`)+
   gS(4,'排序',`<span class="small">排序：</span>${gIn('緊急程度（預設） ▾')}${gN(1)}<span class="small">→ 發現日期：新 → 舊</span>`,
     `<p>預設依<b>緊急程度</b>排：逾期未結 → 即將到期 → 其他，最急的在最上面。</p><p>表格上方的「排序」選單${gN(1)}可以改成<b>發現日期（新 → 舊／舊 → 新）</b>、案件編號、預計完成日期，看這一次用。<b>重新打開網頁，或點左邊的「異常案件清單」，就會回到緊急程度（預設）</b>；從案件按「返回」回清單時，維持剛剛選的排序。</p><p>電腦版也可以直接點表格的<b>欄位標題</b>排序，再點一次反過來。</p>`)+
-  gS(5,'點一列直接編輯',`${gIn('← 返回')}${gIn('看案件內容')}<span class="gin" style="color:#b42318">刪除</span>${gBtn('儲存')}`,
-    `<p>點任一列（手機是點卡片）會<b>直接打開編輯表單</b>，改完按最下面的「儲存」。</p><p>上方的「看案件內容」可以看整理好的內容和照片大圖；「刪除」會先問一次，再移到「最近刪除」，30 天內都能救回來。</p>`)+
+  gS(5,'點一列直接編輯',`${gIn('← 返回')}<span class="gin" style="color:#b42318">刪除</span>${gBtn('儲存')}`,
+    `<p>點任一列（手機是點卡片）會<b>直接打開編輯表單</b>，改完按最下面的「儲存」。</p><p>儲存後會回到清單。點照片可以看大圖；上方「刪除」會先問一次，再移到「最近刪除」，30 天內都能救回來。</p>`)+
   gS(6,'從 Excel 匯入',`${gIn('從 Excel 匯入')}${gN(1)}${gIn('下載匯入範本')}${gN(2)}`,
     `<p>按上方「從 Excel 匯入」${gN(1)}，會先看到<b>匯入表格要放哪些欄位</b>：案件編號、發現日期、工作站、品項、廠商、批號、效期、異常、圖片(1)、圖片(2)、備註、處理辦法、結案日期、分類一、分類二。不確定就按「下載匯入範本」${gN(2)}照著填。</p><p>匯入只會<b>新增</b>，不會覆蓋原本的案件；分好幾個檔案匯入也可以，重複的會自動略過。</p>`)+
   gS(7,'電腦和手機',`<span class="small">電腦：表格　手機：卡片</span>`,
@@ -670,8 +696,8 @@ function formGuide(){ return guideBox('form','新增／編輯案件使用說明'
     `<p>「＋ 加入照片」${gN(1)}選照片；電腦上也可以先點虛線框${gN(2)}（會出現「✔ 已選取」），再按 <b>Ctrl+V</b> 貼上截圖，或把照片直接拖進框裡。</p><p><b>點照片看大圖</b>；要刪掉就點照片右上角的 <b>✕</b>（按「儲存」才會真的刪除，按「取消」可以復原）。前 2 張就是 Excel 的<b>圖片(1)、圖片(2)</b>，按 ◀ 調整順序。照片只存在這台電腦的瀏覽器裡。</p>`)+
   gS(4,'日期決定狀態',`${gIn('預計完成日期')}<span class="small">→</span>${gBadge('即將到期','soon')}${gBadge('逾期未結','over')}<br>${gIn('結案日期')}<span class="small">→</span>${gBadge('已結案','done')}`,
     `<p><b>預計完成日期</b>預設是發現日期＋15 天（改發現日期會跟著變，也可以自己改）。到期前 3 天會變「即將到期」，過了還沒結案會變「逾期未結」。</p><p>填了<b>結案日期</b>，狀態就會變成「已結案」。結案日期、預計完成日期都不能早於發現日期。</p>`)+
-  gS(5,'看案件內容、刪除',`${gIn('看案件內容')}<span class="gin" style="color:#b42318">刪除</span>`,
-    `<p>編輯舊案件時，上方有「看案件內容」和「刪除」。有沒存的修改時，系統會先問你要不要放棄。</p><p>刪除會移到「最近刪除」，30 天內可以還原。</p>`)+
+  gS(5,'工作站可以選兩個以上',`${gBtn('✓ 打漿組')}${gIn('包裝組')}${gBtn('✓ 倉儲組')}</div><div class="gx-row">${gIn('其它：自己打字')}<span class="small">☑ 也加入常用</span>${gIn('＋ 加入')}`,
+    `<p>點選常用的工作站，<b>可以選兩個以上</b>（例：打漿組、倉儲組），再點一次取消。統計時兩個工作站各算一件。</p><p>不在清單上的，在「其它」自己打字按「＋ 加入」；勾「也加入常用選項」，下次就能直接點選。編輯舊案件時，上方還有「刪除」。</p>`)+
   gS(6,'儲存',`${gBtn('儲存')}${gIn('取消')}<span class="dirty small">● 有尚未儲存的修改</span>`,
     `<p>儲存按鈕固定在畫面最下面。改了東西還沒存，會顯示「● 有尚未儲存的修改」；這時離開頁面，系統會先問你確定要離開嗎。</p>`)); }
 function viewGuide(){ return guideBox('view','案件內容使用說明',
@@ -693,10 +719,10 @@ function trashGuide(){ return guideBox('trash','最近刪除使用說明',
   gS(4,'不算進統計',`<span class="small">📊 統計分析 ✕</span>`,
     `<p>這裡的案件不會出現在清單，也不會算進統計分析；還原之後才會算。</p>`)); }
 function settingsGuide(){ return guideBox('settings','設定與資料使用說明',
-  gS(1,'分類一、分類二',`${gIn('改名')}${gN(1)}${gIn('停用')}${gN(2)}${gIn('新增')}${gN(3)}`,
-    `<p><b>改名</b>${gN(1)}：已經用這個分類的案件會一起改成新名稱，統計也會跟著合在一起。</p><p><b>停用</b>${gN(2)}：新增案件時不會出現，但舊案件保留原本的分類；停用的可以再啟用。</p><p><b>新增</b>${gN(3)}：在下面輸入框打字按「新增」。</p>`)+
-  gS(2,'常用選項',`${gIn('常用工作站')}${gIn('常用廠商')}${gIn('常用負責單位')}`,
-    `<p>新增案件時打過的工作站、廠商、負責單位會自動加進來，下次可以直接選。打錯的可以按「移除」，不會影響已經填好的案件。</p>`)+
+  gS(1,'設定常用資料',`<span class="small" style="flex:1">包裝組</span>${gIn('↑')}${gIn('↓')}${gN(1)}${gIn('編輯')}${gN(2)}<span class="gin" style="background:#b42318;color:#fff">刪除</span>${gN(3)}`,
+    `<p>工作站、廠商、分類一、分類二四張卡，跟衛生追蹤一樣：<b>↑ ↓</b>${gN(1)}調整順序（選單、點選的順序跟著變）；<b>編輯</b>${gN(2)}改名稱，用到這個名稱的案件會一起改；<b>刪除</b>${gN(3)}只是從常用選項拿掉，已經存好的案件不會改。</p><p>最下面的輸入框打字按「新增」。旁邊的「N 件」是有幾件案件用到這個選項。</p>`)+
+  gS(2,'工作站名稱自動統一',`${gIn('生產包裝組')}<span class="small">→</span>${gBtn('包裝組')}</div><div class="gx-row">${gIn('打漿')}<span class="small">→</span>${gBtn('打漿組')}${gIn('儲運')}<span class="small">→</span>${gBtn('儲運組')}`,
+    `<p>同一個單位的不同寫法會自動統一：生產包裝組、生產課包裝組 → <b>包裝組</b>；打漿 → <b>打漿組</b>；生產 → <b>生產課</b>；生產課-儲運組、儲運 → <b>儲運組</b>。已經存好的案件、之後匯入或新增的都一樣。</p><p>分類二的<b>規格不符</b>：可為數量／重量／配方。</p>`)+
   gS(3,'備份（每兩週到一個月一次）',`${gBtn('下載備份（含照片）')}${gN(1)}${gIn('從備份還原')}${gN(2)}`,
     `<p>「下載備份」${gN(1)}會存成一個檔案（CAPA_backup_日期.json），裡面有全部案件、照片、分類和常用選項，包含「最近刪除」裡的。請存到<b>這台電腦以外的地方</b>，例如公司雲端硬碟或隨身碟。</p><p>「從備份還原」${gN(2)}會<b>取代</b>這台電腦目前所有資料，按之前會再問一次。換電腦時也是用這個方法搬資料。</p>`)+
   gS(4,'從 Excel 匯入舊資料',`${gBtn('從 Excel 匯入（.xlsx）')}${gN(1)}${gIn('下載匯入範本')}${gN(2)}`,
@@ -726,7 +752,7 @@ function chg(n,pn,good){ if(pn==null) return ''; let t, cls;
 const SGRP=[['station','哪個工作站異常最多'],['cat1','分類一（供應商／廠內異常）'],['cat2','分類二（異常原因）排行'],['vendor','廠商排行']];
 const SCOL={open:'#c0392b',track:'#d4a017',soon:'#f97316',over:'#7a1010',done:'#167a3e'};
 const LCOL=['#16213a','#b8955a','#1d4f91','#167a3e','#b42318'];
-function countBy(list,f){ const m=new Map(); list.forEach(c=>{ const k=String(c[f]||'').trim(); m.set(k,(m.get(k)||0)+1); }); return [...m].sort((x,y)=>y[1]-x[1]||(x[0]===''?1:y[0]===''?-1:x[0].localeCompare(y[0]))); }
+function countBy(list,f){ const m=new Map(); list.forEach(c=>valsOf(c,f).forEach(k=>m.set(k,(m.get(k)||0)+1))); return [...m].sort((x,y)=>y[1]-x[1]||(x[0]===''?1:y[0]===''?-1:x[0].localeCompare(y[0]))); }
 /* 今年（所選年份）到今天為止，跟去年同期比 */
 function yearRanges(y){ const t=today(), cy=+t.slice(0,4), md=t.slice(5);
   const end=y===cy?`${y}-${md}`:`${y}-12-31`, pend=y===cy?`${y-1}-${md==='02-29'?'02-28':md}`:`${y-1}-12-31`;
@@ -740,7 +766,7 @@ function stData(){ stInit(); const rg=pRange(stV,stY,stA()), pr=prevRange(stV,st
   const ySide=f=>{ const pm=new Map(countBy(yP.cases,f)); return countBy(yC.cases,f).map(([k,v])=>({k,v,pv:pm.get(k)||0})); };
   const t=today(), months=[...Array(12)].map((_,i)=>{ const pre=`${stY}-${p2(i+1)}`, fut=pre>t.slice(0,7);
     return {m:i+1,fut,nw:fut?null:live().filter(c=>(c.date||'').startsWith(pre)).length,cl:fut?null:live().filter(c=>(c.closeDate||'').startsWith(pre)).length}; });
-  const topSeries=f=>{ const yr=live().filter(c=>(c.date||'').startsWith(stY+'-')); return countBy(yr,f).filter(([k])=>k).slice(0,5).map(([k],i)=>({name:k,color:LCOL[i],vals:months.map(m=>m.fut?null:yr.filter(c=>String(c[f]||'').trim()===k&&(c.date||'').slice(5,7)===p2(m.m)).length)})); };
+  const topSeries=f=>{ const yr=live().filter(c=>(c.date||'').startsWith(stY+'-')); return countBy(yr,f).filter(([k])=>k).slice(0,5).map(([k],i)=>({name:k,color:LCOL[i],vals:months.map(m=>m.fut?null:yr.filter(c=>valsOf(c,f).includes(k)&&(c.date||'').slice(5,7)===p2(m.m)).length)})); };
   const overList=cur.over.slice().sort((a,b)=>dueOf(a).localeCompare(dueOf(b)));
   return {rg,pr,cur,prv,tot,groups,status,months,yStatus,yTot:yC.cases.length,yCat2:ySide('cat2'),yVendor:ySide('vendor'),YR,stSeries:topSeries('station'),c2Series:topSeries('cat2'),overList}; }
 function stName(){ return stV==='month'?'月報':stV==='quarter'?'季報':'年報'; }
@@ -1002,9 +1028,9 @@ async function importXlsx(inp){ const f=inp.files[0]; inp.value=''; if(!f) retur
   toast('正在匯入…'); const oC=JSON.stringify(C), oS=JSON.stringify(S), newPh=[], now=new Date().toISOString(); let badPh=0;
   for(const o of P.add){
     for(const pc of o._pics){ try{ const b=await pc.blobOf(pc.path); if(!b) throw 0; const data=await compress(b), id='ph_'+newId(); await PDB.put(id,data); PHC[id]=data; newPh.push(id); o.photos.push(id); }catch(e){ badPh++; } }
-    o.cat1=impCat('cat1',o.cat1); o.cat2=impCat('cat2',o.cat2);
+    o.cat1=impCat('cat1',o.cat1); o.cat2=impCat('cat2',o.cat2); o.station=stJoin(stTok(o.station));
     const rec={id:o.id,no:o.no||genNo(o.date),photos:o.photos,createdAt:now,updatedAt:now}; FIELDS.forEach(k=>rec[k]=o[k]||''); C.push(rec);
-    [['stations','station'],['vendors','vendor'],['units','unit']].forEach(([k,fl])=>{ if(rec[fl]&&!S[k].includes(rec[fl])) S[k].push(rec[fl].slice(0,40)); }); }
+    stTok(rec.station).forEach(t=>{ if(!S.stations.includes(t)) S.stations.push(t.slice(0,40)); }); if(rec.vendor&&!S.vendors.includes(rec.vendor)) S.vendors.push(rec.vendor.slice(0,40)); }
   if(!persist()){ C=JSON.parse(oC); S=JSON.parse(oS); for(const id of newPh){ try{ await PDB.del(id); }catch(e){} delete PHC[id]; } return; }
   Object.assign(F,{q:'',year:'',month:'',station:'',vendor:'',cat1:'',cat2:'',status:''}); page='list'; renderList();
   await say(`已匯入 ${P.add.length} 件 ✦${badPh?`\n其中 ${badPh} 張圖片讀不出來，已略過。`:''}\n\n建議現在到「設定與資料」下載一份備份。`); }
@@ -1062,14 +1088,9 @@ async function purgeExpired(){ const lim=addDays(today(),-30), gone=C.filter(c=>
 
 /* ============ 設定：分類與常用選項 ============ */
 function renderSettings(){ page='settings'; nav();
-  const catBox=(k,title,tip)=>`<div class="card"><h2>${title}</h2><div class="small muted">${tip}</div><ul class="optl">${S[k].map((x,i)=>`<li class="${x.on?'':'off'}"><span>${esc(x.n)}</span><span class="small muted">${live().filter(c=>c[k]===x.n).length} 件</span>
-      <button class="sm" onclick="renCat('${k}',${i})">改名</button><button class="sm" onclick="togCat('${k}',${i})">${x.on?'停用':'啟用'}</button></li>`).join('')}</ul>
-    <div class="row"><input id="new_${k}" placeholder="新增選項" style="flex:1;min-width:120px" onkeydown="if(event.key==='Enter')addCat('${k}')"><button onclick="addCat('${k}')">新增</button></div></div>`;
-  const listBox=(k,title)=>`<div class="card"><h2>${title}</h2><ul class="optl">${S[k].length?S[k].map((x,i)=>`<li><span>${esc(x)}</span><button class="sm dng" onclick="delOpt('${k}',${i})">移除</button></li>`).join(''):'<li><span class="muted small">還沒有，新增案件時輸入過的會自動加進來</span></li>'}</ul>
-    <div class="row"><input id="new_${k}" placeholder="新增" style="flex:1;min-width:120px" onkeydown="if(event.key==='Enter')addOpt('${k}')"><button onclick="addOpt('${k}')">新增</button></div></div>`;
-  $('#app').innerHTML=`${headHTML('設定與資料','SETTINGS &amp; DATA','管理分類與常用選項，以及備份與還原。','設定與資料',backupTools())}
-   <div class="ogrid">${catBox('cat1','分類一：異常來源','停用後，新增案件時不會出現，但舊案件保留原本的分類。')}${catBox('cat2','分類二：異常原因','兩項以上原因時，以較多或較嚴重之問題歸類。')}</div>
-   <div class="ogrid" style="margin-top:14px">${listBox('stations','常用工作站／發生部門')}${listBox('vendors','常用廠商')}</div>
+  $('#app').innerHTML=`${headHTML('設定與資料','SETTINGS &amp; DATA','設定常用資料（工作站、廠商、分類），以及匯入、備份與還原。','設定與資料',backupTools())}
+   <div class="note">把常用的工作站、廠商、分類加進來，填案件時就能直接點選或用下拉選單選。常用選項只存在此裝置此瀏覽器，「下載備份」會一起備份。<b>刪除選項不會改到已經存好的案件</b>；「編輯」改名時，用到這個名稱的案件會一起改。</div>
+   <div class="ogrid4">${['stations','vendors','cat1','cat2'].map(optCard).join('')}</div>
    ${impCard()}
    <div class="card" style="margin-top:14px"><h2>📦 備份與還原</h2>
      <div class="row"><button class="pri" onclick="backup()">下載備份（含照片）</button><button onclick="$('#rsIn').click()">從備份還原</button><input type="file" id="rsIn" accept=".json" hidden onchange="restore(this)"></div>
@@ -1082,17 +1103,39 @@ function renderSettings(){ page='settings'; nav();
    ${settingsGuide()}`;
   if(navigator.storage&&navigator.storage.estimate) navigator.storage.estimate().then(e=>{ const el=$('#usage'); if(el) el.textContent=`這個網站目前用了約 ${(e.usage/1048576).toFixed(1)} MB（瀏覽器允許約 ${(e.quota/1048576/1024).toFixed(1)} GB）。`; }).catch(()=>{});
   else { const el=$('#usage'); if(el) el.textContent=''; } }
-async function addCat(k){ const el=$('#new_'+k), v=el.value.trim(); if(!v) return; if(S[k].some(x=>x.n===v)){ await say('已經有這個選項了'); return; } S[k].push({n:v.slice(0,40),on:true}); if(persist()) renderSettings(); }
-function togCat(k,i){ S[k][i].on=!S[k][i].on; if(!persist()) S[k][i].on=!S[k][i].on; renderSettings(); }
-async function renCat(k,i){ const old=S[k][i].n, m=document.createElement('div'); m.className='modal';
-  m.innerHTML=`<div class="box"><h2 style="margin:0 0 8px;font-size:16px">改名</h2><input id="rnI" value="${esc(old)}"><div class="small muted" style="margin:6px 0 12px">已經用這個分類的 ${live().filter(c=>c[k]===old).length} 件案件會一起改成新名稱。</div><div class="row" style="justify-content:flex-end"><button id="rnN">取消</button><button class="pri" id="rnY">儲存</button></div></div>`;
-  document.body.appendChild(m); m.querySelector('#rnN').onclick=()=>m.remove();
-  m.querySelector('#rnY').onclick=async()=>{ const v=m.querySelector('#rnI').value.trim(); if(!v) return; if(v!==old&&S[k].some(x=>x.n===v)){ await say('已經有這個名稱了'); return; }
-    const oC=JSON.stringify(C), oS=JSON.stringify(S); S[k][i].n=v.slice(0,40); C.forEach(c=>{ if(c[k]===old) c[k]=S[k][i].n; });
-    if(!persist()){ C=JSON.parse(oC); S=JSON.parse(oS); return; } m.remove(); renderSettings(); toast('已改名 ✦'); }; }
-function addOpt(k){ const el=$('#new_'+k), v=el.value.trim(); if(!v||S[k].includes(v)) return; S[k].push(v.slice(0,40)); if(persist()) renderSettings(); }
-async function delOpt(k,i){ if(!(await ask(`從常用選項移除「${S[k][i]}」嗎？（不會影響已經填好的案件）`,'移除'))) return; S[k].splice(i,1); persist(); renderSettings(); }
 
+/* ============ 常用選項（跟衛生追蹤一樣：↑ ↓ 編輯 刪除、新增） ============ */
+const OPT_T={stations:'工作站',vendors:'廠商',cat1:'分類一：供應商、廠內異常',cat2:'分類二：異常原因'};
+const OPT_USE={stations:'新增／編輯案件的「工作站」（可以選兩個以上）',vendors:'「廠商」下拉選單',cat1:'「分類一」下拉選單',cat2:'「分類二」下拉選單'};
+const OPT_PH={stations:'新增工作站，例：倉儲組',vendors:'新增廠商',cat1:'新增分類一',cat2:'新增分類二'};
+const isCat=k=>k==='cat1'||k==='cat2', onm=(k,i)=>isCat(k)?S[k][i].n:S[k][i];
+const optUse=(k,n)=>live().filter(c=>k==='stations'?stTok(c.station).includes(n):c[k==='vendors'?'vendor':k]===n).length;
+function optCard(k){ const L=S[k];
+  return `<div class="card"><h2>${OPT_T[k]}</h2><div class="muted small">用在：${OPT_USE[k]}</div>
+    ${L.length?`<ul class="optl">${L.map((x,i)=>`<li><span>${esc(onm(k,i))} <span class="small muted">${optUse(k,onm(k,i))} 件</span></span>
+      <button onclick="optMove('${k}',${i},-1)" ${i?'':'disabled'} aria-label="上移">↑</button>
+      <button onclick="optMove('${k}',${i},1)" ${i<L.length-1?'':'disabled'} aria-label="下移">↓</button>
+      <button onclick="optEdit('${k}',${i})">編輯</button>
+      <button class="danger" onclick="optDel('${k}',${i})">刪除</button></li>`).join('')}</ul>`:'<div class="muted small" style="margin:10px 0">還沒有常用選項。</div>'}
+    ${k==='cat2'?'<div class="muted small" style="margin-bottom:8px">規格不符：可為數量／重量／配方。2 項以上之原因時，以較多或較嚴重之問題歸類。</div>':''}
+    ${k==='stations'?'<div class="muted small" style="margin-bottom:8px">同一單位的不同寫法會自動統一：生產包裝組、生產課包裝組 → 包裝組；打漿 → 打漿組；生產 → 生產課；生產課-儲運組、儲運 → 儲運組。</div>':''}
+    <div class="oadd"><input type="text" id="oi_${k}" placeholder="${OPT_PH[k]}" onkeydown="if(event.key==='Enter')optAdd('${k}')"><button class="pri" onclick="optAdd('${k}')">新增</button></div></div>`; }
+function optMove(k,i,d){ const L=S[k]; if(!L[i+d]) return; [L[i],L[i+d]]=[L[i+d],L[i]]; persist(); renderSettings(); }
+async function optAdd(k){ const el=$('#oi_'+k); let v=el.value.trim().slice(0,40); if(k==='stations') v=normStation(v); if(!v) return;
+  if(S[k].some((_,i)=>onm(k,i)===v)){ await say('已經有這個選項了'); return; }
+  S[k].push(isCat(k)?{n:v,on:true}:v); if(persist()) renderSettings(); }
+async function optDel(k,i){ const n=onm(k,i); if(!(await ask(`從常用選項刪除「${n}」嗎？\n不會改到已經存好的案件（${optUse(k,n)} 件仍保留「${n}」）。`,'刪除',true))) return; S[k].splice(i,1); persist(); renderSettings(); }
+function askText(title,value){ return new Promise(res=>{ const m=document.createElement('div'); m.className='modal';
+  m.innerHTML=`<div class="box"><div style="white-space:pre-wrap;margin-bottom:8px">${esc(title)}</div><input id="atIn" style="margin-bottom:12px"><div class="row" style="justify-content:flex-end"><button id="atNo">取消</button><button class="pri" id="atOk">確定</button></div></div>`;
+  document.body.appendChild(m); const inp=m.querySelector('#atIn'); inp.value=value; inp.focus(); inp.select();
+  const done=v=>{ m.remove(); res(v); }; m.querySelector('#atNo').onclick=()=>done(null); m.querySelector('#atOk').onclick=()=>done(inp.value); inp.onkeydown=e=>{ if(e.key==='Enter') done(inp.value); if(e.key==='Escape') done(null); }; }); }
+async function optEdit(k,i){ const old=onm(k,i), cnt=optUse(k,old); let v=await askText(`修改「${old}」的名稱${cnt?`\n用到這個名稱的 ${cnt} 件案件會一起改`:''}`,old); if(v==null) return;
+  v=v.trim().slice(0,40); if(k==='stations') v=normStation(v); if(!v||v===old) return;
+  if(S[k].some((_,j)=>j!==i&&onm(k,j)===v)){ await say('已經有這個名稱了'); return; }
+  const oC=JSON.stringify(C), oS=JSON.stringify(S);
+  if(isCat(k)) S[k][i].n=v; else S[k][i]=v;
+  C.forEach(c=>{ if(k==='stations'){ const t=stTok(c.station); if(t.includes(old)) c.station=stJoin(t.map(x=>x===old?v:x)); } else { const f=k==='vendors'?'vendor':k; if(c[f]===old) c[f]=v; } });
+  if(!persist()){ C=JSON.parse(oC); S=JSON.parse(oS); return; } renderSettings(); toast('已改名 ✦'); }
 /* ============ 備份與還原（照片一起放進備份檔） ============ */
 async function backup(){ toast('正在打包備份…'); const photos={}; const ids=new Set(C.flatMap(c=>c.photos||[]));
   for(const id of ids){ const v=await phGet(id); if(v) photos[id]=v; }
@@ -1108,11 +1151,16 @@ async function restore(inp){ const f=inp.files[0]; inp.value=''; if(!f) return; 
   Object.keys(PHC).forEach(k=>delete PHC[k]); const oC=C, oS=S; C=cases; S=fixS(Object.assign(defaultS(),d.settings||{}));
   if(!persist()){ C=oC; S=oS; return; } toast('還原完成 ✦'); page='list'; renderList(); }
 
+/* 一次性整理：工作站不同寫法統一（包裝組、打漿組、生產課、儲運組…），分類全部啟用 */
+function migrateStations(){ let n=0; C.forEach(c=>{ const v=stJoin(stTok(c.station)); if(v!==String(c.station||'')){ c.station=v; n++; } });
+  const st=[...new Set(S.stations.map(normStation).filter(Boolean))], stCh=JSON.stringify(st)!==JSON.stringify(S.stations); S.stations=st;
+  let catCh=false; ['cat1','cat2'].forEach(k=>S[k].forEach(x=>{ if(!x.on){ x.on=true; catCh=true; } }));
+  if(n||stCh||catCh){ if(persist()&&n) toast(`已把 ${n} 件的工作站名稱統一（例：生產包裝組 → 包裝組）`); } }
 /* ============ 啟動 ============ */
 (async function init(){
   let ok=true; try{ localStorage.setItem('__t','1'); localStorage.removeItem('__t'); await PDB.open(); }catch(e){ ok=false; }
   if(!ok) say('注意：目前瀏覽器無法保存資料（可能是無痕模式或已封鎖網站資料），關閉後資料會遺失。');
-  await purgeExpired(); renderList();
+  await purgeExpired(); migrateStations(); renderList();
 })();
 </script>
 </body>
