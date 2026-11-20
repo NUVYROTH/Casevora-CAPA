@@ -582,7 +582,7 @@ function openView(id){ const c=C.find(x=>x.id===id); if(!c||c.deleted) return; v
 /* 表單已不使用、但保留舊資料的欄位 */
 const OLD_F=[['finder','異常發現人員'],['cause','異常原因分析'],['immediate','立即處置方式'],['corrective','矯正措施'],['preventive','預防再發措施'],['unit','改善負責單位'],['owner','改善負責人'],['progress','改善進度'],['result','改善結果'],['verify','成效確認'],['verifier','確認人員'],['note2','追蹤備註']];
 const FIELDS=['date','station','item','vendor','lot','expiry','finder','note','desc','cause','immediate','corrective','preventive','method','unit','owner','due','progress','result','verify','verifier','closeDate','note2','cat1','cat2'];
-function blankCase(){ const o={id:newId(),no:'',photos:[]}; FIELDS.forEach(k=>o[k]=''); o.date=today(); o.due=addDays(o.date,DUE_DAYS); o._autoDue=true; return o; }
+function blankCase(){ const o={id:newId(),no:'',photos:[]}; FIELDS.forEach(k=>o[k]=''); o.date=today(); o.due=addDays(o.date,DUE_DAYS); o._autoDue=true; o.no=genNo(o.date); o._autoNo=true; return o; }
 function openForm(id){
   const src=id?C.find(x=>x.id===id):null; if(id&&!src) return;
   if(page!=='edit'&&page!=='new') back=page==='view'?'view':page;
@@ -594,7 +594,7 @@ function inp(k,label,type,o){ o=o||{}; const v=esc(cur[k]); const on=`oninput="s
   return `<div><label class="f ${o.req?'req':''}" for="f_${k}">${label}</label><input id="f_${k}" type="${type}" value="${v}" ${on} ${type==='date'?`onchange="setF('${k}',this.value)"`:''}></div>`; }
 function drawForm(){
   const c=cur, on1=S.cat1.filter(x=>x.on).map(x=>x.n), on2=S.cat2.filter(x=>x.on).map(x=>x.n);
-  $('#app').innerHTML=`${headHTML(c._isNew?'新增異常案件':'編輯案件 '+esc(c.no),c._isNew?'NEW CASE':'EDIT CASE',c._isNew?'案件編號空白會自動產生：發現日期＋三碼流水號，例如 20261120001。':'修改後記得按最下面的「儲存」。',c._isNew?'新增異常案件':'編輯案件',`<button class="lite" onclick="cancelForm()">← 返回</button>${c._isNew?'':`<button class="dng" onclick="formDel()">刪除</button>`}`)}
+  $('#app').innerHTML=`${headHTML(c._isNew?'新增異常案件':'編輯案件 '+esc(c.no),c._isNew?'NEW CASE':'EDIT CASE',c._isNew?'案件編號已自動帶出（發現日期＋三碼流水號），改發現日期會跟著變；也可以自己改。':'修改後記得按最下面的「儲存」。',c._isNew?'新增異常案件':'編輯案件',`<button class="lite" onclick="cancelForm()">← 返回</button>${c._isNew?'':`<button class="dng" onclick="formDel()">刪除</button>`}`)}
    <div class="note" style="margin-bottom:12px">欄位跟 Excel 一樣，只多一格「預計完成日期」。只有「發現日期」必填，另外「產品品項」或「異常描述」至少填一個；其他還沒拿到資料可以先空白。</div>
    <details class="sec" open><summary><span class="no">A</span>基本資料</summary><div class="body"><div class="grid">
      ${inp('no','案件編號','text',{ph:'空白自動產生，例：20261120001'})}${inp('date','發現日期','date',{req:true})}${stationPicker()}${inp('item','產品品項','text')}
@@ -638,7 +638,8 @@ function c2AddOther(){ const el=$('#c2Other'), v=el.value.replace(/[、,，;；]
   const sel=c2Tok(cur.cat2); if(!sel.includes(v)) setF('cat2',[...sel,v].join('、')); el.value=''; c2Redraw(); toast(`已加入「${v}」`); }
 function c2Toggle(i){ const n=C2O[i]; if(!n) return; const sel=c2Tok(cur.cat2); setF('cat2',(sel.includes(n)?sel.filter(x=>x!==n):[...sel,n]).join('、'));
   c2Redraw(); }
-function setF(k,v){ cur[k]=v; if(k==='due') cur._autoDue=false; if((k==='date'||k==='closeDate')&&$('#pdays')) $('#pdays').innerHTML=daysTxt(cur);
+function setF(k,v){ cur[k]=v; if(k==='due') cur._autoDue=false; if(k==='no') cur._autoNo=!String(v).trim();
+  if(k==='date'&&cur._isNew&&cur._autoNo&&v){ cur.no=genNo(v); const el=$('#f_no'); if(el) el.value=cur.no; } if((k==='date'||k==='closeDate')&&$('#pdays')) $('#pdays').innerHTML=daysTxt(cur);
   if(k==='date'&&cur._autoDue&&v){ cur.due=addDays(v,DUE_DAYS); const el=$('#f_due'); if(el) el.value=cur.due; } markDirty(true); }
 function markDirty(v){ if(v) dirty=true; const el=$('#dm'); if(el) el.innerHTML=dirty?'<span class="dirty">● 有尚未儲存的修改</span>':''; }
 function drawPhotos(){ const box=$('#phbox'); if(!box) return;
@@ -671,7 +672,7 @@ async function formDel(){ if(dirty&&!(await ask('有尚未儲存的修改，確�
 async function cancelForm(){ if(dirty&&!(await ask('有尚未儲存的修改，確定要放棄嗎？','放棄修改',true))) return; await dropNewPhotos(); const wasNew=cur._isNew, id=cur.id; dirty=false; cur=null;
   if(!wasNew&&back==='view') openView(id); else { page=back==='view'?'list':back; ({list:renderList,trash:renderTrash,settings:renderSettings,stats:renderStats}[page]||renderList)(); } }
 async function saveForm(){
-  const c=cur; ['no','item','desc','station','vendor','lot'].forEach(k=>c[k]=String(c[k]||'').trim()); c.no=c.no.slice(0,30); c.station=stJoin(stTok(c.station));
+  const c=cur; if(c._isNew&&c._autoNo) c.no=genNo(c.date); ['no','item','desc','station','vendor','lot'].forEach(k=>c[k]=String(c[k]||'').trim()); c.no=c.no.slice(0,30); c.station=stJoin(stTok(c.station));
   if(c.no&&C.some(x=>x.id!==c.id&&String(x.no)===c.no)){ await say(`案件編號「${c.no}」已經有別的案件在用了（也可能在「最近刪除」裡），請換一個，或留空白自動產生。`); return; }
   if(!c.date){ await say('請先填寫：發現日期'); return; } if(!c.item&&!c.desc){ await say('「產品品項」或「異常描述」至少要填一個。'); return; }
   if(c.closeDate&&c.closeDate<c.date){ await say('結案日期不能早於發現日期。'); return; }
@@ -727,7 +728,7 @@ function listGuide(){ return guideBox('list','異常案件清單使用說明',
     `<p>電腦看到的是表格，表頭跟 Excel 同一個順序，最後多了「預計完成日期」和「狀態」；欄寬固定，一般螢幕一頁就看得完。每一列看最右邊的<b>狀態</b>標籤：<span class="st over">逾期未結</span>、<span class="st soon">即將到期</span>…。手機會自動改成卡片，左邊的色條代表一樣的意思。</p>`)); }
 function formGuide(){ return guideBox('form','新增／編輯案件使用說明',
   gS(1,'最少要填什麼',`${gIn('發現日期 *')}<span class="small">＋</span>${gIn('產品品項')}<span class="small">或</span>${gIn('異常描述')}`,
-    `<p>只有<b>發現日期</b>必填，另外「產品品項」或「異常描述」至少填一個。其他欄位可以先空白，之後再回來補。</p><p><b>案件編號</b>可以自己填（例如照 Excel 的編號）；空白就在儲存時自動產生：<b>發現日期 YYYYMMDD＋三碼流水號</b>，例如 11/20 發現的第 1 件是 20261120001、第 2 件是 20261120002，依「發現日期」那天編。以前匯入的編號不會改。編號不能跟別的案件重複。</p>`)+
+    `<p>只有<b>發現日期</b>必填，另外「產品品項」或「異常描述」至少填一個。其他欄位可以先空白，之後再回來補。</p><p><b>案件編號</b>：新增時會<b>自動帶出</b>，改發現日期會跟著變；也可以自己改（例如照 Excel 的編號），自己改過就不會再自動換。編號規則是<b>發現日期 YYYYMMDD＋三碼流水號</b>，例如 11/20 發現的第 1 件是 20261120001、第 2 件是 20261120002，依「發現日期」那天編。以前匯入的編號不會改。編號不能跟別的案件重複。</p>`)+
   gS(2,'跟 Excel 一樣的格子',`${gBtn('A')}<span class="small">案件編號～效期</span>${gBtn('B')}<span class="small">異常、圖片(1)(2)</span>${gBtn('C')}<span class="small">備註～分類二＋預計完成日期</span>`,
     `<p>表單欄位的順序跟 Excel 一樣：案件編號、發現日期、工作站、<b>產品品項</b>、廠商、批號、<b>有效日期</b>、<b>異常描述</b>、圖片(1)、圖片(2)、備註、處理辦法、結案日期、分類一、分類二；只多一格<b>預計完成日期</b>（藍底）。其中產品品項＝Excel 的「品項」、有效日期＝「效期」、異常描述＝「異常」。</p><p>廠商可以從下拉選，也可以直接打字，打過的會自動加進常用選項；<b>工作站、分類二用點選，而且可以選兩個以上</b>（見第 5 步）。</p>`)+
   gS(3,'加照片、貼上、刪除',`<span class="gdonut" style="border-radius:6px;-webkit-mask:none;mask:none;background:#cfe3d6;width:40px;height:30px"></span><span class="gin">＋ 加入照片</span>${gN(1)}</div><div class="gx-row"><span class="gin" style="border:2px dashed #b8955a;background:#fff4e0;color:#7a3d06">📋 點這裡，再按 Ctrl+V 貼上</span>${gN(2)}`,
