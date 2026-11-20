@@ -186,6 +186,12 @@ dl.kv dd{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
 .modal .box{background:var(--card);border-radius:14px;padding:18px;max-width:520px;width:100%;max-height:88vh;overflow:auto}
 .modal.img .box{max-width:min(1100px,96vw);padding:8px;background:#000}
 .modal.img img{display:block;max-width:100%;max-height:82vh;margin:0 auto}
+.modal.img .box{position:relative}
+.pvbar{display:flex;justify-content:space-between;align-items:center;gap:8px;color:#fff;font-size:13px;padding:0 2px 6px}
+.pvbar button{padding:2px 10px;font-size:13px}
+.pvn{position:absolute;top:50%;transform:translateY(-50%);width:42px;height:42px;padding:0;border-radius:50%;background:rgba(255,255,255,.88);font-size:16px}
+.pvp{left:12px}.pvq{right:12px}
+img.zoom{cursor:zoom-in}
 .toast{position:fixed;top:14px;left:50%;transform:translateX(-50%);background:var(--brand);color:#fffdf8;border:1px solid var(--gold);padding:9px 20px;border-radius:999px;z-index:99;font-weight:700;max-width:92vw;text-align:center}
 .optl{list-style:none;margin:6px 0 10px;padding:0}
 .optl li{display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--line)}
@@ -396,6 +402,15 @@ function compress(file){ return new Promise((ok,no)=>{ const fr=new FileReader()
   fr.readAsDataURL(file); }); }
 /* 頁面上的 <img data-ph="編號"> 會自動從 IndexedDB 填入 */
 async function fillPhotos(root){ for(const el of (root||document).querySelectorAll('img[data-ph]')){ const v=await phGet(el.dataset.ph); if(v) el.src=v; else el.alt='（照片遺失）'; } }
+/* 清單上點小圖：看大圖，同一件有多張可以 ◀ ▶（或鍵盤左右鍵）切換，Esc 或點旁邊關閉 */
+async function viewCasePhotos(cid,i){ const c=C.find(x=>x.id===cid); if(!c||!(c.photos||[]).length) return; const L=c.photos; let k=Math.max(0,Math.min(i,L.length-1));
+  const m=document.createElement('div'); m.className='modal img'; document.body.appendChild(m);
+  const close=()=>{ m.remove(); document.removeEventListener('keydown',key); };
+  const draw=async()=>{ const v=await phGet(L[k]); m.innerHTML=`<div class="box"><div class="pvbar"><span>${esc(c.no)}・${k<2?`圖片(${k+1})`:`其他圖片 ${k+1}`}　${k+1} / ${L.length}</span><button id="pvX" aria-label="關閉">✕ 關閉</button></div>${v?`<img src="${v}" alt="圖片 ${k+1}">`:'<div style="color:#fff;padding:40px;text-align:center">（照片遺失）</div>'}${L.length>1?`<button class="pvn pvp" aria-label="上一張">◀</button><button class="pvn pvq" aria-label="下一張">▶</button>`:''}</div>`;
+    m.querySelector('#pvX').onclick=close; const pp=m.querySelector('.pvp'), qq=m.querySelector('.pvq'); if(pp) pp.onclick=e=>{ e.stopPropagation(); go(-1); }; if(qq) qq.onclick=e=>{ e.stopPropagation(); go(1); }; };
+  const go=d=>{ k=(k+d+L.length)%L.length; draw(); };
+  const key=e=>{ if(e.key==='Escape') close(); else if(e.key==='ArrowLeft') go(-1); else if(e.key==='ArrowRight') go(1); };
+  m.onclick=e=>{ if(e.target===m) close(); }; document.addEventListener('keydown',key); await draw(); }
 function viewPhoto(id){ phGet(id).then(v=>{ if(!v) return; const m=document.createElement('div'); m.className='modal img'; m.innerHTML=`<div class="box"><img src="${v}" alt="異常照片"></div>`; m.onclick=()=>m.remove(); document.body.appendChild(m); }); }
 async function savePhotoFile(id,name){ const v=await phGet(id); if(!v) return; const b=await (await fetch(v)).blob(); download(b,name+'.jpg'); }
 
@@ -525,12 +540,12 @@ function drawList(){
      ${COLS.map(([k,n])=>k.startsWith('ph')?`<th class="ns">${n}</th>`:`<th onclick="sortBy('${k}')">${n}${ar(k)}</th>`).join('')}</tr></thead><tbody>
      ${rows.map(c=>`<tr class="r-${statusOf(c)}" onclick="openForm('${c.id}')">
        <td style="white-space:nowrap;font-variant-numeric:tabular-nums">${esc(c.no)}</td><td style="white-space:nowrap">${fmtD(c.date)}</td><td>${esc(c.station)}</td><td>${esc(c.item)}</td><td>${esc(c.vendor)}</td><td>${esc(c.lot)}</td><td style="white-space:nowrap">${fmtD(c.expiry)}</td>
-       <td class="desc"><div class="clip">${esc(c.desc)}</div></td><td><div class="ths">${(c.photos||[]).slice(0,2).map((p,i)=>`<img class="th" data-ph="${p}" alt="圖片(${i+1})">`).join('')}</div></td>
+       <td class="desc"><div class="clip">${esc(c.desc)}</div></td><td><div class="ths">${(c.photos||[]).slice(0,2).map((p,i)=>`<img class="th zoom" data-ph="${p}" alt="圖片(${i+1})" title="點一下看大圖" onclick="event.stopPropagation();viewCasePhotos('${c.id}',${i})">`).join('')}</div></td>
        <td class="desc"><div class="clip">${esc(c.note)}</div></td><td class="desc"><div class="clip">${esc(c.method)}</div></td><td style="white-space:nowrap">${fmtD(c.closeDate)}${procDays(c)!=null?`<div class="small muted">${procDays(c)} 天</div>`:''}</td>
        <td>${c.cat1?`<span class="tag ${c.cat1==='供應商'?'sup':'fac'}">${esc(c.cat1)}</span>`:''}</td><td>${c2Tok(c.cat2).map(x=>`<span class="tag">${esc(x)}</span>`).join('')}</td>
        <td style="white-space:nowrap">${fmtD(dueOf(c))}</td><td>${stBadge(c)}${(c.photos||[]).length>2?`<div class="small muted">另有 ${c.photos.length-2} 張圖</div>`:''}</td></tr>`).join('')}
      </tbody></table></div>
-     <div class="cards">${rows.map(c=>`<div class="ccard r-${statusOf(c)}" onclick="openForm('${c.id}')">${(c.photos||[]).length?`<img data-ph="${c.photos[0]}" alt="異常照片">`:''}<div class="m">
+     <div class="cards">${rows.map(c=>`<div class="ccard r-${statusOf(c)}" onclick="openForm('${c.id}')">${(c.photos||[]).length?`<img class="zoom" data-ph="${c.photos[0]}" alt="異常照片" title="點一下看大圖" onclick="event.stopPropagation();viewCasePhotos('${c.id}',0)">`:''}<div class="m">
        <div class="row" style="gap:6px"><b class="small" style="font-variant-numeric:tabular-nums">${esc(c.no)}</b>${stBadge(c)}</div>
        <div class="t">${esc(c.item||'（未填品項）')}${c.vendor?'・'+esc(c.vendor):''}</div><div class="small muted">${fmtD(c.date)}${c.station?'・'+esc(c.station):''}</div>
        <div class="small" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.desc)}</div><div>${catTag(c)}</div></div></div>`).join('')}</div>`
@@ -706,7 +721,7 @@ function listGuide(){ return guideBox('list','異常案件清單使用說明',
   gS(4,'排序',`<span class="small">排序：</span>${gIn('緊急程度（預設） ▾')}${gN(1)}<span class="small">→ 發現日期：新 → 舊</span>`,
     `<p>預設依<b>緊急程度</b>排：逾期未結 → 即將到期 → 其他，最急的在最上面。</p><p>表格上方的「排序」選單${gN(1)}可以改成<b>發現日期（新 → 舊／舊 → 新）</b>、案件編號、預計完成日期，看這一次用。<b>重新打開網頁，或點左邊的「異常案件清單」，就會回到緊急程度（預設）</b>；從案件按「返回」回清單時，維持剛剛選的排序。</p><p>電腦版也可以直接點表格的<b>欄位標題</b>排序，再點一次反過來。</p>`)+
   gS(5,'點一列直接編輯',`${gIn('← 返回')}<span class="gin" style="color:#b42318">刪除</span>${gBtn('儲存')}`,
-    `<p>點任一列（手機是點卡片）會<b>直接打開編輯表單</b>，改完按最下面的「儲存」。</p><p>儲存後會回到清單。點照片可以看大圖；上方「刪除」會先問一次，再移到「最近刪除」，30 天內都能救回來。</p>`)+
+    `<p>點任一列（手機是點卡片）會<b>直接打開編輯表單</b>，改完按最下面的「儲存」。</p><p>儲存後會回到清單。<b>點清單上的小圖可以看大圖</b>（不會進入編輯），同一件有兩張以上用 ◀ ▶ 或鍵盤左右鍵切換，Esc 關閉；上方「刪除」會先問一次，再移到「最近刪除」，30 天內都能救回來。</p>`)+
   gS(6,'從 Excel 匯入',`${gIn('從 Excel 匯入')}${gN(1)}${gIn('下載匯入範本')}${gN(2)}`,
     `<p>按上方「從 Excel 匯入」${gN(1)}，會先看到<b>匯入表格要放哪些欄位</b>：案件編號、發現日期、工作站、品項、廠商、批號、效期、異常、圖片(1)、圖片(2)、備註、處理辦法、結案日期、分類一、分類二。不確定就按「下載匯入範本」${gN(2)}照著填。</p><p>匯入只會<b>新增</b>，不會覆蓋原本的案件；分好幾個檔案匯入也可以，重複的會自動略過。</p>`)+
   gS(7,'電腦和手機',`<span class="small">電腦：表格　手機：卡片</span>`,
