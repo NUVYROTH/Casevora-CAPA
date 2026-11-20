@@ -123,7 +123,17 @@ td img.th{width:56px;height:42px;object-fit:cover;border-radius:6px;border:1px s
 .st.done{background:var(--ok-soft);color:var(--ok)}
 .st.over{background:#b42318;color:#fff}
 .st.soon{background:#f97316;color:#fff}
-tr.r-over td{background:#fdecea} tr.r-soon td{background:#fff4e0}
+/* 清單表格：固定欄寬，一般電腦螢幕一頁看完（不用左右捲） */
+table.lt{table-layout:fixed;width:100%;min-width:1300px;font-size:12.5px}
+table.lt th{white-space:normal;line-height:1.3;padding:7px 5px;vertical-align:bottom}
+table.lt td{min-width:0;padding:7px 5px;overflow-wrap:anywhere}
+table.lt td.desc{min-width:0;max-width:none}
+table.lt td.nw{white-space:nowrap;font-variant-numeric:tabular-nums}
+table.lt img.th{width:38px;height:30px}
+table.lt .tag{font-size:11.5px;padding:0 4px}
+table.lt .st{font-size:12px;padding:0 7px}
+table.lt .tag{white-space:normal}
+table.lt td.desc .clip{-webkit-line-clamp:4}
 .ccard.r-over{border-left:5px solid #b42318} .ccard.r-soon{border-left:5px solid #f97316}
 .alertbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;background:var(--card);border:1px solid var(--line);border-left:5px solid var(--bad);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-weight:700}
 .alertbar a{cursor:pointer;text-decoration:none;border-radius:999px;padding:2px 12px;font-size:14px}
@@ -368,6 +378,8 @@ function filtered(){ const ws=F.q.trim().toLowerCase().split(/\s+/).filter(Boole
   else a.sort((x,y)=>{ const vx=k==='status'?URG[statusOf(x)]:k==='due'?dueOf(x):String(x[k]||''), vy=k==='status'?URG[statusOf(y)]:k==='due'?dueOf(y):String(y[k]||''); return (vx<vy?-1:vx>vy?1:0)*d||String(y.no).localeCompare(String(x.no)); });
   return a; }
 /* 清單表頭：跟 Excel 一樣的順序和名稱；最後加系統用的「預計完成日期」「狀態」 */
+/* 欄寬（沒寫的＝自動分剩下的空間：異常描述） */
+const COLW={no:'98px',date:'72px',station:'50px',item:'92px',vendor:'56px',lot:'84px',expiry:'72px',ph1:'46px',ph2:'46px',note:'70px',method:'96px',closeDate:'72px',cat1:'52px',cat2:'76px',due:'72px',status:'70px'};
 const COLS=[['no','案件編號'],['date','發現日期'],['station','工作站'],['item','產品品項'],['vendor','廠商'],['lot','批號'],['expiry','有效日期'],['desc','異常描述'],['ph1','圖片(1)'],['ph2','圖片(2)'],['note','備註'],['method','處理辦法'],['closeDate','結案日期'],['cat1','分類一'],['cat2','分類二'],['due','預計完成日期'],['status','狀態']];
 function renderList(){
   page='list'; nav(); const rows=filtered(), all=live(), cnt=k=>all.filter(c=>statusOf(c)===k).length;
@@ -411,10 +423,10 @@ function drawList(){
   const rows=filtered(), el=$('#lres'); if(!el) return; SEL=new Set([...SEL].filter(id=>rows.some(c=>c.id===id)));
   const ar=k=>F.sort===k?(F.dir>0?' ▲':' ▼'):'';
   const anyF=F.q||F.year||F.month||F.station||F.vendor||F.cat1||F.cat2||F.status;
-  el.innerHTML=`<div class="row small muted" style="margin-bottom:6px"><span>符合 <b>${rows.length}</b> 件</span>${SEL.size?`<span>・已勾選 <b>${SEL.size}</b> 件（匯出功能在第 3 段加入）</span>`:''}<span class="sp"></span><span>排序：${F.sort==='urgent'?'<b>緊急程度</b>（逾期 → 即將到期 → 其他）':`欄位排序 <a href="#" onclick="F.sort='urgent';F.dir=1;drawList();return false">改回緊急程度</a>`}</span>${anyF?'・<a href="#" onclick="clearF();return false">清除篩選</a>':''}</div>
-   ${rows.length?`<div class="tw"><table><thead><tr><th class="ns"><input type="checkbox" aria-label="全選" style="width:auto" ${rows.length&&rows.every(c=>SEL.has(c.id))?'checked':''} onclick="event.stopPropagation();selAll(this.checked)"></th>
+  el.innerHTML=`<div class="row small muted" style="margin-bottom:6px"><span>符合 <b>${rows.length}</b> 件</span>${SEL.size?`<span>・已勾選 <b>${SEL.size}</b> 件（匯出功能在第 3 段加入）</span>`:''}<span class="sp"></span><span>排序：${F.sort==='urgent'?`<b>緊急程度</b>（<span class="st over">逾期未結</span> → <span class="st soon">即將到期</span> → 其他）`:`欄位排序 <a href="#" onclick="F.sort='urgent';F.dir=1;drawList();return false">改回緊急程度</a>`}</span>${anyF?'・<a href="#" onclick="clearF();return false">清除篩選</a>':''}</div>
+   ${rows.length?`<div class="tw"><table class="lt"><colgroup>${COLS.map(([k])=>`<col style="width:${COLW[k]||'auto'}">`).join('')}</colgroup><thead><tr>
      ${COLS.map(([k,n])=>k.startsWith('ph')?`<th class="ns">${n}</th>`:`<th onclick="sortBy('${k}')">${n}${ar(k)}</th>`).join('')}</tr></thead><tbody>
-     ${rows.map(c=>`<tr class="r-${statusOf(c)}" onclick="openForm('${c.id}')"><td onclick="event.stopPropagation()"><input type="checkbox" style="width:auto" aria-label="勾選 ${esc(c.no)}" ${SEL.has(c.id)?'checked':''} onchange="tog('${c.id}',this.checked)"></td>
+     ${rows.map(c=>`<tr class="r-${statusOf(c)}" onclick="openForm('${c.id}')">
        <td style="white-space:nowrap;font-variant-numeric:tabular-nums">${esc(c.no)}</td><td style="white-space:nowrap">${fmtD(c.date)}</td><td>${esc(c.station)}</td><td>${esc(c.item)}</td><td>${esc(c.vendor)}</td><td>${esc(c.lot)}</td><td style="white-space:nowrap">${fmtD(c.expiry)}</td>
        <td class="desc"><div class="clip">${esc(c.desc)}</div></td>${[0,1].map(i=>`<td>${(c.photos||[])[i]?`<img class="th" data-ph="${c.photos[i]}" alt="圖片(${i+1})">`:''}</td>`).join('')}
        <td class="desc"><div class="clip">${esc(c.note)}</div></td><td class="desc"><div class="clip">${esc(c.method)}</div></td><td style="white-space:nowrap">${fmtD(c.closeDate)}</td>
@@ -564,7 +576,7 @@ function listGuide(){ return guideBox('list','異常案件清單使用說明',
   gS(6,'從 Excel 匯入',`${gIn('從 Excel 匯入')}${gN(1)}${gIn('下載匯入範本')}${gN(2)}`,
     `<p>按上方「從 Excel 匯入」${gN(1)}，會先看到<b>匯入表格要放哪些欄位</b>：案件編號、發現日期、工作站、品項、廠商、批號、效期、異常、圖片(1)、圖片(2)、備註、處理辦法、結案日期、分類一、分類二。不確定就按「下載匯入範本」${gN(2)}照著填。</p><p>匯入只會<b>新增</b>，不會覆蓋原本的案件；分好幾個檔案匯入也可以，重複的會自動略過。</p>`)+
   gS(7,'電腦和手機',`<span class="small">電腦：表格　手機：卡片</span>`,
-    `<p>電腦看到的是表格，表頭跟 Excel 一樣（最後多了「預計完成日期」和「狀態」）；紅底是逾期、橘底是即將到期；手機會自動改成卡片，左邊的色條代表一樣的意思。</p>`)); }
+    `<p>電腦看到的是表格，表頭跟 Excel 同一個順序，最後多了「預計完成日期」和「狀態」；欄寬固定，一般螢幕一頁就看得完。每一列看最右邊的<b>狀態</b>標籤：<span class="st over">逾期未結</span>、<span class="st soon">即將到期</span>…。手機會自動改成卡片，左邊的色條代表一樣的意思。</p>`)); }
 function formGuide(){ return guideBox('form','新增／編輯案件使用說明',
   gS(1,'最少要填什麼',`${gIn('發現日期 *')}<span class="small">＋</span>${gIn('品項名稱')}<span class="small">或</span>${gIn('異常描述')}`,
     `<p>只有<b>發現日期</b>必填，另外「產品品項」或「異常描述」至少填一個。其他欄位可以先空白，之後再回來補。</p><p><b>案件編號</b>可以自己填（例如照 Excel 的編號）；空白就在儲存時自動產生：發現日期＋當天流水號，例如 2026111901。編號不能跟別的案件重複。</p>`)+
