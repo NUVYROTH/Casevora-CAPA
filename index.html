@@ -282,6 +282,10 @@ img.zoom{cursor:zoom-in}
 .st-tile.t-over{border-color:#e7b4ae;background:var(--bad-soft)}
 .st-tile.click{cursor:pointer}.st-tile.click:hover,.st-tile.pick{box-shadow:0 0 0 2px var(--gold)}
 .st-note{font-size:12px;color:var(--muted);margin:2px 0 10px}
+.st-charts{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:16px;margin:10px 0 4px;align-items:start}.st-charts>*{min-width:0}
+.st-sub{font-size:13.5px;font-weight:700;color:var(--muted);margin-bottom:6px}
+.leg li.click{cursor:pointer}.leg li.click:hover{background:#fffaf0}
+@media(max-width:760px){.st-charts{grid-template-columns:1fr}}
 .st-extra{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px}
 .st-extra .box{flex:1 1 240px;border:2px dashed var(--field);border-radius:10px;padding:10px 14px;background:#fff}
 .st-extra .n{font-size:26px;font-weight:700;color:var(--info)}.st-extra .n small{font-size:14px;color:var(--muted)}
@@ -698,11 +702,11 @@ function statsGuide(){ const k=(n,l,c)=>`<span class="gx-k ${c||''}">${n}<small>
     gS(2,'看四個數字、點開案件',`${k(12,'新增')}${k(5,'已結案','ok')}${k(5,'尚未結案','b')}${gN(1)}${k(2,'逾期未結','rd')}`,
       `<p>新增 ＝ 已結案 ＋ 尚未結案 ＋ 逾期未結，都是看本期新增的案件「到今天」的狀態。下面的虛線框是<b>平均處理天數</b>（發現日期 → 結案日期），也會跟上期比多幾天、少幾天。</p><p>點任一格${gN(1)}，下面會列出是哪幾件；再點案件就能直接打開編輯。</p>`)+
     gS(3,'逾期明細、各分類排行',`<div style="flex:1">${bar('包裝組',80,1)}${bar('打漿組',45)}${bar('生產',25)}</div>`,
-      `<p>「逾期未結明細」列出本期逾期的案件和逾期幾天，最久的在最上面。</p><p>下面依<b>工作站、分類一、分類二、廠商</b>排行（廠商沒填的＝公司內部，不列入廠商排行）；點任一列${gN(1)}會跳出那幾件案件，再點案件就直接打開編輯。工作站、分類二一件選了兩個以上的，會各算一件。</p>`)+
+      `<p>「逾期未結明細」列出本期逾期的案件和逾期幾天，最久的在最上面。</p><p>下面依<b>工作站、分類一、分類二、廠商</b>排行（廠商沒填的＝公司內部，不列入廠商排行）；<b>分類一、分類二</b>下面還有<b>圓餅圖</b>（本期各分類佔多少，前 5 名＋其它）和<b>曲線圖</b>（所選年份每月件數），同一個分類兩張圖同一個顏色，點圓餅或旁邊清單也能看案件；點任一列${gN(1)}會跳出那幾件案件，再點案件就直接打開編輯。工作站、分類二一件選了兩個以上的，會各算一件。</p>`)+
     gS(4,'右側三張卡',`<span class="gdonut"></span><div style="flex:1">${bar('天然異物',70)}${bar('規格不符',40)}</div>`,
       `<p>右邊跟衛生追蹤一樣是<b>所選年份</b>的處理狀態（圓餅圖）、異常原因（分類二）、<b>工作站件數</b>，旁邊的 ▲▼ 是跟<b>去年同期</b>比；點任一列會跳出那幾件。一件寫兩個工作站（用「、」隔開）會各算一件。</p>`)+
     gS(5,'📈 每月趨勢',`<span class="small"><b style="color:#16213a">── 新增</b>　<b style="color:#167a3e">- - 結案</b></span>`,
-      `<p>最下面三張折線圖看所選年份 1～12 月：<b>每月異常總數</b>（新增、結案）、<b>各工作站每月件數</b>、<b>各異常原因每月件數</b>（各取前 5 名）。還沒到的月份不畫；手機上可以左右滑動。</p>`)+
+      `<p>最下面的折線圖看所選年份 1～12 月：<b>每月異常總數</b>（新增、結案）、<b>各工作站每月件數</b>（前 5 名）。分類一、分類二的每月曲線在左邊排行下面。還沒到的月份不畫；手機上可以左右滑動。</p>`)+
     gS(6,'▲▼ 跟上期比幾 %',`${k(12,'新增 <b style="color:#b42318">▲ +20%</b>')}${k(5,'已結案 <b style="color:#167a3e">▲ +8%</b>','ok')}`,
       `<p><b style="color:#b42318">紅色＝變差</b>（異常、逾期變多，或結案變少）；<b style="color:#167a3e">綠色＝變好</b>。本期還沒過完時，上期只算到<b>同一天</b>（例：11/1～11/19 比 10/1～10/19）。</p>`)+
     gS(7,'下載 Word 報表、列印',`<span class="gx-b">下載 Word 報表</span><span class="gx-b">列印／存成 PDF</span>`,
@@ -802,7 +806,7 @@ function stData(){ stInit(); const rg=pRange(stV,stY,stA()), pr=prevRange(stV,st
     return {m:i+1,fut,nw:fut?null:live().filter(c=>(c.date||'').startsWith(pre)).length,cl:fut?null:live().filter(c=>(c.closeDate||'').startsWith(pre)).length}; });
   const topSeries=f=>{ const yr=live().filter(c=>(c.date||'').startsWith(stY+'-')); return countBy(yr,f).filter(([k])=>k).slice(0,5).map(([k],i)=>({name:k,color:LCOL[i],vals:months.map(m=>m.fut?null:yr.filter(c=>valsOf(c,f).includes(k)&&(c.date||'').slice(5,7)===p2(m.m)).length)})); };
   const overList=cur.over.slice().sort((a,b)=>dueOf(a).localeCompare(dueOf(b)));
-  return {rg,pr,cur,prv,tot,groups,status,months,yStatus,yTot:yC.cases.length,yCat2:ySide('cat2'),yVendor:ySide('vendor'),yStation:ySide('station'),YR,stSeries:topSeries('station'),c2Series:topSeries('cat2'),overList}; }
+  return {rg,pr,cur,prv,tot,groups,status,months,yStatus,yTot:yC.cases.length,yCat2:ySide('cat2'),yVendor:ySide('vendor'),yStation:ySide('station'),YR,stSeries:topSeries('station'),c1Series:topSeries('cat1'),c2Series:topSeries('cat2'),overList}; }
 function stName(){ return stV==='month'?'月報':stV==='quarter'?'季報':'年報'; }
 /* 上方四格：跟衛生追蹤一樣看「現在」 */
 function statKpis(){ const a=live(), t=today(), thisM=t.slice(0,7), [yy,mm]=thisM.split('-').map(Number), lm=mm===1?`${yy-1}-12`:`${yy}-${p2(mm-1)}`;
@@ -827,7 +831,14 @@ function renderStats(){ page='stats'; nav(); stInit(); const D=stData(), {rg,pr,
   const bars=g=>{ const top=g.rows.slice(0,10), rest=g.rows.slice(10), mx=Math.max(1,...g.rows.map(r=>r.v));
     return `<div class="st-sec">${g.n}</div>${top.length?top.map(r=>{ const i=STB.push({t:`${g.n.replace(/（.*$|排行$|哪個|異常最多/g,'')||g.f}：${r.k||'（未填）'}`,scope:rg.label,list:cur.cases.filter(c=>valsOf(c,g.f).includes(r.k))})-1, can=true;
       return `<div class="st-bar ${can?'click':''}" ${can?`onclick="stShow(${i})" title="點開看是哪些案件"`:''}><span>${r.k?esc(r.k):'<span class="muted">（未填）</span>'}</span><span class="b"><i style="width:${Math.max(2,Math.round(r.v/mx*100))}%"></i></span><span class="v">${r.v}</span><span class="c">${chg(r.v,r.pv)}</span></div>`; }).join('')
-      +(rest.length?`<div class="st-note">其他 ${rest.length} 項，共 ${rest.reduce((s,r)=>s+r.v,0)} 件</div>`:''):'<div class="st-note">尚無資料</div>'}${g.f==='vendor'?`<div class="st-note">廠商空白＝公司內部，不列入廠商排行（本期 ${g.skip} 件）。</div>`:''}`; };
+      +(rest.length?`<div class="st-note">其他 ${rest.length} 項，共 ${rest.reduce((s,r)=>s+r.v,0)} 件</div>`:''):'<div class="st-note">尚無資料</div>'}${g.f==='vendor'?`<div class="st-note">廠商空白＝公司內部，不列入廠商排行（本期 ${g.skip} 件）。</div>`:''}${(g.f==='cat1'||g.f==='cat2')&&g.rows.length?catCharts(g):''}`; };
+  const catCharts=g=>{ const ser=g.f==='cat1'?D.c1Series:D.c2Series, top=g.rows.slice(0,5), rest=g.rows.slice(5), restV=rest.reduce((a,r)=>a+r.v,0);
+    const cm=colorMap([...top.map(r=>r.k||'（未填）'),...ser.map(x=>x.name)]), nm=g.f==='cat1'?'分類一':'分類二';
+    const items=top.map(r=>{ const n=r.k||'（未填）'; return {n,v:r.v,c:cm.get(n),i:STB.push({t:`${nm}：${n}`,scope:rg.label,list:cur.cases.filter(c=>valsOf(c,g.f).includes(r.k))})-1}; });
+    if(restV) items.push({n:'其它',v:restV,c:'#9aa3b2',i:STB.push({t:`${nm}：其它`,scope:rg.label,list:cur.cases.filter(c=>valsOf(c,g.f).some(v=>rest.some(r=>r.k===v)))})-1});
+    const tot=items.reduce((a,x)=>a+x.v,0), lser=ser.map(x=>({...x,color:cm.get(x.name)}));
+    return `<div class="st-charts"><div><div class="st-sub">${nm}分布（${esc(rg.label)}）</div><div class="pie"><figure data-title="${nm}分布（${esc(rg.label)}）" data-legend='${esc(JSON.stringify(items.map(x=>[x.n+' '+x.v,x.c])))}'>${pieGen(items)}</figure><ul class="leg">${items.map(x=>`<li class="click" onclick="stShow(${x.i})" title="點開看是哪些案件"><i style="background:${x.c}"></i>${esc(x.n)}<b>${x.v}</b><span class="muted small">${tot?Math.round(x.v/tot*100):0}%</span></li>`).join('')}</ul></div></div>
+      <div><div class="st-sub">${nm}每月件數（${stY} 年，前 5 名）</div>${lser.length?`<figure class="trend" data-title="${nm}每月件數（${stY} 年）" data-legend='${esc(JSON.stringify(lser.map(x=>[x.name,x.color])))}'>${multiSVG(lser,D.months)}</figure><div class="leg3">${lser.map(x=>`<span><i style="background:${x.color}"></i>${esc(x.name)}</span>`).join('')}</div>`:'<div class="st-note">這一年還沒有資料。</div>'}</div></div>${tot<g.rows.reduce((a,r)=>a+r.v,0)||g.f==='cat2'?`<div class="st-note">${g.f==='cat2'?'一件選了兩個以上原因，會各算一件，所以圓餅圖加起來可能比件數多。':''}</div>`:''}`; };
   const yCases=stCompute(D.YR.cur).cases;
   const side=(title,sub,rows,note)=>{ const mx=Math.max(1,...rows.map(r=>r.v)); return `<div class="card"><div class="phd"><b>${title}</b><span class="small muted">${sub}</span></div>${rows.length?rows.map(r=>{ const i=STB.push({t:`${title.replace(/（.*）/,'')}：${r.k||'（未填）'}`,scope:`${stY} 年`,list:yCases.filter(c=>valsOf(c,r.f).includes(r.k))})-1;
       return `<div class="hb hc click" role="button" tabindex="0" title="點開看是哪些案件" onclick="stShow(${i})" onkeydown="if(event.key==='Enter')this.click()"><span>${r.k?esc(r.k):'（未填）'}</span><span class="b"><i style="width:${Math.max(2,Math.round(r.v/mx*100))}%"></i></span><span class="v">${r.v}</span><span class="c">${chg(r.v,r.pv)}</span></div>`; }).join(''):`<div class="small muted">${stY} 年還沒有案件。</div>`}${note?`<div class="muted small" style="margin-top:6px">${note}</div>`:''}</div>`; };
@@ -871,7 +882,6 @@ function renderStats(){ page='stats'; nav(); stInit(); const D=stData(), {rg,pr,
     <div class="lcgrid">
      <div><div class="st-sec">每月異常總數</div><figure class="trend" id="trendMain" data-title="${stY} 年每月新增與結案件數">${lineSVG(D.months)}</figure><div class="leg2"><span><i style="background:#16213a"></i>新增件數</span><span><i class="dash"></i>結案件數</span></div></div>
      <div><div class="st-sec">各工作站每月件數（前 5 名）</div>${multiHTML(D.stSeries,D.months)}</div>
-     <div><div class="st-sec">各異常原因每月件數（前 5 名）</div>${multiHTML(D.c2Series,D.months)}</div>
     </div></div>
    ${statsGuide()}`;
 }
@@ -884,6 +894,13 @@ function multiSVG(series,ms){ const W=640, H=220, L=36, R=12, T=14, B=28, vals=s
   series.forEach(s=>{ const pts=s.vals.map((v,i)=>v==null?null:[x(i),y(v)]).filter(Boolean); if(!pts.length) return;
     g+=`<polyline points="${pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ')}" fill="none" stroke="${s.color}" stroke-width="2.2"/>`+pts.map(p=>`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3" fill="${s.color}"/>`).join(''); });
   return `<svg role="img" aria-label="每月件數折線圖" viewBox="0 0 ${W} ${H}" width="100%" font-family="Microsoft JhengHei,PingFang TC,Noto Sans TC,sans-serif">${g}</svg>`; }
+const PAL=['#2a78d6','#eb6834','#1baf7a','#eda100','#e87ba4','#6250d6'];
+function colorMap(names){ const m=new Map(); names.forEach(n=>{ if(n==='其它') return; if(!m.has(n)) m.set(n,PAL[m.size%PAL.length]); }); return m; }
+function pieGen(items){ const tot=items.reduce((s,x)=>s+x.v,0), cx=100, cy=100, r=88, ri=52; let a0=-Math.PI/2, out=''; const pt=(a,rr)=>`${(cx+rr*Math.cos(a)).toFixed(2)},${(cy+rr*Math.sin(a)).toFixed(2)}`;
+  items.filter(x=>x.v).forEach(x=>{ const f=x.v/tot; const on=x.i!=null?` onclick="stShow(${x.i})" style="cursor:pointer"`:'';
+    if(f>=0.9999){ out+=`<circle cx="${cx}" cy="${cy}" r="${(r+ri)/2}" fill="none" stroke="${x.c}" stroke-width="${r-ri}"${on}><title>${esc(x.n)} ${x.v}</title></circle>`; return; }
+    const a1=a0+f*2*Math.PI, lg=f>0.5?1:0; out+=`<path d="M${pt(a0,r)} A${r},${r} 0 ${lg} 1 ${pt(a1,r)} L${pt(a1,ri)} A${ri},${ri} 0 ${lg} 0 ${pt(a0,ri)} Z" fill="${x.c}" stroke="#fff" stroke-width="1.5"${on}><title>${esc(x.n)} ${x.v}</title></path>`; a0=a1; });
+  return `<svg role="img" aria-label="圓餅圖" viewBox="0 0 200 200" width="180" height="180" font-family="Microsoft JhengHei,PingFang TC,Noto Sans TC,sans-serif">${out}<text x="100" y="98" text-anchor="middle" font-size="26" font-weight="700" fill="#16213a">${tot}</text><text x="100" y="120" text-anchor="middle" font-size="13" fill="#5d6779">件</text></svg>`; }
 function pieSVG(st){ const tot=st.reduce((s,x)=>s+x.v,0), cx=100, cy=100, r=88, ri=52; let a0=-Math.PI/2, out='';
   const pt=(a,rr)=>`${(cx+rr*Math.cos(a)).toFixed(2)},${(cy+rr*Math.sin(a)).toFixed(2)}`;
   st.filter(s=>s.v).forEach(s=>{ const f=s.v/tot;
@@ -932,12 +949,16 @@ async function svgPng(svgEl){ const vb=svgEl.viewBox.baseVal, W=vb.width, H=vb.h
   const b=await new Promise((ok,no)=>c.toBlob(x=>x?ok(x):no(new Error('png')),'image/png')); return {png:new Uint8Array(await b.arrayBuffer()),w:W,h:H}; }
 const ctxt=s=>s.replace(/<[^>]+>/g,'');
 /* 圖表轉成圖片：上面標題、下面圖例（跟衛生追蹤的 Word 報表一樣） */
-async function chartPng(svgEl,title,legend){ const vb=svgEl.viewBox.baseVal, W=vb.width, H=vb.height, tH=36, lH=legend&&legend.length?30:8, k=2, F='Microsoft JhengHei,PingFang TC,Noto Sans TC,sans-serif';
-  let lg='', x=20; (legend||[]).forEach(([n,c,dash])=>{ lg+=`<line x1="${x}" y1="${H+tH+16}" x2="${x+26}" y2="${H+tH+16}" stroke="${c}" stroke-width="3" ${dash?'stroke-dasharray="7 4"':''}/><text x="${x+32}" y="${H+tH+20}" font-size="13" fill="#16213a">${esc(n)}</text>`; x+=46+String(n).length*14; });
-  const src=`<svg xmlns="http://www.w3.org/2000/svg" width="${W+24}" height="${H+tH+lH}" viewBox="0 0 ${W+24} ${H+tH+lH}" font-family="${F}"><rect width="100%" height="100%" fill="#fff"/><text x="14" y="25" font-size="15" font-weight="700" fill="#16213a">${esc(title||'')}</text><g transform="translate(12,${tH})">${svgEl.innerHTML}</g>${lg}</svg>`;
+async function chartPng(svgEl,title,legend){ const vb=svgEl.viewBox.baseVal, W=Math.max(vb.width,300), H=vb.height, tH=36, k=2, F='Microsoft JhengHei,PingFang TC,Noto Sans TC,sans-serif', TW=W+24;
+  /* 圖例：放不下就換行 */
+  const rows=[[]]; let x=20; (legend||[]).forEach(it=>{ const w=46+String(it[0]).length*14; if(x+w>TW-10&&rows[rows.length-1].length){ rows.push([]); x=20; } rows[rows.length-1].push({n:it[0],c:it[1],dash:!!it[2],x}); x+=w; });
+  const lH=legend&&legend.length?rows.length*22+10:8; let lg='';
+  rows.forEach((r,ri)=>r.forEach(({n,c,dash,x:xx})=>{ const y=H+tH+16+ri*22; lg+=`<line x1="${xx}" y1="${y}" x2="${xx+26}" y2="${y}" stroke="${c}" stroke-width="${dash?3:6}" ${dash?'stroke-dasharray="7 4"':''}/><text x="${xx+32}" y="${y+4}" font-size="13" fill="#16213a">${esc(n)}</text>`; }));
+  const off=(TW-vb.width)/2;
+  const src=`<svg xmlns="http://www.w3.org/2000/svg" width="${TW}" height="${H+tH+lH}" viewBox="0 0 ${TW} ${H+tH+lH}" font-family="${F}"><rect width="100%" height="100%" fill="#fff"/><text x="14" y="25" font-size="15" font-weight="700" fill="#16213a">${esc(title||'')}</text><g transform="translate(${off},${tH})">${svgEl.innerHTML}</g>${lg}</svg>`;
   const img=new Image(); img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(src); await img.decode();
-  const c=document.createElement('canvas'); c.width=(W+24)*k; c.height=(H+tH+lH)*k; const g=c.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,c.width,c.height); g.drawImage(img,0,0,c.width,c.height);
-  const b=await new Promise((ok,no)=>c.toBlob(x=>x?ok(x):no(new Error('png')),'image/png')); return {png:new Uint8Array(await b.arrayBuffer()),w:W+24,h:H+tH+lH}; }
+  const c=document.createElement('canvas'); c.width=TW*k; c.height=(H+tH+lH)*k; const g=c.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,c.width,c.height); g.drawImage(img,0,0,c.width,c.height);
+  const b=await new Promise((ok,no)=>c.toBlob(x=>x?ok(x):no(new Error('png')),'image/png')); return {png:new Uint8Array(await b.arrayBuffer()),w:TW,h:H+tH+lH}; }
 /* Word 報表：照畫面左邊「統計報表」一段一段轉成 Word（跟衛生追蹤一樣），最後加上每月趨勢圖 */
 async function dlStatsWord(){ const box=$('#statBody'), btn=$('#wordBtn'); if(!box||!btn) return; btn.disabled=true; const old=btn.textContent; btn.textContent='產生中…';
   try{ const rg=pRange(stV,stY,stA()), name=stName(), txt=el=>el?el.textContent.replace(/\s+/g,' ').trim():'', media=[];
@@ -953,6 +974,8 @@ async function dlStatsWord(){ const box=$('#statBody'), btn=$('#wordBtn'); if(!b
       else if(el.classList.contains('st-note')) body+=wPara(txt(el),{sz:17,color:'5D6779'});
       else if(el.classList.contains('st-sec')) body+=H2(txt(el));
       else if(el.classList.contains('st-bar')){ if(!(el.previousElementSibling&&el.previousElementSibling.classList.contains('st-bar'))){ const rows=[['項目','件數','比上期']]; let n=el; while(n&&n.classList.contains('st-bar')){ rows.push([txt(n.children[0]),txt(n.querySelector('.v')),txt(n.querySelector('.c'))]); n=n.nextElementSibling; } body+=wTable(rows); } }
+      else if(el.classList.contains('st-charts')){ for(const fig of el.querySelectorAll('figure')){ const sv=fig.querySelector('svg'); let lg=[]; try{ lg=JSON.parse(fig.dataset.legend||'[]'); }catch(e){}
+          try{ const r=await chartPng(sv,fig.dataset.title,lg); body+=pic(r,sv.viewBox.baseVal.width<=200?3000000:5040000); }catch(e){} } }
       else if(el.querySelector&&el.querySelector('table')){ const tb=el.querySelector('table'); body+=wTable([...tb.rows].map(r=>[...r.cells].map(txt))); }
       else if(txt(el)) body+=wPara(txt(el),{sz:19,color:'5D6779'});
     }
