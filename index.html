@@ -263,6 +263,7 @@ dl.kv dd{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
   <div class="appg"><nav class="snav" id="nav" aria-label="功能選單"></nav><section id="app"></section></div>
 </main>
 <input type="file" id="rsGlobal" accept=".json" hidden onchange="restore(this)">
+<input type="file" id="xlsxIn" accept=".xlsx" hidden onchange="importXlsx(this)">
 <script>
 /* ============ 基本工具 ============ */
 const KEY_C='casevoraCAPA_v1', KEY_S='casevoraCAPA_v1_settings', PDB_NAME='casevoraCAPAPhotos';
@@ -369,7 +370,7 @@ function renderList(){
   const sel=(id,v,opts,ph)=>`<select onchange="F.${id}=this.value;drawList()" aria-label="${ph}"><option value="">${ph}</option>${opts.map(o=>`<option value="${esc(o[0])}" ${String(v)===String(o[0])?'selected':''}>${esc(o[1])}</option>`).join('')}</select>`;
   const chip=(k,n)=>`<button class="${F.status===k?'on':''}" onclick="F.status='${k}';renderList()">${n}</button>`;
   $('#app').innerHTML=`${headHTML('異常矯正工作台','CORRECTIVE &amp; PREVENTIVE ACTION','從發現異常、原因分析、矯正預防到成效確認，讓每一件異常都有紀錄、有對策、有結案。','異常案件清單',
-     `<button class="pri pnew" onclick="go('new')">＋ 新增異常案件</button><button class="lite" onclick="go('trash')">最近刪除（${C.filter(c=>c.deleted).length}）</button>${backupTools()}`)}
+     `<button class="pri pnew" onclick="go('new')">＋ 新增異常案件</button><button class="lite" onclick="$('#xlsxIn').click()">從 Excel 匯入</button><button class="lite" onclick="go('trash')">最近刪除（${C.filter(c=>c.deleted).length}）</button>${backupTools()}`)}
    ${listKpis()}
    ${listGuide()}
    <div class="card"><div class="phd"><b>異常案件清單</b><span class="small muted">共 ${all.length} 件・未結 ${all.length-cnt('done')} 件</span></div>
@@ -578,7 +579,9 @@ function settingsGuide(){ return guideBox('settings','設定與資料使用說�
     `<p>新增案件時打過的工作站、廠商、負責單位會自動加進來，下次可以直接選。打錯的可以按「移除」，不會影響已經填好的案件。</p>`)+
   gS(3,'備份（每兩週到一個月一次）',`${gBtn('下載備份（含照片）')}${gN(1)}${gIn('從備份還原')}${gN(2)}`,
     `<p>「下載備份」${gN(1)}會存成一個檔案（CAPA_backup_日期.json），裡面有全部案件、照片、分類和常用選項，包含「最近刪除」裡的。請存到<b>這台電腦以外的地方</b>，例如公司雲端硬碟或隨身碟。</p><p>「從備份還原」${gN(2)}會<b>取代</b>這台電腦目前所有資料，按之前會再問一次。換電腦時也是用這個方法搬資料。</p>`)+
-  gS(4,'資料存在哪裡',`<span class="small" style="color:#8a1c12;font-weight:700">本機儲存 · 僅在此裝置此瀏覽器有效</span>`,
+  gS(4,'從 Excel 匯入舊資料',`${gBtn('從 Excel 匯入（.xlsx）')}${gN(1)}${gIn('下載匯入範本')}${gN(2)}`,
+    `<p>按「從 Excel 匯入」${gN(1)}選 .xlsx 檔，系統會先列出「Excel 欄名 → 系統欄位」和可以匯入幾件，確認後才存。清單頁上方也有同一個按鈕。</p><p>欄名只看<b>括號、冒號外面的字</b>，例如「品項」→品項名稱、「效期」→有效日期、「異常」→異常描述、「圖片(1)」「圖片(2)」→照片 2 格。案件編號照 Excel，重複的會略過；沒填發現日期就用當天。不確定格式就按「下載匯入範本」${gN(2)}。</p>`)+
+  gS(5,'資料存在哪裡',`<span class="small" style="color:#8a1c12;font-weight:700">本機儲存 · 僅在此裝置此瀏覽器有效</span>`,
     `<p>所有資料只存在<b>這台電腦、這個瀏覽器</b>：換電腦、換瀏覽器、用無痕視窗都看不到；清除瀏覽資料會全部消失。</p><p>沒有登入和權限控管，請用電腦的開機密碼保護。下面會顯示目前用了多少空間。</p>`)); }
 /* ============ 統計分析（月／季／年），版面比照衛生追蹤 ============ */
 let stV='month', stY=null, stM=null, stQ=null, STB=[];
@@ -711,6 +714,154 @@ async function dlStatsWord(){ const btn=$('#wordBtn'); if(!btn) return; btn.disa
   }catch(e){ say('Word 報表產生失敗，請再試一次。'); }
   btn.disabled=false; btn.textContent=old; }
 
+/* ============ 從 Excel 匯入（.xlsx） ============ */
+/* 欄位名稱只看括號、冒號「外面」的字：例如「圖片(1)」＝圖片、「分類一：供應商、廠內異常」＝分類一 */
+const IMP_MAP=[
+  ['no','案件編號',['案件編號','編號']],
+  ['date','發現日期',['發現日期','日期']],
+  ['station','工作站／發生部門',['工作站','發生部門','工作站／發生部門','工作站/發生部門']],
+  ['item','品項名稱',['品項','產品品項','品項名稱','產品']],
+  ['vendor','廠商名稱',['廠商','廠商名稱','供應商名稱']],
+  ['lot','批號',['批號']],
+  ['expiry','有效日期',['效期','校期','有效日期','有效期限']],
+  ['finder','異常發現人員',['發現人員','異常發現人員']],
+  ['desc','異常描述',['異常','異常描述','異常內容']],
+  ['ph','異常照片',['圖片','照片','異常照片']],
+  ['note','備註',['備註']],
+  ['cause','異常原因分析',['異常原因分析','原因分析']],
+  ['immediate','立即處置方式',['立即處置方式','立即處置']],
+  ['corrective','矯正措施',['矯正措施']],
+  ['preventive','預防再發措施',['預防再發措施','預防措施']],
+  ['method','處理辦法',['處理辦法','處理方式']],
+  ['unit','改善負責單位',['改善負責單位','負責單位']],
+  ['owner','改善負責人',['改善負責人','負責人']],
+  ['due','預計完成日期',['預計完成日期','預計完成']],
+  ['progress','改善進度',['改善進度']],
+  ['result','改善結果',['改善結果']],
+  ['verify','成效確認',['成效確認']],
+  ['verifier','確認人員',['確認人員']],
+  ['closeDate','結案日期',['結案日期']],
+  ['note2','追蹤備註',['追蹤備註']],
+  ['cat1','分類一：異常來源',['分類一']],
+  ['cat2','分類二：異常原因',['分類二']]];
+const IMP_DATE=['date','expiry','due','closeDate'];
+const hdrKey=h=>String(h??'').replace(/[（(\[［【].*$/,'').replace(/[：:].*$/,'').replace(/\s+/g,'').trim();
+function impField(h){ const k=hdrKey(h); if(!k) return null; const m=IMP_MAP.find(x=>x[2].includes(k)); return m?m[0]:null; }
+const serialDate=n=>new Date(Date.UTC(1899,11,30)+Math.round(n)*86400000).toISOString().slice(0,10);
+function impDate(v){ if(v==null||v==='') return ''; if(typeof v==='number') return v>20000&&v<80000?serialDate(v):'';
+  const m=String(v).trim().match(/^(\d{4})\s*[.\/\-年]\s*(\d{1,2})\s*[.\/\-月]\s*(\d{1,2})/); if(!m) return null;
+  const y=+m[1], mo=+m[2], d=+m[3]; if(mo<1||mo>12||d<1||d>lastDay(y,mo)) return null; return `${y}-${p2(mo)}-${p2(d)}`; }
+/* 讀 .xlsx：儲存格文字＋插在儲存格上的圖片（一般「插入圖片」和新版「放在儲存格內」兩種都讀） */
+async function readXlsxCAPA(file){
+  const buf=new Uint8Array(await file.arrayBuffer()), dv=new DataView(buf.buffer), td=new TextDecoder();
+  let e=buf.length-22; while(e>=0&&dv.getUint32(e,true)!==0x06054b50) e--; if(e<0) throw new Error('not zip');
+  const n=dv.getUint16(e+10,true), files={}; let p=dv.getUint32(e+16,true);
+  for(let i=0;i<n;i++){ const nl=dv.getUint16(p+28,true), xl=dv.getUint16(p+30,true), cl=dv.getUint16(p+32,true);
+    files[td.decode(buf.subarray(p+46,p+46+nl))]={method:dv.getUint16(p+10,true),size:dv.getUint32(p+20,true),lo:dv.getUint32(p+42,true)}; p+=46+nl+xl+cl; }
+  const bin=async name=>{ const f=files[name]; if(!f) return null; const st=f.lo+30+dv.getUint16(f.lo+26,true)+dv.getUint16(f.lo+28,true), data=buf.subarray(st,st+f.size);
+    if(f.method===0) return data; return new Uint8Array(await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer()); };
+  const read=async name=>{ const b=await bin(name); return b?td.decode(b):null; };
+  const xml=t=>new DOMParser().parseFromString(t,'application/xml'), tags=(d,nm)=>[...d.getElementsByTagName(nm)];
+  const lname=(d,nm)=>[...d.getElementsByTagName('*')].filter(x=>x.localName===nm);
+  const resolve=(base,t)=>{ if(t.startsWith('/')) return t.slice(1); const a=base.split('/'); a.pop(); for(const s of t.split('/')){ if(s==='..') a.pop(); else if(s!=='.') a.push(s); } return a.join('/'); };
+  const relsOf=async path=>{ const i=path.lastIndexOf('/'), t=await read(path.slice(0,i)+'/_rels/'+path.slice(i+1)+'.rels'), o={}; if(t) tags(xml(t),'Relationship').forEach(r=>o[r.getAttribute('Id')]=resolve(path,r.getAttribute('Target'))); return o; };
+  const ss=[]; const sst=await read('xl/sharedStrings.xml'); if(sst) tags(xml(sst),'si').forEach(si=>ss.push(tags(si,'t').map(t=>t.textContent).join('')));
+  const colIdx=ref=>{ let k=0; for(const ch of ref.replace(/\d+/g,'')) k=k*26+ch.charCodeAt(0)-64; return k-1; };
+  const mime=nm=>/\.png$/i.test(nm)?'image/png':/\.gif$/i.test(nm)?'image/gif':/\.bmp$/i.test(nm)?'image/bmp':/\.webp$/i.test(nm)?'image/webp':'image/jpeg';
+  const blobOf=async path=>{ const b=await bin(path); return b?new Blob([b],{type:mime(path)}):null; };
+  /* 新版「放在儲存格內」的圖片：vm 編號 → richData → 圖片檔 */
+  let rich=[]; try{ const rv=await read('xl/richData/rdrichvalue.xml'), rr=await read('xl/richData/richValueRel.xml');
+    if(rv&&rr){ const rrel=await relsOf('xl/richData/richValueRel.xml'), list=lname(xml(rr),'rel').map(r=>rrel[r.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships','id')||r.getAttribute('r:id')]);
+      rich=lname(xml(rv),'rv').map(r=>{ const v=lname(r,'v')[0]; return v?list[+v.textContent]:null; }); } }catch(err){ rich=[]; }
+  const wrels=await relsOf('xl/workbook.xml'), out=[];
+  for(const sh of tags(xml(await read('xl/workbook.xml')),'sheet')){
+    const rid=sh.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships','id')||sh.getAttribute('r:id'), path=wrels[rid]; if(!path) continue;
+    const t=await read(path); if(!t) continue; const d=xml(t), rows=[], pics=[];
+    tags(d,'row').forEach(rw=>{ const ri=+rw.getAttribute('r')-1, row=[];
+      tags(rw,'c').forEach(c=>{ const ty=c.getAttribute('t'), v=c.getElementsByTagName('v')[0], ci=colIdx(c.getAttribute('r')); let val=null;
+        if(ty==='s') val=v?ss[+v.textContent]:null; else if(ty==='inlineStr') val=tags(c,'t').map(x=>x.textContent).join('');
+        else if(v&&ty!=='e') val=(ty==='str')?v.textContent:(ty==='b'?v.textContent==='1':+v.textContent);
+        const vm=c.getAttribute('vm'); if(vm&&rich[+vm-1]) pics.push({r:ri,c:ci,path:rich[+vm-1]}), val=null;
+        if(val!=null&&val!=='') row[ci]=val; });
+      rows[ri]=row; });
+    /* 一般插入的圖片：看圖片左上角落在哪一格 */
+    const srels=await relsOf(path);
+    for(const dr of tags(d,'drawing')){ const dp=srels[dr.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships','id')||dr.getAttribute('r:id')]; if(!dp) continue;
+      const dt=await read(dp); if(!dt) continue; const drels=await relsOf(dp), dd=xml(dt);
+      for(const an of [...lname(dd,'twoCellAnchor'),...lname(dd,'oneCellAnchor')]){ const fr=lname(an,'from')[0], bl=lname(an,'blip')[0]; if(!fr||!bl) continue;
+        const emb=bl.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships','embed')||bl.getAttribute('r:embed');
+        const cc=+lname(fr,'col')[0].textContent, rr=+lname(fr,'row')[0].textContent; if(drels[emb]) pics.push({r:rr,c:cc,path:drels[emb]}); } }
+    out.push({name:sh.getAttribute('name'),rows,pics,blobOf}); }
+  return out; }
+/* 把 Excel 內容整理成案件（還不存），回傳要給使用者確認的摘要 */
+function impPlan(sheets){ const plan={add:[],dup:[],empty:0,badDate:[],cols:new Map(),skipCols:new Set(),pics:0};
+  const nos=new Set(C.map(c=>String(c.no))), t=today();
+  for(const sh of sheets){ let hr=-1;
+    for(let r=0;r<Math.min(sh.rows.length,15);r++){ const fs=(sh.rows[r]||[]).map(impField); if(fs.filter(Boolean).length>=3&&(fs.includes('item')||fs.includes('desc'))){ hr=r; break; } }
+    if(hr<0) continue; const hdr=sh.rows[hr]||[], fmap=[];
+    for(let c=0;c<hdr.length;c++){ if(hdr[c]==null||hdr[c]==='') continue; const f=impField(hdr[c]); if(f){ fmap[c]=f; { const h=String(hdr[c]).replace(/\s+/g,' ').trim(); plan.cols.set(h.length>24?h.slice(0,22)+'…':h,f); } } else plan.skipCols.add(String(hdr[c]).trim()); }
+    const phCols=fmap.map((f,c)=>f==='ph'?c:-1).filter(c=>c>=0);
+    for(let r=hr+1;r<sh.rows.length;r++){ const row=sh.rows[r]||[], o={id:newId(),photos:[],_pics:[]}; FIELDS.forEach(k=>o[k]='');
+      fmap.forEach((f,c)=>{ if(!f||f==='ph'||row[c]==null) return; let v=row[c];
+        if(IMP_DATE.includes(f)){ const d=impDate(v); if(d===null){ plan.badDate.push(`第 ${r+1} 列「${String(hdr[c]).trim()}」：${String(v).slice(0,20)}`); if(f==='expiry') o.note=(o.note?o.note+'\n':'')+'效期：'+String(v).trim(); return; } v=d; }
+        else if(f==='no'&&typeof v==='number') v=String(Math.round(v));
+        o[f]=String(v).trim().slice(0,f==='no'?30:5000); });
+      const pics=sh.pics.filter(pc=>pc.r===r&&(phCols.length?phCols.includes(pc.c):true)).sort((a,b)=>a.c-b.c).slice(0,2);
+      if(!FIELDS.some(k=>o[k])&&!o.no&&!pics.length){ continue; }
+      if(!o.item&&!o.desc){ plan.empty++; continue; }
+      if(!o.date) o.date=t;
+      if(o.no&&nos.has(o.no)){ plan.dup.push(o.no); continue; }
+      o._pics=pics.map(pc=>({path:pc.path,blobOf:sh.blobOf})); plan.pics+=o._pics.length;
+      if(o.no) nos.add(o.no); plan.add.push(o); } }
+  return plan; }
+/* 分類：完全一樣就用；是設定裡某個選項的開頭（例：「其它品質因素」→「其它品質因素（含包裝／標示不良）」）就用那個；都沒有就新增到設定 */
+function impCat(k,v){ if(!v) return ''; const a=S[k]; if(a.some(x=>x.n===v)) return v; const m=a.find(x=>x.n.startsWith(v)); if(m) return m.n; a.push({n:v.slice(0,40),on:true}); return v.slice(0,40); }
+async function importXlsx(inp){ const f=inp.files[0]; inp.value=''; if(!f) return;
+  if(typeof DecompressionStream==='undefined'){ await say('這個瀏覽器版本太舊，無法讀取 Excel。請更新 Chrome 或 Edge 後再試。'); return; }
+  if(!/\.xlsx$/i.test(f.name)){ await say('請選擇 .xlsx 格式的 Excel 檔。\n如果是舊的 .xls，請先用 Excel 打開，「另存新檔」成 .xlsx 再匯入。'); return; }
+  let sheets; try{ sheets=await readXlsxCAPA(f); }catch(e){ await say('無法讀取這個檔案，請確認是 Excel（.xlsx）檔。'); return; }
+  const P=impPlan(sheets);
+  if(!P.cols.size){ await say('找不到標題列。\n請確認 Excel 有一列標題，至少要有「品項」或「異常」欄，例如：案件編號、發現日期、品項、效期、異常、圖片(1)、圖片(2)。\n可以到「設定與資料」下載匯入範本。'); return; }
+  const lab=f=>IMP_MAP.find(x=>x[0]===f)[1];
+  const msg=`讀到的欄位（Excel 欄名 → 系統欄位）：\n${[...P.cols].map(([h,f])=>`・${h} → ${lab(f)}`).join('\n')}`+
+    (P.skipCols.size?`\n\n沒有對應、不會匯入的欄位：${[...P.skipCols].join('、')}`:'')+
+    `\n\n可以匯入：${P.add.length} 件（照片 ${P.pics} 張）`+
+    (P.dup.length?`\n略過 ${P.dup.length} 件：案件編號已經存在（${P.dup.slice(0,5).join('、')}${P.dup.length>5?'…':''}）`:'')+
+    (P.empty?`\n略過 ${P.empty} 列：沒有品項也沒有異常描述`:'')+
+    (P.badDate.length?`\n\n看不懂的日期（已留空${P.badDate.some(x=>x.includes('效期')||x.includes('校期'))?'，效期原文放進備註':''}）：\n${P.badDate.slice(0,6).map(x=>'・'+x).join('\n')}${P.badDate.length>6?'\n…':''}`:'')+
+    `\n\n沒填發現日期的，會用今天（${fmtD(today())}）；沒填案件編號的，會自動產生。`;
+  if(!P.add.length){ await say(msg+'\n\n沒有可以匯入的案件。'); return; }
+  if(!(await ask(msg,`匯入 ${P.add.length} 件`))) return;
+  toast('正在匯入…'); const oC=JSON.stringify(C), oS=JSON.stringify(S), newPh=[], now=new Date().toISOString(); let badPh=0;
+  for(const o of P.add){
+    for(const pc of o._pics){ try{ const b=await pc.blobOf(pc.path); if(!b) throw 0; const data=await compress(b), id='ph_'+newId(); await PDB.put(id,data); PHC[id]=data; newPh.push(id); o.photos.push(id); }catch(e){ badPh++; } }
+    o.cat1=impCat('cat1',o.cat1); o.cat2=impCat('cat2',o.cat2);
+    const rec={id:o.id,no:o.no||genNo(o.date),photos:o.photos,createdAt:now,updatedAt:now}; FIELDS.forEach(k=>rec[k]=o[k]||''); C.push(rec);
+    [['stations','station'],['vendors','vendor'],['units','unit']].forEach(([k,fl])=>{ if(rec[fl]&&!S[k].includes(rec[fl])) S[k].push(rec[fl].slice(0,40)); }); }
+  if(!persist()){ C=JSON.parse(oC); S=JSON.parse(oS); for(const id of newPh){ try{ await PDB.del(id); }catch(e){} delete PHC[id]; } return; }
+  Object.assign(F,{q:'',year:'',month:'',station:'',vendor:'',cat1:'',cat2:'',status:''}); page='list'; renderList();
+  await say(`已匯入 ${P.add.length} 件 ✦${badPh?`\n其中 ${badPh} 張圖片讀不出來，已略過。`:''}\n\n建議現在到「設定與資料」下載一份備份。`); }
+/* 匯入範本：只有標題列，欄名跟系統對得上 */
+function dlImpTemplate(){ const H=['案件編號','發現日期','工作站','品項','廠商','批號','效期','異常','圖片(1)','圖片(2)','備註','處理辦法','結案日期','分類一：供應商、廠內異常','分類二：天然異物、非天然異物'];
+  const col=i=>String.fromCharCode(65+i), cell=(v,i)=>`<c r="${col(i)}1" t="inlineStr" s="1"><is><t>${wx(v)}</t></is></c>`;
+  const sheet=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols><col min="1" max="15" width="16" customWidth="1"/></cols><sheetData><row r="1">${H.map(cell).join('')}</row></sheetData></worksheet>`;
+  const files=[['[Content_Types].xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>'],
+    ['_rels/.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'],
+    ['xl/workbook.xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="異常事件記錄表" sheetId="1" r:id="rId1"/></sheets></workbook>'],
+    ['xl/_rels/workbook.xml.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>'],
+    ['xl/styles.xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Microsoft JhengHei"/></font><font><b/><sz val="11"/><name val="Microsoft JhengHei"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFF3ECE0"/></patternFill></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf/></cellStyleXfs><cellXfs count="2"><xf/><xf fontId="1" fillId="2" applyFont="1" applyFill="1"/></cellXfs></styleSheet>'],
+    ['xl/worksheets/sheet1.xml',sheet]];
+  const b=zipStore(files); download(new Blob([b],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),'CAPA_匯入範本.xlsx'); }
+/* 設定頁：匯入說明卡（Excel 欄名 → 系統欄位對照） */
+function impCard(){ const show=['no','date','station','item','vendor','lot','expiry','desc','ph','note','method','closeDate','cat1','cat2'];
+  return `<div class="card" style="margin-top:14px"><h2>📥 從 Excel 匯入</h2>
+   <div class="row" style="margin-bottom:8px"><button class="pri" onclick="$('#xlsxIn').click()">從 Excel 匯入（.xlsx）</button><button onclick="dlImpTemplate()">下載匯入範本</button></div>
+   <div class="small muted" style="margin-bottom:6px">Excel 第一列（或標題在上面幾列內）放欄位名稱。系統只看<b>括號、冒號外面的字</b>：「圖片(1)」＝圖片、「分類一：供應商、廠內異常」＝分類一。按「匯入」前會先列出對應結果讓你確認。</div>
+   <div class="tw" style="display:block"><table><thead><tr><th class="ns">Excel 欄名（任一個都可以）</th><th class="ns">匯入到系統的哪一欄</th><th class="ns">說明</th></tr></thead><tbody>
+   ${show.map(k=>{ const m=IMP_MAP.find(x=>x[0]===k); const tip={no:'自訂編號照 Excel；空白就自動產生；跟現有案件重複的會略過',date:'空白就用匯入當天',expiry:'看得懂的日期才放進效期，看不懂的原文放進備註',ph:'圖片(1)、圖片(2) 兩格，插在格子上的圖片會一起匯入（最多 2 張）',closeDate:'有填就變成「已結案」',cat1:'跟設定裡的選項比對，沒有的會自動新增',cat2:'例：「其它品質因素」會對到「其它品質因素（含包裝／標示不良）」'}[k]||'';
+     return `<tr style="cursor:default"><td>${m[2].slice(0,3).map(esc).join('、')}${k==='ph'?'（圖片(1)、圖片(2)）':''}</td><td><b>${esc(m[1])}</b></td><td class="small muted">${tip}</td></tr>`; }).join('')}
+   </tbody></table></div>
+   <div class="small muted" style="margin-top:6px">其他欄位（原因分析、矯正措施、改善負責單位、預計完成日期…）用系統上的欄位名稱當 Excel 欄名，也會一起匯入。</div></div>`; }
 /* ============ 刪除與最近刪除（保留 30 天） ============ */
 async function delCase(id){ const c=C.find(x=>x.id===id); if(!c) return;
   if(!(await ask(`確定要刪除案件 ${c.no} 嗎？\n會先移到「最近刪除」，30 天內可以還原。`,'刪除',true))) return;
@@ -743,6 +894,7 @@ function renderSettings(){ page='settings'; nav();
    ${settingsGuide()}
    <div class="ogrid">${catBox('cat1','分類一：異常來源','停用後，新增案件時不會出現，但舊案件保留原本的分類。')}${catBox('cat2','分類二：異常原因','兩項以上原因時，以較多或較嚴重之問題歸類。')}</div>
    <div class="ogrid" style="margin-top:14px">${listBox('stations','常用工作站／發生部門')}${listBox('vendors','常用廠商')}${listBox('units','常用改善負責單位')}</div>
+   ${impCard()}
    <div class="card" style="margin-top:14px"><h2>📦 備份與還原</h2>
      <div class="row"><button class="pri" onclick="backup()">下載備份（含照片）</button><button onclick="$('#rsIn').click()">從備份還原</button><input type="file" id="rsIn" accept=".json" hidden onchange="restore(this)"></div>
      <div class="small muted" style="margin-top:8px" id="usage">正在計算使用空間…</div>
