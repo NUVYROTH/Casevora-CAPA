@@ -95,12 +95,25 @@ details.sec .body{padding:0 16px 16px}
 .savebar .in{max-width:1440px;margin:0 auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .dirty{color:var(--warn);font-weight:700;font-size:14px}
 /* 照片 */
-.phs{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px}
+.phs{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.ph .bar button{white-space:nowrap}
 .ph{position:relative;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
 .ph img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;cursor:zoom-in}
 .ph .bar{display:flex;gap:4px;padding:4px;justify-content:space-between;align-items:center;font-size:12px}
 .ph .bar span{color:var(--muted)}
 .drop{border:2px dashed var(--field);border-radius:10px;padding:14px;text-align:center;color:var(--muted);cursor:pointer;background:#fffaf0}
+.photos{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.photos .ph{position:relative;border:0;border-radius:0;overflow:visible;background:none;width:110px}
+.photos img{width:110px;height:110px;object-fit:cover;border-radius:6px;border:1px solid var(--line);display:block;cursor:zoom-in}
+.photos .x{position:absolute;top:3px;right:3px;padding:0 6px;font-size:12px;line-height:18px;background:rgba(255,255,255,.9);border-radius:6px}
+.photos .x:hover{background:var(--bad);color:#fff}
+.photos .cap{display:flex;align-items:center;justify-content:space-between;gap:4px;font-size:11.5px;color:var(--muted);margin-top:2px}
+.photos .cap button{padding:0 6px;font-size:11px;line-height:18px}
+.pzone{margin-top:8px;padding:10px 12px;border:2px dashed var(--field);border-radius:8px;color:var(--muted);font-size:13.5px;text-align:center;cursor:pointer;background:var(--card)}
+.pzone:hover{border-color:var(--gold)}
+.pzone:focus,.pzone.over{outline:none;border-color:var(--gold);background:#fff4e0;color:#7a3d06}
+.pzone:focus::after{content:'　✔ 已選取';font-weight:700}
+@media (hover:none){.pzone{display:none}}
 /* 清單 */
 .filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:8px}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
@@ -546,8 +559,9 @@ function drawForm(){
    <details class="sec" open><summary><span class="no">B</span>異常與圖片</summary><div class="body"><div class="grid">
      ${inp('desc','異常描述','ta',{wide:true,big:true,ph:'例：外箱破損，內袋可見黑色異物約 0.5cm'})}</div>
      <label class="f" style="margin-top:10px">圖片(1)、圖片(2)（原因分析、處理過程也可以拍照或截圖放這裡；超過 2 張的會列在「其他圖片」）</label>
-     <div class="phs" id="phbox"></div>
-     <div class="drop" style="margin-top:8px" onclick="$('#phIn').click()">📷 點這裡選擇圖片或拍照</div><input type="file" id="phIn" accept="image/*" multiple hidden onchange="addPhotos(this)">
+     <div class="photos" id="phbox"></div>
+     <div class="row" style="margin-top:6px"><button onclick="this.nextElementSibling.click()">＋ 加入照片</button><input type="file" id="phIn" accept="image/*" multiple hidden onchange="addPhotos(this)"><span class="muted small">照片會自動壓縮後保存；前 2 張就是 Excel 的圖片(1)、圖片(2)。</span></div>
+     <div class="pzone" tabindex="0" role="button" aria-label="貼上或拖曳照片">📋 點這裡，再按 <b>Ctrl+V</b> 貼上照片（也可以把照片拖進來）</div>
    </div></details>
    <details class="sec" open><summary><span class="no">C</span>處理與結案</summary><div class="body"><div class="grid">
      ${inp('note','備註','ta',{wide:true})}${inp('method','處理辦法','ta',{wide:true})}${inp('closeDate','結案日期','date')}
@@ -563,13 +577,26 @@ function setF(k,v){ cur[k]=v; if(k==='due') cur._autoDue=false;
   if(k==='date'&&cur._autoDue&&v){ cur.due=addDays(v,DUE_DAYS); const el=$('#f_due'); if(el) el.value=cur.due; } markDirty(true); }
 function markDirty(v){ if(v) dirty=true; const el=$('#dm'); if(el) el.innerHTML=dirty?'<span class="dirty">● 有尚未儲存的修改</span>':''; }
 function drawPhotos(){ const box=$('#phbox'); if(!box) return;
-  box.innerHTML=cur.photos.map((p,i)=>`<div class="ph"><img data-ph="${p}" alt="照片 ${i+1}" onclick="viewPhoto('${p}')"><div class="bar"><span>${i<2?`圖片(${i+1})`:`其他圖片 ${i+1}`}</span><span style="display:flex;gap:4px">
-    ${i>0?`<button class="sm" title="往前移" aria-label="往前移" onclick="movePh(${i})">◀</button>`:''}<button class="sm" onclick="savePhotoFile('${p}','照片${i+1}')">下載</button><button class="sm dng" onclick="rmPhoto(${i})">刪除</button></span></div></div>`).join('');
+  box.innerHTML=cur.photos.map((p,i)=>`<div class="ph"><img data-ph="${p}" alt="照片 ${i+1}" onclick="viewPhoto('${p}')" title="點一下看大圖"><button class="x" title="刪除這張" aria-label="刪除圖片 ${i+1}" onclick="rmPhoto(${i})">✕</button>
+    <div class="cap"><span>${i<2?`圖片(${i+1})`:`其他 ${i+1}`}</span>${i>0?`<button title="往前移" aria-label="往前移" onclick="movePh(${i})">◀</button>`:''}</div></div>`).join('');
   fillPhotos(box); }
-async function addPhotos(inpEl){ const files=[...inpEl.files]; inpEl.value=''; if(!files.length) return; let bad=0;
+async function addPhotos(inpEl){ const files=[...inpEl.files]; inpEl.value=''; await addPhotoFiles(files); }
+async function addPhotoFiles(files){ if(!files.length||!cur) return; let bad=0;
   for(const f of files){ if(!/^image\//.test(f.type)){bad++;continue;} try{ const data=await compress(f), id='ph_'+newId(); await PDB.put(id,data); PHC[id]=data; cur.photos.push(id); cur._added.push(id); }catch(e){ bad++; } }
   drawPhotos(); markDirty(true); if(bad) say(`有 ${bad} 個檔案不是圖片或讀不出來，已略過。`); }
-async function rmPhoto(i){ if(!(await ask('確定要刪除這張照片嗎？（按「儲存」後才會真的刪除）','刪除',true))) return; const id=cur.photos.splice(i,1)[0]; cur._removed.push(id); drawPhotos(); markDirty(true); }
+function rmPhoto(i){ const id=cur.photos.splice(i,1)[0]; cur._removed.push(id); drawPhotos(); markDirty(true); toast('已移除，按「儲存」才會生效；按「取消」可以復原'); }
+/* 貼上（Ctrl+V）與拖曳：跟衛生追蹤一樣，先點照片區下方的貼上框，再貼上 */
+document.addEventListener('paste',e=>{ if(page!=='edit'||!cur) return; const dt=e.clipboardData; if(!dt) return;
+  const imgs=[...dt.items].filter(it=>it.kind==='file'&&/^image\//.test(it.type)).map(it=>it.getAsFile()).filter(Boolean); if(!imgs.length) return;
+  const z=document.activeElement&&document.activeElement.closest&&document.activeElement.closest('.pzone');
+  const t=e.target, inText=t&&(t.tagName==='TEXTAREA'||(t.tagName==='INPUT'&&!/^(file|checkbox|radio|button)$/.test(t.type)));
+  if(!z&&inText&&dt.getData('text/plain')) return;   /* 文字欄位貼文字：照常貼 */
+  e.preventDefault();
+  if(!z){ say('請先點一下照片下方的「📋 點這裡，再按 Ctrl+V」貼上框，再按 Ctrl+V。'); return; }
+  addPhotoFiles(imgs).then(()=>toast(`已貼上 ${imgs.length} 張照片 ✦`)); });
+document.addEventListener('dragover',e=>{ const z=e.target.closest&&e.target.closest('.pzone'); if(z){ e.preventDefault(); z.classList.add('over'); } });
+document.addEventListener('dragleave',e=>{ const z=e.target.closest&&e.target.closest('.pzone'); if(z) z.classList.remove('over'); });
+document.addEventListener('drop',e=>{ const z=e.target.closest&&e.target.closest('.pzone'); if(!z||page!=='edit'||!cur) return; e.preventDefault(); z.classList.remove('over'); addPhotoFiles([...e.dataTransfer.files]); });
 function movePh(i){ const a=cur.photos; [a[i-1],a[i]]=[a[i],a[i-1]]; drawPhotos(); markDirty(true); }
 async function dropNewPhotos(){ if(cur&&cur._added&&cur._added.length){ for(const id of cur._added){ try{ await PDB.del(id); }catch(e){} delete PHC[id]; } cur._added=[]; } }
 /* 編輯中：看案件內容、刪除（有沒存的修改會先問） */
@@ -639,8 +666,8 @@ function formGuide(){ return guideBox('form','新增／編輯案件使用說明'
     `<p>只有<b>發現日期</b>必填，另外「產品品項」或「異常描述」至少填一個。其他欄位可以先空白，之後再回來補。</p><p><b>案件編號</b>可以自己填（例如照 Excel 的編號）；空白就在儲存時自動產生：發現日期＋當天流水號，例如 2026111901。編號不能跟別的案件重複。</p>`)+
   gS(2,'跟 Excel 一樣的格子',`${gBtn('A')}<span class="small">案件編號～效期</span>${gBtn('B')}<span class="small">異常、圖片(1)(2)</span>${gBtn('C')}<span class="small">備註～分類二＋預計完成日期</span>`,
     `<p>表單欄位的順序跟 Excel 一樣：案件編號、發現日期、工作站、<b>產品品項</b>、廠商、批號、<b>有效日期</b>、<b>異常描述</b>、圖片(1)、圖片(2)、備註、處理辦法、結案日期、分類一、分類二；只多一格<b>預計完成日期</b>（藍底）。其中產品品項＝Excel 的「品項」、有效日期＝「效期」、異常描述＝「異常」。</p><p>工作站、廠商可以從清單選，也可以直接打字，打過的會自動加進常用選項。分類二有兩項以上原因時，以<b>較多或較嚴重</b>的問題歸類。</p>`)+
-  gS(3,'照片',`<span class="gin">📷 點這裡選擇照片或拍照</span>${gN(1)}${gIn('◀')}${gIn('下載')}${gIn('刪除')}`,
-    `<p>可以一次選多張${gN(1)}，手機可以直接拍照；照片會自動壓縮。</p><p>第 1、2 張就是 Excel 的<b>圖片(1)、圖片(2)</b>，超過的列在「其他圖片」。<b>原因分析、處理過程</b>請拍照或截圖放在照片裡。按 ◀ 可以調整順序。照片只存在這台電腦的瀏覽器裡，不會上傳到網路。</p>`)+
+  gS(3,'加照片、貼上、刪除',`<span class="gdonut" style="border-radius:6px;-webkit-mask:none;mask:none;background:#cfe3d6;width:40px;height:30px"></span><span class="gin">＋ 加入照片</span>${gN(1)}</div><div class="gx-row"><span class="gin" style="border:2px dashed #b8955a;background:#fff4e0;color:#7a3d06">📋 點這裡，再按 Ctrl+V 貼上</span>${gN(2)}`,
+    `<p>「＋ 加入照片」${gN(1)}選照片；電腦上也可以先點虛線框${gN(2)}（會出現「✔ 已選取」），再按 <b>Ctrl+V</b> 貼上截圖，或把照片直接拖進框裡。</p><p><b>點照片看大圖</b>；要刪掉就點照片右上角的 <b>✕</b>（按「儲存」才會真的刪除，按「取消」可以復原）。前 2 張就是 Excel 的<b>圖片(1)、圖片(2)</b>，按 ◀ 調整順序。照片只存在這台電腦的瀏覽器裡。</p>`)+
   gS(4,'日期決定狀態',`${gIn('預計完成日期')}<span class="small">→</span>${gBadge('即將到期','soon')}${gBadge('逾期未結','over')}<br>${gIn('結案日期')}<span class="small">→</span>${gBadge('已結案','done')}`,
     `<p><b>預計完成日期</b>預設是發現日期＋15 天（改發現日期會跟著變，也可以自己改）。到期前 3 天會變「即將到期」，過了還沒結案會變「逾期未結」。</p><p>填了<b>結案日期</b>，狀態就會變成「已結案」。結案日期、預計完成日期都不能早於發現日期。</p>`)+
   gS(5,'看案件內容、刪除',`${gIn('看案件內容')}<span class="gin" style="color:#b42318">刪除</span>`,
