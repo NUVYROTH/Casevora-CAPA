@@ -413,8 +413,8 @@ let C=loadC(), S=loadS();
 function persist(){ try{ localStorage.setItem(KEY_C,JSON.stringify(C)); localStorage.setItem(KEY_S,JSON.stringify(S)); return true; }
   catch(e){ say('儲存失敗！瀏覽器的儲存空間可能已滿。請先「下載備份」，再刪除部分案件。'); return false; } }
 const live=()=>C.filter(c=>!c.deleted);
-/* 案件編號：發現日期 YYYYMMDD ＋ 當天流水號兩碼，例如 2026110601 */
-function genNo(date){ const pre=(date||today()).replace(/-/g,''); let mx=0; C.forEach(c=>{ if(String(c.no||'').startsWith(pre)){ const n=+String(c.no).slice(pre.length)||0; if(n>mx) mx=n; } }); return pre+p2(mx+1); }
+/* 案件編號：發現日期 YYYYMMDD ＋ 當天三碼流水號，例如 20261120001、20261120002（依發現日期編碼；以前匯入的編號不改） */
+function genNo(date){ const pre=(date||today()).replace(/-/g,''); let mx=0; C.forEach(c=>{ if(String(c.no||'').startsWith(pre)){ const n=+String(c.no).slice(pre.length)||0; if(n>mx) mx=n; } }); return pre+String(mx+1).padStart(3,'0'); }
 /* 案件狀態由內容自動判斷，不會跟資料互相矛盾 */
 /* 預計完成日期：沒填就用「發現日期＋15 天」 */
 const DUE_DAYS=15;
@@ -580,10 +580,10 @@ function inp(k,label,type,o){ o=o||{}; const v=esc(cur[k]); const on=`oninput="s
   return `<div><label class="f ${o.req?'req':''}" for="f_${k}">${label}</label><input id="f_${k}" type="${type}" value="${v}" ${on} ${type==='date'?`onchange="setF('${k}',this.value)"`:''}></div>`; }
 function drawForm(){
   const c=cur, on1=S.cat1.filter(x=>x.on).map(x=>x.n), on2=S.cat2.filter(x=>x.on).map(x=>x.n);
-  $('#app').innerHTML=`${headHTML(c._isNew?'新增異常案件':'編輯案件 '+esc(c.no),c._isNew?'NEW CASE':'EDIT CASE',c._isNew?'案件編號可以自己填，空白就自動產生（發現日期＋流水號）。':'修改後記得按最下面的「儲存」。',c._isNew?'新增異常案件':'編輯案件',`<button class="lite" onclick="cancelForm()">← 返回</button>${c._isNew?'':`<button class="dng" onclick="formDel()">刪除</button>`}`)}
+  $('#app').innerHTML=`${headHTML(c._isNew?'新增異常案件':'編輯案件 '+esc(c.no),c._isNew?'NEW CASE':'EDIT CASE',c._isNew?'案件編號空白會自動產生：發現日期＋三碼流水號，例如 20261120001。':'修改後記得按最下面的「儲存」。',c._isNew?'新增異常案件':'編輯案件',`<button class="lite" onclick="cancelForm()">← 返回</button>${c._isNew?'':`<button class="dng" onclick="formDel()">刪除</button>`}`)}
    <div class="note" style="margin-bottom:12px">欄位跟 Excel 一樣，只多一格「預計完成日期」。只有「發現日期」必填，另外「產品品項」或「異常描述」至少填一個；其他還沒拿到資料可以先空白。</div>
    <details class="sec" open><summary><span class="no">A</span>基本資料</summary><div class="body"><div class="grid">
-     ${inp('no','案件編號','text',{ph:'空白會自動產生（發現日期＋流水號）'})}${inp('date','發現日期','date',{req:true})}${stationPicker()}${inp('item','產品品項','text')}
+     ${inp('no','案件編號','text',{ph:'空白自動產生，例：20261120001'})}${inp('date','發現日期','date',{req:true})}${stationPicker()}${inp('item','產品品項','text')}
      ${inp('vendor','廠商','list',{opts:optsOf('vendors','vendor')})}${inp('lot','批號','text')}${inp('expiry','有效日期','date')}</div></div></details>
    <details class="sec" open><summary><span class="no">B</span>異常與圖片</summary><div class="body"><div class="grid">
      ${inp('desc','異常描述','ta',{wide:true,big:true,ph:'例：外箱破損，內袋可見黑色異物約 0.5cm'})}</div>
@@ -616,9 +616,14 @@ function stAddOther(){ const el=$('#stOther'), v=normStation(el.value).slice(0,4
 function daysTxt(c){ const d=procDays(c), o=openDays(c); return d!=null?(d<0?'—':`<b>${d}</b> 天（發現日期 → 結案日期）`):o!=null?`尚未結案，已經過 <b>${Math.max(0,o)}</b> 天`:'—'; }
 let C2O=[];
 function c2Picker(on2){ const sel=c2Tok(cur.cat2); C2O=[...new Set([...on2,...sel])];
-  return `<div class="wide"><label class="f">分類二：異常原因（可以選兩個以上）</label><div class="stpick" id="c2pick">${C2O.map((n,i)=>`<button type="button" class="${sel.includes(n)?'on':''}" onclick="c2Toggle(${i})">${sel.includes(n)?'✓ ':''}${esc(n)}</button>`).join('')}</div></div>`; }
+  return `<div class="wide"><label class="f">分類二：異常原因（可以選兩個以上）</label><div class="stpick" id="c2pick">${C2O.map((n,i)=>`<button type="button" class="${sel.includes(n)?'on':''}" onclick="c2Toggle(${i})">${sel.includes(n)?'✓ ':''}${esc(n)}</button>`).join('')}</div>
+    <div class="row" style="margin-top:6px"><input id="c2Other" placeholder="其它異常原因：自己打字（例：溫度異常）" style="flex:1;min-width:150px" onkeydown="if(event.key==='Enter'){event.preventDefault();c2AddOther()}"><label class="small" style="display:inline-flex;gap:4px;align-items:center"><input type="checkbox" id="c2Keep" checked style="width:auto">也加入常用選項</label><button type="button" onclick="c2AddOther()">＋ 加入</button></div></div>`; }
+function c2Redraw(){ const box=$('#c2pick'); if(box){ const w=document.createElement('div'); w.innerHTML=c2Picker(S.cat2.filter(x=>x.on).map(x=>x.n)); box.replaceWith(w.querySelector('#c2pick')); } }
+function c2AddOther(){ const el=$('#c2Other'), v=el.value.replace(/[、,，;；]/g,' ').trim().slice(0,40); if(!v) return;
+  if($('#c2Keep').checked&&!S.cat2.some(x=>x.n===v)){ S.cat2.push({n:v,on:true}); persist(); }
+  const sel=c2Tok(cur.cat2); if(!sel.includes(v)) setF('cat2',[...sel,v].join('、')); el.value=''; c2Redraw(); toast(`已加入「${v}」`); }
 function c2Toggle(i){ const n=C2O[i]; if(!n) return; const sel=c2Tok(cur.cat2); setF('cat2',(sel.includes(n)?sel.filter(x=>x!==n):[...sel,n]).join('、'));
-  const box=$('#c2pick'); if(box){ const w=document.createElement('div'); w.innerHTML=c2Picker(S.cat2.filter(x=>x.on).map(x=>x.n)); box.replaceWith(w.querySelector('#c2pick')); } }
+  c2Redraw(); }
 function setF(k,v){ cur[k]=v; if(k==='due') cur._autoDue=false; if((k==='date'||k==='closeDate')&&$('#pdays')) $('#pdays').innerHTML=daysTxt(cur);
   if(k==='date'&&cur._autoDue&&v){ cur.due=addDays(v,DUE_DAYS); const el=$('#f_due'); if(el) el.value=cur.due; } markDirty(true); }
 function markDirty(v){ if(v) dirty=true; const el=$('#dm'); if(el) el.innerHTML=dirty?'<span class="dirty">● 有尚未儲存的修改</span>':''; }
@@ -708,7 +713,7 @@ function listGuide(){ return guideBox('list','異常案件清單使用說明',
     `<p>電腦看到的是表格，表頭跟 Excel 同一個順序，最後多了「預計完成日期」和「狀態」；欄寬固定，一般螢幕一頁就看得完。每一列看最右邊的<b>狀態</b>標籤：<span class="st over">逾期未結</span>、<span class="st soon">即將到期</span>…。手機會自動改成卡片，左邊的色條代表一樣的意思。</p>`)); }
 function formGuide(){ return guideBox('form','新增／編輯案件使用說明',
   gS(1,'最少要填什麼',`${gIn('發現日期 *')}<span class="small">＋</span>${gIn('品項名稱')}<span class="small">或</span>${gIn('異常描述')}`,
-    `<p>只有<b>發現日期</b>必填，另外「產品品項」或「異常描述」至少填一個。其他欄位可以先空白，之後再回來補。</p><p><b>案件編號</b>可以自己填（例如照 Excel 的編號）；空白就在儲存時自動產生：發現日期＋當天流水號，例如 2026111901。編號不能跟別的案件重複。</p>`)+
+    `<p>只有<b>發現日期</b>必填，另外「產品品項」或「異常描述」至少填一個。其他欄位可以先空白，之後再回來補。</p><p><b>案件編號</b>可以自己填（例如照 Excel 的編號）；空白就在儲存時自動產生：<b>發現日期 YYYYMMDD＋三碼流水號</b>，例如 11/20 發現的第 1 件是 20261120001、第 2 件是 20261120002，依「發現日期」那天編。以前匯入的編號不會改。編號不能跟別的案件重複。</p>`)+
   gS(2,'跟 Excel 一樣的格子',`${gBtn('A')}<span class="small">案件編號～效期</span>${gBtn('B')}<span class="small">異常、圖片(1)(2)</span>${gBtn('C')}<span class="small">備註～分類二＋預計完成日期</span>`,
     `<p>表單欄位的順序跟 Excel 一樣：案件編號、發現日期、工作站、<b>產品品項</b>、廠商、批號、<b>有效日期</b>、<b>異常描述</b>、圖片(1)、圖片(2)、備註、處理辦法、結案日期、分類一、分類二；只多一格<b>預計完成日期</b>（藍底）。其中產品品項＝Excel 的「品項」、有效日期＝「效期」、異常描述＝「異常」。</p><p>工作站、廠商可以從清單選，也可以直接打字，打過的會自動加進常用選項。分類二有兩項以上原因時，以<b>較多或較嚴重</b>的問題歸類。</p>`)+
   gS(3,'加照片、貼上、刪除',`<span class="gdonut" style="border-radius:6px;-webkit-mask:none;mask:none;background:#cfe3d6;width:40px;height:30px"></span><span class="gin">＋ 加入照片</span>${gN(1)}</div><div class="gx-row"><span class="gin" style="border:2px dashed #b8955a;background:#fff4e0;color:#7a3d06">📋 點這裡，再按 Ctrl+V 貼上</span>${gN(2)}`,
@@ -716,7 +721,7 @@ function formGuide(){ return guideBox('form','新增／編輯案件使用說明'
   gS(4,'日期決定狀態',`${gIn('預計完成日期')}<span class="small">→</span>${gBadge('即將到期','soon')}${gBadge('逾期未結','over')}<br>${gIn('結案日期')}<span class="small">→</span>${gBadge('已結案','done')}`,
     `<p><b>預計完成日期</b>預設是發現日期＋15 天（改發現日期會跟著變，也可以自己改）。到期前 3 天會變「即將到期」，過了還沒結案會變「逾期未結」。</p><p>填了<b>結案日期</b>，狀態就會變成「已結案」，旁邊的<b>處理天數</b>會自動算出發現日期到結案日期幾天（還沒結案就顯示已經過幾天）；清單的結案日期下面也會顯示天數。結案日期、預計完成日期都不能早於發現日期。</p>`)+
   gS(5,'工作站可以選兩個以上',`${gBtn('✓ 打漿組')}${gIn('包裝組')}${gBtn('✓ 倉儲組')}</div><div class="gx-row">${gIn('其它：自己打字')}<span class="small">☑ 也加入常用</span>${gIn('＋ 加入')}`,
-    `<p>點選常用的工作站，<b>可以選兩個以上</b>（例：打漿組、倉儲組），再點一次取消。統計時兩個工作站各算一件。<b>分類二（異常原因）</b>也一樣可以選兩個以上，一件有多個問題時都選起來，統計時分開計算。</p><p>不在清單上的，在「其它」自己打字按「＋ 加入」；勾「也加入常用選項」，下次就能直接點選。編輯舊案件時，上方還有「刪除」。</p>`)+
+    `<p>點選常用的工作站，<b>可以選兩個以上</b>（例：打漿組、倉儲組），再點一次取消。統計時兩個工作站各算一件。<b>分類二（異常原因）</b>也一樣可以選兩個以上，一件有多個問題時都選起來，統計時分開計算；清單上沒有的原因，在下面「其它異常原因」自己打字按「＋ 加入」，勾「也加入常用選項」下次就能直接點。</p><p>不在清單上的，在「其它」自己打字按「＋ 加入」；勾「也加入常用選項」，下次就能直接點選。編輯舊案件時，上方還有「刪除」。</p>`)+
   gS(6,'儲存',`${gBtn('儲存')}${gIn('取消')}<span class="dirty small">● 有尚未儲存的修改</span>`,
     `<p>儲存按鈕固定在畫面最下面。改了東西還沒存，會顯示「● 有尚未儲存的修改」；這時離開頁面，系統會先問你確定要離開嗎。</p>`)); }
 function viewGuide(){ return guideBox('view','案件內容使用說明',
