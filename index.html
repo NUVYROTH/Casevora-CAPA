@@ -424,7 +424,7 @@ function drawList(){
   const rows=filtered(), el=$('#lres'); if(!el) return; SEL=new Set([...SEL].filter(id=>rows.some(c=>c.id===id)));
   const ar=k=>F.sort===k?(F.dir>0?' ▲':' ▼'):'';
   const anyF=F.q||F.year||F.month||F.station||F.vendor||F.cat1||F.cat2||F.status!=='notdone';
-  el.innerHTML=`<div class="row small muted" style="margin-bottom:6px"><span>符合 <b>${rows.length}</b> 件</span>${SEL.size?`<span>・已勾選 <b>${SEL.size}</b> 件（匯出功能在第 3 段加入）</span>`:''}<span class="sp"></span><span>排序：${F.sort==='urgent'?`<b>緊急程度</b>（<span class="st over">逾期未結</span> → <span class="st soon">即將到期</span> → 其他）`:`欄位排序 <a href="#" onclick="F.sort='urgent';F.dir=1;drawList();return false">改回緊急程度</a>`}</span>${anyF?'・<a href="#" onclick="clearF();return false">清除篩選</a>':''}</div>
+  el.innerHTML=`<div class="row small muted" style="margin-bottom:6px"><span>符合 <b>${rows.length}</b> 件</span>${SEL.size?`<span>・已勾選 <b>${SEL.size}</b> 件（匯出功能在第 3 段加入）</span>`:''}<span class="sp"></span><span class="row" style="gap:6px"><label for="srtSel">排序：</label>${sortSel()}${F.sort==='urgent'?`<span>（<span class="st over">逾期未結</span> → <span class="st soon">即將到期</span> → 其他）</span>`:''}</span>${anyF?'・<a href="#" onclick="clearF();return false">清除篩選</a>':''}</div>
    ${rows.length?`<div class="tw"><table class="lt"><colgroup>${COLS.map(([k])=>`<col style="width:${COLW[k]||'auto'}">`).join('')}</colgroup><thead><tr>
      ${COLS.map(([k,n])=>k.startsWith('ph')?`<th class="ns">${n}</th>`:`<th onclick="sortBy('${k}')">${n}${ar(k)}</th>`).join('')}</tr></thead><tbody>
      ${rows.map(c=>`<tr class="r-${statusOf(c)}" onclick="openForm('${c.id}')">
@@ -441,7 +441,15 @@ function drawList(){
    :`<div class="empty">${live().length?(F.status==='notdone'&&!anyF?'✅ 目前沒有未結案的案件（要看已結案的，請按「已結案」或「全部」）':'沒有符合條件的案件'):'目前還沒有案件，請按「＋ 新增異常案件」開始；已經有 Excel 紀錄的，可以按上面的「從 Excel 匯入」'}</div>`}`;
   fillPhotos(el);
 }
-function sortBy(k){ if(F.sort===k) F.dir=-F.dir; else { F.sort=k; F.dir=['date','no','due','closeDate','expiry'].includes(k)?-1:1; } drawList(); }
+function sortBy(k){ if(F.sort===k) F.dir=-F.dir; else { F.sort=k; F.dir=['date','no','due','closeDate','expiry'].includes(k)?-1:1; } saveSort(); drawList(); }
+/* 排序選單（選了會記住，下次打開一樣） */
+const SORTS=[['urgent:1','緊急程度（預設）'],['date:-1','發現日期：新 → 舊'],['date:1','發現日期：舊 → 新'],['no:-1','案件編號：大 → 小'],['due:1','預計完成日期：近 → 遠']];
+const SORT_KEY='casevoraCAPA_v1_sort';
+function sortSel(){ const v=F.sort+':'+F.dir, has=SORTS.some(o=>o[0]===v||(F.sort==='urgent'&&o[0]==='urgent:1')), cn=(COLS.find(c=>c[0]===F.sort)||[0,F.sort])[1];
+  return `<select id="srtSel" style="width:auto;padding:4px 8px;font-size:13px" onchange="setSort(this.value)">${SORTS.map(([k,n])=>`<option value="${k}" ${(F.sort==='urgent'?k==='urgent:1':k===v)?'selected':''}>${n}</option>`).join('')}${has?'':`<option selected value="${esc(v)}">${esc(cn)}：${F.dir>0?'小 → 大':'大 → 小'}</option>`}</select>`; }
+function setSort(v){ const [k,d]=v.split(':'); F.sort=k; F.dir=+d||1; saveSort(); drawList(); }
+function saveSort(){ try{ localStorage.setItem(SORT_KEY,F.sort+':'+F.dir); }catch(e){} }
+(function(){ try{ const v=localStorage.getItem(SORT_KEY); if(v){ const [k,d]=v.split(':'); if(k==='urgent'||COLS.some(c=>c[0]===k)){ F.sort=k; F.dir=+d||1; } } }catch(e){} })();
 function tog(id,v){ v?SEL.add(id):SEL.delete(id); drawList(); }
 function selAll(v){ const rows=filtered(); rows.forEach(c=>v?SEL.add(c.id):SEL.delete(c.id)); drawList(); }
 function clearF(){ Object.assign(F,{q:'',year:'',month:'',station:'',vendor:'',cat1:'',cat2:'',status:'notdone'}); renderList(); }
@@ -570,8 +578,8 @@ function listGuide(){ return guideBox('list','異常案件清單使用說明',
     `<p>一打開清單<b>預設只顯示「未結案」</b>（跟衛生追蹤一樣），要看全部請按最右邊的「全部」；按「清除篩選」也會回到未結案。</p><p>狀態是系統<b>自動判斷</b>的，不用自己改：</p><p>${gBadge('已結案','done')} 有填結案日期<br>${gBadge('逾期未結','over')} 過了預計完成日期還沒結案<br>${gBadge('即將到期','soon')} 3 天內到期<br>${gBadge('改善追蹤中','track')} 有填處理辦法<br>${gBadge('未處理','open')} 其他</p>`)+
   gS(3,'搜尋與篩選',`${gIn('🔍 包裝區 黑色異物')}${gN(1)}${gIn('全部年度 ▾')}${gIn('全部廠商 ▾')}${gN(2)}`,
     `<p>搜尋欄${gN(1)}可以打案件編號、品項、廠商、批號、異常描述、處理辦法等；用<b>空格</b>分開可以同時找多個關鍵字。</p><p>下拉選單${gN(2)}可以依年度、月份、工作站、廠商、分類一、分類二篩選。按「清除篩選」回到全部。</p>`)+
-  gS(4,'排序',`<span class="small">預設：<b>緊急程度</b>（逾期 → 即將到期 → 其他）</span>${gN(1)}`,
-    `<p>預設依緊急程度排，最急的在最上面。</p><p>電腦版可以點表格的<b>欄位標題</b>${gN(1)}改成依那一欄排序，再點一次反過來；要回到緊急程度，按「改回緊急程度」。</p>`)+
+  gS(4,'排序',`<span class="small">排序：</span>${gIn('緊急程度（預設） ▾')}${gN(1)}<span class="small">→ 發現日期：新 → 舊</span>`,
+    `<p>預設依<b>緊急程度</b>排：逾期未結 → 即將到期 → 其他，最急的在最上面。</p><p>表格上方的「排序」選單${gN(1)}可以改成<b>發現日期（新 → 舊／舊 → 新）</b>、案件編號、預計完成日期；選了會記住，下次打開一樣。要回來就選「緊急程度（預設）」。</p><p>電腦版也可以直接點表格的<b>欄位標題</b>排序，再點一次反過來。</p>`)+
   gS(5,'點一列直接編輯',`${gIn('← 返回')}${gIn('看案件內容')}<span class="gin" style="color:#b42318">刪除</span>${gBtn('儲存')}`,
     `<p>點任一列（手機是點卡片）會<b>直接打開編輯表單</b>，改完按最下面的「儲存」。</p><p>上方的「看案件內容」可以看整理好的內容和照片大圖；「刪除」會先問一次，再移到「最近刪除」，30 天內都能救回來。</p>`)+
   gS(6,'從 Excel 匯入',`${gIn('從 Excel 匯入')}${gN(1)}${gIn('下載匯入範本')}${gN(2)}`,
