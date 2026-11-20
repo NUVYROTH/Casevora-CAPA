@@ -367,7 +367,8 @@ function filtered(){ const ws=F.q.trim().toLowerCase().split(/\s+/).filter(Boole
   if(k==='urgent') a.sort((x,y)=>(URG[statusOf(x)]-URG[statusOf(y)])||(URG[statusOf(x)]<2?String(dueOf(x)).localeCompare(String(dueOf(y))):0)||String(y.date).localeCompare(String(x.date))||String(y.no).localeCompare(String(x.no)));
   else a.sort((x,y)=>{ const vx=k==='status'?URG[statusOf(x)]:k==='due'?dueOf(x):String(x[k]||''), vy=k==='status'?URG[statusOf(y)]:k==='due'?dueOf(y):String(y[k]||''); return (vx<vy?-1:vx>vy?1:0)*d||String(y.no).localeCompare(String(x.no)); });
   return a; }
-const COLS=[['no','案件編號'],['date','發現日期'],['station','工作站'],['item','品項'],['vendor','廠商'],['lot','批號'],['expiry','效期'],['desc','異常描述'],['ph','照片'],['note','備註'],['method','處理辦法'],['due','預計完成'],['closeDate','結案日期'],['status','狀態'],['cat1','分類一'],['cat2','分類二']];
+/* 清單表頭：跟 Excel 一樣的順序和名稱；最後加系統用的「預計完成日期」「狀態」 */
+const COLS=[['no','案件編號'],['date','發現日期'],['station','工作站'],['item','品項'],['vendor','廠商'],['lot','批號'],['expiry','效期'],['desc','異常'],['ph1','圖片(1)'],['ph2','圖片(2)'],['note','備註'],['method','處理辦法'],['closeDate','結案日期'],['cat1','分類一'],['cat2','分類二'],['due','預計完成日期'],['status','狀態']];
 function renderList(){
   page='list'; nav(); const rows=filtered(), all=live(), cnt=k=>all.filter(c=>statusOf(c)===k).length;
   const sel=(id,v,opts,ph)=>`<select onchange="F.${id}=this.value;drawList()" aria-label="${ph}"><option value="">${ph}</option>${opts.map(o=>`<option value="${esc(o[0])}" ${String(v)===String(o[0])?'selected':''}>${esc(o[1])}</option>`).join('')}</select>`;
@@ -412,12 +413,13 @@ function drawList(){
   const anyF=F.q||F.year||F.month||F.station||F.vendor||F.cat1||F.cat2||F.status;
   el.innerHTML=`<div class="row small muted" style="margin-bottom:6px"><span>符合 <b>${rows.length}</b> 件</span>${SEL.size?`<span>・已勾選 <b>${SEL.size}</b> 件（匯出功能在第 3 段加入）</span>`:''}<span class="sp"></span><span>排序：${F.sort==='urgent'?'<b>緊急程度</b>（逾期 → 即將到期 → 其他）':`欄位排序 <a href="#" onclick="F.sort='urgent';F.dir=1;drawList();return false">改回緊急程度</a>`}</span>${anyF?'・<a href="#" onclick="clearF();return false">清除篩選</a>':''}</div>
    ${rows.length?`<div class="tw"><table><thead><tr><th class="ns"><input type="checkbox" aria-label="全選" style="width:auto" ${rows.length&&rows.every(c=>SEL.has(c.id))?'checked':''} onclick="event.stopPropagation();selAll(this.checked)"></th>
-     ${COLS.map(([k,n])=>k==='ph'?`<th class="ns">${n}</th>`:`<th onclick="sortBy('${k}')">${n}${ar(k)}</th>`).join('')}</tr></thead><tbody>
+     ${COLS.map(([k,n])=>k.startsWith('ph')?`<th class="ns">${n}</th>`:`<th onclick="sortBy('${k}')">${n}${ar(k)}</th>`).join('')}</tr></thead><tbody>
      ${rows.map(c=>`<tr class="r-${statusOf(c)}" onclick="openForm('${c.id}')"><td onclick="event.stopPropagation()"><input type="checkbox" style="width:auto" aria-label="勾選 ${esc(c.no)}" ${SEL.has(c.id)?'checked':''} onchange="tog('${c.id}',this.checked)"></td>
        <td style="white-space:nowrap;font-variant-numeric:tabular-nums">${esc(c.no)}</td><td style="white-space:nowrap">${fmtD(c.date)}</td><td>${esc(c.station)}</td><td>${esc(c.item)}</td><td>${esc(c.vendor)}</td><td>${esc(c.lot)}</td><td style="white-space:nowrap">${fmtD(c.expiry)}</td>
-       <td class="desc"><div class="clip">${esc(c.desc)}</div></td><td>${(c.photos||[]).length?`<img class="th" data-ph="${c.photos[0]}" alt="異常照片">${c.photos.length>1?`<div class="small muted">共 ${c.photos.length} 張</div>`:''}`:''}</td>
-       <td class="desc"><div class="clip">${esc(c.note)}</div></td><td class="desc"><div class="clip">${esc(c.method)}</div></td><td style="white-space:nowrap">${fmtD(dueOf(c))}</td><td style="white-space:nowrap">${fmtD(c.closeDate)}</td>
-       <td>${stBadge(c)}</td><td>${c.cat1?`<span class="tag ${c.cat1==='供應商'?'sup':'fac'}">${esc(c.cat1)}</span>`:''}</td><td>${c.cat2?`<span class="tag">${esc(c.cat2)}</span>`:''}</td></tr>`).join('')}
+       <td class="desc"><div class="clip">${esc(c.desc)}</div></td>${[0,1].map(i=>`<td>${(c.photos||[])[i]?`<img class="th" data-ph="${c.photos[i]}" alt="圖片(${i+1})">`:''}</td>`).join('')}
+       <td class="desc"><div class="clip">${esc(c.note)}</div></td><td class="desc"><div class="clip">${esc(c.method)}</div></td><td style="white-space:nowrap">${fmtD(c.closeDate)}</td>
+       <td>${c.cat1?`<span class="tag ${c.cat1==='供應商'?'sup':'fac'}">${esc(c.cat1)}</span>`:''}</td><td>${c.cat2?`<span class="tag">${esc(c.cat2)}</span>`:''}</td>
+       <td style="white-space:nowrap">${fmtD(dueOf(c))}</td><td>${stBadge(c)}${(c.photos||[]).length>2?`<div class="small muted">另有 ${c.photos.length-2} 張圖</div>`:''}</td></tr>`).join('')}
      </tbody></table></div>
      <div class="cards">${rows.map(c=>`<div class="ccard r-${statusOf(c)}" onclick="openForm('${c.id}')">${(c.photos||[]).length?`<img data-ph="${c.photos[0]}" alt="異常照片">`:''}<div class="m">
        <div class="row" style="gap:6px"><b class="small" style="font-variant-numeric:tabular-nums">${esc(c.no)}</b>${stBadge(c)}</div>
@@ -437,10 +439,10 @@ function openView(id){ const c=C.find(x=>x.id===id); if(!c||c.deleted) return; v
   $('#app').innerHTML=`${headHTML(`案件 ${esc(c.no)} ${stBadge(c)}`,'CASE DETAIL',esc(c.item||'（未填品項）')+(c.vendor?'・'+esc(c.vendor):'')+'・發現日期 '+fmtD(c.date),'案件 '+esc(c.no),
      `<button class="lite" onclick="go('${back==='view'?'list':back}')">← 返回清單</button><button class="pri pnew" onclick="openForm('${c.id}')">編輯</button><button class="dng" onclick="delCase('${c.id}')">刪除</button>`)}
    ${viewGuide()}
-   <div class="card"><h2>A. 基本資料</h2>${kv([['案件編號',t(c.no)],['發現日期',fmtD(c.date)],['工作站／發生部門',t(c.station)],['品項名稱',t(c.item)],['廠商名稱',t(c.vendor)],['批號',t(c.lot)],['有效日期',fmtD(c.expiry)],['分類一：異常來源',t(c.cat1)],['分類二：異常原因',t(c.cat2)],['備註',t(c.note)]])}</div>
-   <div class="card"><h2>B. 異常內容</h2>${kv([['異常描述',t(c.desc)]])}
-     <div class="phs" style="margin-top:10px">${(c.photos||[]).map((p,i)=>`<div class="ph"><img data-ph="${p}" alt="異常照片 ${i+1}" onclick="viewPhoto('${p}')"><div class="bar"><span>照片 ${i+1}</span><button class="sm" onclick="savePhotoFile('${p}','${esc(c.no)}_照片${i+1}')">下載</button></div></div>`).join('')||'<span class="muted small">沒有照片</span>'}</div></div>
-   <div class="card"><h2>C. 處理與結案</h2>${kv([['處理辦法',t(c.method)],['預計完成日期',fmtD(dueOf(c))+(c.due?'':' <span class="small muted">（沒填，以發現日期＋15 天計）</span>')],['結案日期',fmtD(c.closeDate)]])}</div>
+   <div class="card"><h2>A. 基本資料</h2>${kv([['案件編號',t(c.no)],['發現日期',fmtD(c.date)],['工作站',t(c.station)],['品項',t(c.item)],['廠商',t(c.vendor)],['批號',t(c.lot)],['效期',fmtD(c.expiry)]])}</div>
+   <div class="card"><h2>B. 異常與圖片</h2>${kv([['異常',t(c.desc)]])}
+     <div class="phs" style="margin-top:10px">${(c.photos||[]).map((p,i)=>`<div class="ph"><img data-ph="${p}" alt="圖片(${i+1})" onclick="viewPhoto('${p}')"><div class="bar"><span>${i<2?`圖片(${i+1})`:`其他圖片 ${i+1}`}</span><button class="sm" onclick="savePhotoFile('${p}','${esc(c.no)}_照片${i+1}')">下載</button></div></div>`).join('')||'<span class="muted small">沒有照片</span>'}</div></div>
+   <div class="card"><h2>C. 處理與結案</h2>${kv([['備註',t(c.note)],['處理辦法',t(c.method)],['結案日期',fmtD(c.closeDate)],['分類一',t(c.cat1)],['分類二',t(c.cat2)],['預計完成日期',fmtD(dueOf(c))+(c.due?'':' <span class="small muted">（沒填，以發現日期＋15 天計）</span>')]])}</div>
    ${(()=>{ const old=OLD_F.filter(([k])=>String(c[k]||'').trim()); return old.length?`<div class="card"><h2>其他（舊欄位，表單已不使用）</h2><div class="small muted" style="margin-bottom:6px">這些是以前填過的內容，資料都還在、也在備份裡；表單已經不再顯示這些欄位。</div>${kv(old.map(([k,n])=>[n,t(c[k])]))}</div>`:''; })()}
    <div class="small muted">建立：${new Date(c.createdAt).toLocaleString('zh-TW')}・最後修改：${new Date(c.updatedAt).toLocaleString('zh-TW')}</div>`;
   fillPhotos($('#app')); window.scrollTo(0,0); }
@@ -461,25 +463,24 @@ function inp(k,label,type,o){ o=o||{}; const v=esc(cur[k]); const on=`oninput="s
   return `<div><label class="f ${o.req?'req':''}" for="f_${k}">${label}</label><input id="f_${k}" type="${type}" value="${v}" ${on} ${type==='date'?`onchange="setF('${k}',this.value)"`:''}></div>`; }
 function drawForm(){
   const c=cur, on1=S.cat1.filter(x=>x.on).map(x=>x.n), on2=S.cat2.filter(x=>x.on).map(x=>x.n);
-  $('#app').innerHTML=`${headHTML(c._isNew?'新增異常案件':'編輯案件 '+esc(c.no),c._isNew?'NEW CASE':'EDIT CASE',c._isNew?'案件編號會在儲存時自動產生（發現日期＋流水號）。':'修改後記得按最下面的「儲存」。',c._isNew?'新增異常案件':'編輯案件',`<button class="lite" onclick="cancelForm()">← 返回</button>${c._isNew?'':`<button class="lite" onclick="formView()">看案件內容</button><button class="dng" onclick="formDel()">刪除</button>`}`)}
+  $('#app').innerHTML=`${headHTML(c._isNew?'新增異常案件':'編輯案件 '+esc(c.no),c._isNew?'NEW CASE':'EDIT CASE',c._isNew?'案件編號可以自己填，空白就自動產生（發現日期＋流水號）。':'修改後記得按最下面的「儲存」。',c._isNew?'新增異常案件':'編輯案件',`<button class="lite" onclick="cancelForm()">← 返回</button>${c._isNew?'':`<button class="lite" onclick="formView()">看案件內容</button><button class="dng" onclick="formDel()">刪除</button>`}`)}
    ${formGuide()}
-   <div class="note" style="margin-bottom:12px">只有「發現日期」必填，另外「品項名稱」或「異常描述」至少填一個。其他欄位還沒拿到資料可以先空白，之後再回來補。</div>
+   <div class="note" style="margin-bottom:12px">欄位跟 Excel 一樣，只多一格「預計完成日期」。只有「發現日期」必填，另外「品項」或「異常」至少填一個；其他還沒拿到資料可以先空白。</div>
    <details class="sec" open><summary><span class="no">A</span>基本資料</summary><div class="body"><div class="grid">
-     ${c._isNew?'':`<div><label class="f">案件編號</label><input value="${esc(c.no)}" disabled></div>`}
-     ${inp('date','發現日期','date',{req:true})}${inp('station','工作站／發生部門','list',{opts:optsOf('stations','station')})}${inp('item','品項名稱','text')}
-     ${inp('vendor','廠商名稱','list',{opts:optsOf('vendors','vendor')})}${inp('lot','批號','text')}${inp('expiry','有效日期','date')}
-     ${inp('cat1','分類一：異常來源','sel',{opts:on1})}${inp('cat2','分類二：異常原因','sel',{opts:on2})}
-     <div class="wide small muted">分類二：如有兩項以上異常原因，以較多或較嚴重之問題歸類。</div>
-     ${inp('note','備註','ta',{wide:true})}</div></div></details>
-   <details class="sec" open><summary><span class="no">B</span>異常內容與照片</summary><div class="body"><div class="grid">
-     ${inp('desc','異常描述','ta',{wide:true,big:true,ph:'例：外箱破損，內袋可見黑色異物約 0.5cm'})}</div>
-     <label class="f" style="margin-top:10px">異常照片（前 2 張對應 Excel 的圖片(1)、圖片(2)；原因分析、處理過程也可以拍照或截圖放這裡）</label>
+     ${inp('no','案件編號','text',{ph:'空白會自動產生（發現日期＋流水號）'})}${inp('date','發現日期','date',{req:true})}${inp('station','工作站','list',{opts:optsOf('stations','station')})}${inp('item','品項','text')}
+     ${inp('vendor','廠商','list',{opts:optsOf('vendors','vendor')})}${inp('lot','批號','text')}${inp('expiry','效期','date')}</div></div></details>
+   <details class="sec" open><summary><span class="no">B</span>異常與圖片</summary><div class="body"><div class="grid">
+     ${inp('desc','異常','ta',{wide:true,big:true,ph:'例：外箱破損，內袋可見黑色異物約 0.5cm'})}</div>
+     <label class="f" style="margin-top:10px">圖片(1)、圖片(2)（原因分析、處理過程也可以拍照或截圖放這裡；超過 2 張的會列在「其他圖片」）</label>
      <div class="phs" id="phbox"></div>
-     <div class="drop" style="margin-top:8px" onclick="$('#phIn').click()">📷 點這裡選擇照片或拍照</div><input type="file" id="phIn" accept="image/*" multiple hidden onchange="addPhotos(this)">
+     <div class="drop" style="margin-top:8px" onclick="$('#phIn').click()">📷 點這裡選擇圖片或拍照</div><input type="file" id="phIn" accept="image/*" multiple hidden onchange="addPhotos(this)">
    </div></details>
    <details class="sec" open><summary><span class="no">C</span>處理與結案</summary><div class="body"><div class="grid">
-     ${inp('method','處理辦法','ta',{wide:true})}${inp('due','預計完成日期','date')}${inp('closeDate','結案日期','date')}
-     <div class="wide small muted">預計完成日期預設是發現日期＋15 天，可以改。填了「結案日期」，狀態就會變成「已結案」。</div></div></div></details>
+     ${inp('note','備註','ta',{wide:true})}${inp('method','處理辦法','ta',{wide:true})}${inp('closeDate','結案日期','date')}
+     ${inp('cat1','分類一：供應商、廠內異常','sel',{opts:on1})}${inp('cat2','分類二：異常原因','sel',{opts:on2})}
+     <div class="wide small muted">分類二：天然異物、非天然異物、規格不符、風味口感不良、其它品質因素（含包裝／標示不良）、其它異常原因。2 項以上之原因時，以較多或較嚴重之問題歸類。</div>
+     <div style="background:var(--info-soft);border-radius:8px;padding:6px 10px">${inp('due','預計完成日期（Excel 沒有，系統用）','date')}</div>
+     <div class="small muted" style="align-self:end">預計完成日期預設是發現日期＋15 天，可以改；過了還沒結案會變「逾期未結」。填了「結案日期」，狀態就會變成「已結案」。</div></div></div></details>
    <div class="savebar"><div class="in"><button class="pri" onclick="saveForm()">儲存</button><button onclick="cancelForm()">取消</button><span id="dm"></span></div></div>`;
   drawPhotos(); markDirty(false);
 }
@@ -487,7 +488,7 @@ function setF(k,v){ cur[k]=v; if(k==='due') cur._autoDue=false;
   if(k==='date'&&cur._autoDue&&v){ cur.due=addDays(v,DUE_DAYS); const el=$('#f_due'); if(el) el.value=cur.due; } markDirty(true); }
 function markDirty(v){ if(v) dirty=true; const el=$('#dm'); if(el) el.innerHTML=dirty?'<span class="dirty">● 有尚未儲存的修改</span>':''; }
 function drawPhotos(){ const box=$('#phbox'); if(!box) return;
-  box.innerHTML=cur.photos.map((p,i)=>`<div class="ph"><img data-ph="${p}" alt="照片 ${i+1}" onclick="viewPhoto('${p}')"><div class="bar"><span>照片 ${i+1}${i<2?'':'（不進原格式表）'}</span><span style="display:flex;gap:4px">
+  box.innerHTML=cur.photos.map((p,i)=>`<div class="ph"><img data-ph="${p}" alt="照片 ${i+1}" onclick="viewPhoto('${p}')"><div class="bar"><span>${i<2?`圖片(${i+1})`:`其他圖片 ${i+1}`}</span><span style="display:flex;gap:4px">
     ${i>0?`<button class="sm" title="往前移" aria-label="往前移" onclick="movePh(${i})">◀</button>`:''}<button class="sm" onclick="savePhotoFile('${p}','照片${i+1}')">下載</button><button class="sm dng" onclick="rmPhoto(${i})">刪除</button></span></div></div>`).join('');
   fillPhotos(box); }
 async function addPhotos(inpEl){ const files=[...inpEl.files]; inpEl.value=''; if(!files.length) return; let bad=0;
@@ -504,8 +505,9 @@ async function formDel(){ if(dirty&&!(await ask('有尚未儲存的修改，確�
 async function cancelForm(){ if(dirty&&!(await ask('有尚未儲存的修改，確定要放棄嗎？','放棄修改',true))) return; await dropNewPhotos(); const wasNew=cur._isNew, id=cur.id; dirty=false; cur=null;
   if(!wasNew&&back==='view') openView(id); else { page=back==='view'?'list':back; ({list:renderList,trash:renderTrash,settings:renderSettings}[page]||renderList)(); } }
 async function saveForm(){
-  const c=cur; ['item','desc','station','vendor','lot','finder','unit','owner','verifier'].forEach(k=>c[k]=String(c[k]||'').trim());
-  if(!c.date){ await say('請先填寫：發現日期'); return; } if(!c.item&&!c.desc){ await say('「品項名稱」或「異常描述」至少要填一個。'); return; }
+  const c=cur; ['no','item','desc','station','vendor','lot'].forEach(k=>c[k]=String(c[k]||'').trim()); c.no=c.no.slice(0,30);
+  if(c.no&&C.some(x=>x.id!==c.id&&String(x.no)===c.no)){ await say(`案件編號「${c.no}」已經有別的案件在用了（也可能在「最近刪除」裡），請換一個，或留空白自動產生。`); return; }
+  if(!c.date){ await say('請先填寫：發現日期'); return; } if(!c.item&&!c.desc){ await say('「品項」或「異常」至少要填一個。'); return; }
   if(c.closeDate&&c.closeDate<c.date){ await say('結案日期不能早於發現日期。'); return; }
   if(c.due&&c.due<c.date){ await say('預計完成日期不能早於發現日期。'); return; }
   const now=new Date().toISOString(), old=C.findIndex(x=>x.id===c.id), rec={id:c.id,no:c.no||genNo(c.date),photos:c.photos.slice(),createdAt:c.createdAt||now,updatedAt:now};
@@ -562,14 +564,14 @@ function listGuide(){ return guideBox('list','異常案件清單使用說明',
   gS(6,'從 Excel 匯入',`${gIn('從 Excel 匯入')}${gN(1)}${gIn('下載匯入範本')}${gN(2)}`,
     `<p>按上方「從 Excel 匯入」${gN(1)}，會先看到<b>匯入表格要放哪些欄位</b>：案件編號、發現日期、工作站、品項、廠商、批號、效期、異常、圖片(1)、圖片(2)、備註、處理辦法、結案日期、分類一、分類二。不確定就按「下載匯入範本」${gN(2)}照著填。</p><p>匯入只會<b>新增</b>，不會覆蓋原本的案件；分好幾個檔案匯入也可以，重複的會自動略過。</p>`)+
   gS(7,'電腦和手機',`<span class="small">電腦：表格　手機：卡片</span>`,
-    `<p>電腦看到的是表格，紅底是逾期、橘底是即將到期；手機會自動改成卡片，左邊的色條代表一樣的意思。</p>`)); }
+    `<p>電腦看到的是表格，表頭跟 Excel 一樣（最後多了「預計完成日期」和「狀態」）；紅底是逾期、橘底是即將到期；手機會自動改成卡片，左邊的色條代表一樣的意思。</p>`)); }
 function formGuide(){ return guideBox('form','新增／編輯案件使用說明',
   gS(1,'最少要填什麼',`${gIn('發現日期 *')}<span class="small">＋</span>${gIn('品項名稱')}<span class="small">或</span>${gIn('異常描述')}`,
-    `<p>只有<b>發現日期</b>必填，另外「品項名稱」或「異常描述」至少填一個。其他欄位可以先空白，之後再回來補。</p><p><b>案件編號</b>在第一次儲存時自動產生：發現日期＋當天流水號，例如 2026111901。</p>`)+
-  gS(2,'三個區塊（跟 Excel 同樣的格子）',`${gBtn('A')}<span class="small">基本資料</span>${gBtn('B')}<span class="small">異常內容與照片</span>${gBtn('C')}<span class="small">處理與結案</span>`,
-    `<p>表單只放 Excel 有的格子，再加一格「預計完成日期」。點區塊標題可以打開或收起。工作站、廠商可以從清單選，也可以直接打字，打過的會自動加進常用選項。</p><p>分類二如果有兩項以上原因，以<b>較多或較嚴重</b>的問題歸類。</p>`)+
+    `<p>只有<b>發現日期</b>必填，另外「品項」或「異常」至少填一個。其他欄位可以先空白，之後再回來補。</p><p><b>案件編號</b>可以自己填（例如照 Excel 的編號）；空白就在儲存時自動產生：發現日期＋當天流水號，例如 2026111901。編號不能跟別的案件重複。</p>`)+
+  gS(2,'跟 Excel 一樣的格子',`${gBtn('A')}<span class="small">案件編號～效期</span>${gBtn('B')}<span class="small">異常、圖片(1)(2)</span>${gBtn('C')}<span class="small">備註～分類二＋預計完成日期</span>`,
+    `<p>表單欄位的名稱和順序都跟 Excel 一樣：案件編號、發現日期、工作站、品項、廠商、批號、效期、異常、圖片(1)、圖片(2)、備註、處理辦法、結案日期、分類一、分類二；只多一格<b>預計完成日期</b>（藍底）。</p><p>工作站、廠商可以從清單選，也可以直接打字，打過的會自動加進常用選項。分類二有兩項以上原因時，以<b>較多或較嚴重</b>的問題歸類。</p>`)+
   gS(3,'照片',`<span class="gin">📷 點這裡選擇照片或拍照</span>${gN(1)}${gIn('◀')}${gIn('下載')}${gIn('刪除')}`,
-    `<p>可以一次選多張${gN(1)}，手機可以直接拍照；照片會自動壓縮。</p><p>前 2 張對應 Excel 的圖片(1)、圖片(2)。<b>原因分析、處理過程</b>請拍照或截圖放在照片裡。按 ◀ 可以調整順序。照片只存在這台電腦的瀏覽器裡，不會上傳到網路。</p>`)+
+    `<p>可以一次選多張${gN(1)}，手機可以直接拍照；照片會自動壓縮。</p><p>第 1、2 張就是 Excel 的<b>圖片(1)、圖片(2)</b>，超過的列在「其他圖片」。<b>原因分析、處理過程</b>請拍照或截圖放在照片裡。按 ◀ 可以調整順序。照片只存在這台電腦的瀏覽器裡，不會上傳到網路。</p>`)+
   gS(4,'日期決定狀態',`${gIn('預計完成日期')}<span class="small">→</span>${gBadge('即將到期','soon')}${gBadge('逾期未結','over')}<br>${gIn('結案日期')}<span class="small">→</span>${gBadge('已結案','done')}`,
     `<p><b>預計完成日期</b>預設是發現日期＋15 天（改發現日期會跟著變，也可以自己改）。到期前 3 天會變「即將到期」，過了還沒結案會變「逾期未結」。</p><p>填了<b>結案日期</b>，狀態就會變成「已結案」。結案日期、預計完成日期都不能早於發現日期。</p>`)+
   gS(5,'看案件內容、刪除',`${gIn('看案件內容')}<span class="gin" style="color:#b42318">刪除</span>`,
@@ -741,19 +743,19 @@ async function dlStatsWord(){ const btn=$('#wordBtn'); if(!btn) return; btn.disa
 const IMP_MAP=[
   ['no','案件編號',['案件編號','編號']],
   ['date','發現日期',['發現日期','日期']],
-  ['station','工作站／發生部門',['工作站','發生部門','工作站／發生部門','工作站/發生部門']],
-  ['item','品項名稱',['品項','產品品項','品項名稱','產品']],
-  ['vendor','廠商名稱',['廠商','廠商名稱','供應商名稱']],
+  ['station','工作站',['工作站','發生部門','工作站／發生部門','工作站/發生部門']],
+  ['item','品項',['品項','產品品項','品項名稱','產品']],
+  ['vendor','廠商',['廠商','廠商名稱','供應商名稱']],
   ['lot','批號',['批號']],
-  ['expiry','有效日期',['效期','校期','有效日期','有效期限']],
-  ['desc','異常描述',['異常','異常描述','異常內容']],
-  ['ph','異常照片',['圖片','照片','異常照片']],
+  ['expiry','效期',['效期','校期','有效日期','有效期限']],
+  ['desc','異常',['異常','異常描述','異常內容']],
+  ['ph','圖片(1)、圖片(2)',['圖片','照片','異常照片']],
   ['note','備註',['備註']],
   ['method','處理辦法',['處理辦法','處理方式']],
   ['due','預計完成日期',['預計完成日期','預計完成']],
   ['closeDate','結案日期',['結案日期']],
-  ['cat1','分類一：異常來源',['分類一']],
-  ['cat2','分類二：異常原因',['分類二']]];
+  ['cat1','分類一',['分類一']],
+  ['cat2','分類二',['分類二']]];
 const IMP_DATE=['date','expiry','due','closeDate'];
 const hdrKey=h=>String(h??'').replace(/[（(\[［【].*$/,'').replace(/[：:].*$/,'').replace(/\s+/g,'').trim();
 function impField(h){ const k=hdrKey(h); if(!k) return null; const m=IMP_MAP.find(x=>x[2].includes(k)); return m?m[0]:null; }
