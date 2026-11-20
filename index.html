@@ -686,7 +686,7 @@ function statsGuide(){ const k=(n,l,c)=>`<span class="gx-k ${c||''}">${n}<small>
     gS(6,'▲▼ 跟上期比幾 %',`${k(12,'新增 <b style="color:#b42318">▲ +20%</b>')}${k(5,'已結案 <b style="color:#167a3e">▲ +8%</b>','ok')}`,
       `<p><b style="color:#b42318">紅色＝變差</b>（異常、逾期變多，或結案變少）；<b style="color:#167a3e">綠色＝變好</b>。本期還沒過完時，上期只算到<b>同一天</b>（例：11/1～11/19 比 10/1～10/19）。</p>`)+
     gS(7,'下載 Word 報表、列印',`<span class="gx-b">下載 Word 報表</span><span class="gx-b">列印／存成 PDF</span>`,
-      `<p>「下載 Word 報表」依目前選的期間產生<b>月報／季報／年報</b>（.docx）：總覽、逾期明細、各分類排行、處理狀態、每月趨勢和圖表。「列印／存成 PDF」只印統計內容。</p><p>統計只算<b>這台電腦、這個瀏覽器</b>裡的案件，「最近刪除」裡的不算。</p>`)); }
+      `<p>「下載 Word 報表」依目前選的期間產生<b>月報／季報／年報</b>（.docx），格式跟衛生追蹤一樣：照左邊「統計報表」由上到下轉成 Word（總結、四個數字表、平均處理天數、逾期明細、各分類排行），最後附每月趨勢圖。「列印／存成 PDF」只印統計內容。</p><p>統計只算<b>這台電腦、這個瀏覽器</b>裡的案件，「最近刪除」裡的不算。</p>`)); }
 /* ---------- 各分頁的使用說明（打開／收起會記住） ---------- */
 function guideBox(k,title,body){ const key='casevoraCAPA_v1_guide_'+k; let open=false; try{ open=localStorage.getItem(key)==='1'; }catch(e){}
   return `<div class="card gcard noprint"><details id="guide_${k}" ${open?'open':''} ontoggle="try{localStorage.setItem('${key}',this.open?'1':'0')}catch(e){}"><summary><b>📖 ${title}</b><span class="muted small">（點這裡展開／收合）</span></summary><div class="mg-grid">${body}</div></details></div>`; }
@@ -809,7 +809,7 @@ function caseMini(list,extra){ return list.length?`<div class="tw" style="displa
 function renderStats(){ page='stats'; nav(); stInit(); const D=stData(), {rg,pr,cur,prv,tot}=D; STB=[];
   const ys=[...new Set([...yearsOf().map(Number),stY])].sort((a,b)=>b-a), pn=stV==='month'?'上月':stV==='quarter'?'上季':'去年';
   const vt=(k,n)=>`<button class="${stV===k?'on':''}" onclick="setStat('v','${k}')">${n}</button>`;
-  const tile=(k,cls,n,l,d,c)=>`<div class="st-tile click ${cls} ${stPick===k?'pick':''}" onclick="stPickSet('${k}')" title="點一下列出案件"><div class="n">${n}</div><div class="l">${l}</div><div class="d">${d}</div><div class="d">${c}</div></div>`;
+  const tile=(k,cls,n,l,d,c)=>`<div class="st-tile click ${cls} ${stPick===k?'pick':''}" onclick="stPickSet('${k}')" title="點一下列出案件"><div class="n">${n}</div><div class="l">${l}</div><div class="d">${d}</div><div class="d tchg">${c}</div></div>`;
   const pickName={all:'新增',done:'已結案',open:'尚未結案',over:'逾期未結'}[stPick], pickList={all:cur.cases,done:cur.done,open:cur.open,over:cur.over}[stPick]||[];
   const bars=g=>{ const top=g.rows.slice(0,10), rest=g.rows.slice(10), mx=Math.max(1,...g.rows.map(r=>r.v));
     return `<div class="st-sec">${g.n}</div>${top.length?top.map(r=>{ const i=STB.push({t:`${g.n.replace(/（.*$|排行$|哪個|異常最多/g,'')||g.f}：${r.k||'（未填）'}`,scope:rg.label,list:cur.cases.filter(c=>valsOf(c,g.f).includes(r.k))})-1, can=true;
@@ -832,6 +832,7 @@ function renderStats(){ page='stats'; nav(); stInit(); const D=stData(), {rg,pr,
       ${stV==='quarter'?`<select style="width:auto" aria-label="季" onchange="setStat('q',this.value)">${[1,2,3,4].map(q=>`<option value="${q}" ${q===stQ?'selected':''}>第 ${q} 季</option>`).join('')}</select>`:''}
       <button class="sm" onclick="stMove(1)" aria-label="下一期">▶</button></div>
      <h3 class="st-title">${esc(rg.label)}</h3>
+     <div id="statBody">
      <div class="st-sum ${sum[0]}">${sum[1]}</div>
      <div class="st-tiles">
       ${tile('all','',tot,'新增','發現日期在本期',chg(tot,prv.cases.length)+` <span class="muted">比${pn}${pr.same?'同期':''}（${prv.cases.length}）</span>`)}
@@ -845,6 +846,7 @@ function renderStats(){ page='stats'; nav(); stInit(); const D=stData(), {rg,pr,
      ${stPick?`<div id="stList"><div class="st-sec">本期「${pickName}」的案件（${pickList.length} 件）<button class="sm noprint" style="margin-left:8px" onclick="stPickSet('${stPick}')">收起</button></div>${caseMini(pickList)}</div>`:''}
      <div class="st-sec">逾期未結明細（需追蹤）</div>${D.overList.length?caseMini(D.overList,['逾期',c=>`<b style="color:var(--bad)">${daysBetween(dueOf(c),today())} 天</b>`]):'<div class="st-note">本期沒有逾期未結的案件。</div>'}
      ${D.groups.map(bars).join('')}
+     </div>
     </div>
     <div class="rcol">
      <div class="card"><div class="phd"><b>處理狀態</b><span class="small muted">${stY} 年</span></div>${D.yTot?`<div class="pie"><figure data-title="${stY} 年處理狀態">${pieSVG(D.yStatus)}</figure><ul class="leg">${D.yStatus.map(s=>`<li><i style="background:${SCOL[s.k]}"></i>${s.n}<b>${s.v}</b><span class="muted small">${Math.round(s.v/D.yTot*100)}%</span></li>`).join('')}</ul></div>`:`<div class="small muted">${stY} 年還沒有案件。</div>`}</div>
@@ -906,41 +908,50 @@ function zipStore(files){ const T=zipStore.t||(zipStore.t=Array.from({length:256
   return new Blob([...parts,...cen,new Uint8Array([...u32(0x06054b50),...u16(0),...u16(0),...u16(files.length),...u16(files.length),...u32(cl),...u32(off),...u16(0)])],{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}); }
 function wx(t){ return String(t??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function wRun(t,o={}){ return `<w:r><w:rPr><w:rFonts w:ascii="Microsoft JhengHei" w:hAnsi="Microsoft JhengHei" w:eastAsia="Microsoft JhengHei"/>${o.b?'<w:b/>':''}${o.color?`<w:color w:val="${o.color}"/>`:''}<w:sz w:val="${o.sz||21}"/></w:rPr><w:t xml:space="preserve">${wx(t)}</w:t></w:r>`; }
-function wPara(t,o={}){ return `<w:p><w:pPr>${o.keep?'<w:keepNext/>':''}${o.jc?`<w:jc w:val="${o.jc}"/>`:''}<w:spacing w:before="${o.before||0}" w:after="${o.after??80}"/></w:pPr>${wRun(t,o)}</w:p>`; }
-function wTable(rows){ const B=['top','left','bottom','right','insideH','insideV'].map(k=>`<w:${k} w:val="single" w:sz="4" w:color="C9BDA6"/>`).join('');
+function wPara(t,o={}){ return `<w:p><w:pPr>${o.keep?'<w:keepNext/>':''}${o.jc?`<w:jc w:val="${o.jc}"/>`:''}<w:spacing w:before="${o.before||0}" w:after="${o.after??80}"/>${o.shade?`<w:shd w:val="clear" w:color="auto" w:fill="${o.shade}"/>`:''}</w:pPr>${wRun(t,o)}</w:p>`; }
+function wTable(rows,head=true){ const B=['top','left','bottom','right','insideH','insideV'].map(k=>`<w:${k} w:val="single" w:sz="4" w:color="C9BDA6"/>`).join('');
   return `<w:tbl><w:tblPr><w:tblW w:w="5000" w:type="pct"/><w:tblBorders>${B}</w:tblBorders><w:tblCellMar><w:left w:w="80" w:type="dxa"/><w:right w:w="80" w:type="dxa"/></w:tblCellMar></w:tblPr>`+
-    rows.map((r,i)=>`<w:tr>${r.map(c=>`<w:tc><w:tcPr>${i===0?'<w:shd w:val="clear" w:color="auto" w:fill="F3ECE0"/>':''}</w:tcPr>${wPara(c,{b:i===0,sz:19,after:0})}</w:tc>`).join('')}</w:tr>`).join('')+'</w:tbl>'+wPara('',{after:60}); }
+    rows.map((r,i)=>`<w:tr>${r.map(c=>`<w:tc><w:tcPr>${head&&i===0?'<w:shd w:val="clear" w:color="auto" w:fill="F3ECE0"/>':''}</w:tcPr>${wPara(c,{b:head&&i===0,sz:19,after:0})}</w:tc>`).join('')}</w:tr>`).join('')+'</w:tbl>'+wPara('',{after:60}); }
 async function svgPng(svgEl){ const vb=svgEl.viewBox.baseVal, W=vb.width, H=vb.height, k=2;
   const src=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" font-family="Microsoft JhengHei,PingFang TC,Noto Sans TC,sans-serif"><rect width="100%" height="100%" fill="#fff"/>${svgEl.innerHTML}</svg>`;
   const img=new Image(); img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(src); await img.decode();
   const c=document.createElement('canvas'); c.width=W*k; c.height=H*k; const g=c.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,c.width,c.height); g.drawImage(img,0,0,c.width,c.height);
   const b=await new Promise((ok,no)=>c.toBlob(x=>x?ok(x):no(new Error('png')),'image/png')); return {png:new Uint8Array(await b.arrayBuffer()),w:W,h:H}; }
 const ctxt=s=>s.replace(/<[^>]+>/g,'');
-async function dlStatsWord(){ const btn=$('#wordBtn'); if(!btn) return; btn.disabled=true; const old=btn.textContent; btn.textContent='產生中…';
-  try{ const D=stData(), {rg,pr,cur,prv,tot}=D, media=[], H2=t=>wPara(t,{b:1,sz:24,before:200,after:80,color:'16213A',keep:1});
-    const pct=(n,pn,good)=>ctxt(chg(n,pn,good));
-    const img=async(svgEl,cxEmu)=>{ if(!svgEl) return ''; try{ const r=await svgPng(svgEl); media.push(r.png); const id=media.length, cy=Math.round(cxEmu*r.h/r.w);
-      return `<w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:drawing><wp:inline><wp:extent cx="${cxEmu}" cy="${cy}"/><wp:docPr id="${id}" name="chart${id}"/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="${id}" name="chart${id}.png"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="rImg${id}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cxEmu}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>`; }catch(e){ return wPara('（圖表無法轉成圖片）',{sz:18,color:'5D6779'}); } };
-    let body=wPara('異常矯正統計'+stName(),{b:1,sz:32,jc:'center',after:60})+wPara(rg.label+'　產出日期：'+fmtD(today()),{jc:'center',sz:20,color:'5D6779',after:200});
-    const pn=stV==='month'?'上月':stV==='quarter'?'上季':'去年';
-    body+=H2('一、總覽')+wTable([['項目','件數',`比${pn}${pr.same?'同期':''}`,'說明'],['新增',tot+' 件',pct(tot,prv.cases.length),'發現日期在本期'],['已結案',cur.done.length+' 件',pct(cur.done.length,prv.done.length,true),'本期新增中，已填結案日期'],
-      ['尚未結案',cur.open.length+' 件',pct(cur.open.length,prv.open.length),'本期新增中，還沒到預計完成日'],['逾期未結',cur.over.length+' 件',pct(cur.over.length,prv.over.length),'本期新增中，超過預計完成日還沒結'],['平均處理天數',cur.avg==null?'—':cur.avg+' 天',cur.avg!=null&&prv.avg!=null?ctxt(chgDays(cur.avg,prv.avg)):'',`發現日期 → 結案日期（已結案 ${cur.nDays} 件${cur.maxD!=null?`，最久 ${cur.maxD} 天`:''}）`]]);
-    body+=wPara(`新增 ＝ 已結案 ＋ 尚未結案 ＋ 逾期未結（${tot} ＝ ${cur.done.length} ＋ ${cur.open.length} ＋ ${cur.over.length}）。比較期間：${fmtD(pr.start)}～${fmtD(pr.end)}${pr.same?'（本期還沒過完，上期只算到同一天）':''}。`,{sz:17,color:'5D6779'});
-    body+=H2('二、逾期未結明細')+(D.overList.length?wTable([['案件編號','發現日期','產品品項','廠商','預計完成','逾期天數'],...D.overList.map(c=>[c.no,fmtD(c.date),c.item,c.vendor,fmtD(dueOf(c)),daysBetween(dueOf(c),today())+' 天'])]):wPara('本期沒有逾期未結的案件',{sz:19,color:'5D6779'}));
-    const nums=['三','四','五','六'];
-    D.groups.forEach((g,i)=>{ body+=H2(`${nums[i]}、${g.n}`)+(g.rows.length?wTable([['項目','件數','佔比',`比${pn}`],...g.rows.map(r=>[r.k||'（未填）',r.v+' 件',r.pct+'%',pct(r.v,r.pv)])]):wPara('本期沒有案件',{sz:19,color:'5D6779'})); });
-    body+=H2('七、處理狀態（本期新增）')+wTable([['狀態','件數','佔比'],...D.status.map(s=>[s.n,s.v+' 件',tot?Math.round(s.v/tot*100)+'%':'—'])]);
-    if(D.yTot){ body+=wPara(`${stY} 年處理狀態`,{b:1,sz:19,jc:'center',before:120}); body+=await img(document.querySelector('.pie svg'),2160000); }
-    body+=H2(`八、${stY} 年每月趨勢`)+wTable([['月份',...D.months.map(m=>m.m+'月')],['新增',...D.months.map(m=>m.nw==null?'—':String(m.nw))],['結案',...D.months.map(m=>m.cl==null?'—':String(m.cl))]]);
-    body+=await img(document.querySelector('#trendMain svg'),5760000);
-    body+=wPara('實線：新增件數　虛線：結案件數',{sz:17,color:'5D6779',jc:'center'});
-    body+=wPara('Casevora-CAPA 異常矯正追蹤．本報表依本機資料產生',{sz:16,color:'888888',before:120,jc:'center'});
+/* 圖表轉成圖片：上面標題、下面圖例（跟衛生追蹤的 Word 報表一樣） */
+async function chartPng(svgEl,title,legend){ const vb=svgEl.viewBox.baseVal, W=vb.width, H=vb.height, tH=36, lH=legend&&legend.length?30:8, k=2, F='Microsoft JhengHei,PingFang TC,Noto Sans TC,sans-serif';
+  let lg='', x=20; (legend||[]).forEach(([n,c,dash])=>{ lg+=`<line x1="${x}" y1="${H+tH+16}" x2="${x+26}" y2="${H+tH+16}" stroke="${c}" stroke-width="3" ${dash?'stroke-dasharray="7 4"':''}/><text x="${x+32}" y="${H+tH+20}" font-size="13" fill="#16213a">${esc(n)}</text>`; x+=46+String(n).length*14; });
+  const src=`<svg xmlns="http://www.w3.org/2000/svg" width="${W+24}" height="${H+tH+lH}" viewBox="0 0 ${W+24} ${H+tH+lH}" font-family="${F}"><rect width="100%" height="100%" fill="#fff"/><text x="14" y="25" font-size="15" font-weight="700" fill="#16213a">${esc(title||'')}</text><g transform="translate(12,${tH})">${svgEl.innerHTML}</g>${lg}</svg>`;
+  const img=new Image(); img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(src); await img.decode();
+  const c=document.createElement('canvas'); c.width=(W+24)*k; c.height=(H+tH+lH)*k; const g=c.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,c.width,c.height); g.drawImage(img,0,0,c.width,c.height);
+  const b=await new Promise((ok,no)=>c.toBlob(x=>x?ok(x):no(new Error('png')),'image/png')); return {png:new Uint8Array(await b.arrayBuffer()),w:W+24,h:H+tH+lH}; }
+/* Word 報表：照畫面左邊「統計報表」一段一段轉成 Word（跟衛生追蹤一樣），最後加上每月趨勢圖 */
+async function dlStatsWord(){ const box=$('#statBody'), btn=$('#wordBtn'); if(!box||!btn) return; btn.disabled=true; const old=btn.textContent; btn.textContent='產生中…';
+  try{ const rg=pRange(stV,stY,stA()), name=stName(), txt=el=>el?el.textContent.replace(/\s+/g,' ').trim():'', media=[];
+    const H2=t=>wPara(t,{b:1,sz:24,before:200,after:80,color:'16213A',keep:1});
+    const pic=(r,cxEmu)=>{ media.push(r.png); const id=media.length, cy=Math.round(cxEmu*r.h/r.w);
+      return `<w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:drawing><wp:inline><wp:extent cx="${cxEmu}" cy="${cy}"/><wp:docPr id="${id}" name="chart${id}"/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="${id}" name="chart${id}.png"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="rImg${id}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cxEmu}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>`; };
+    let body=wPara('異常矯正統計'+name,{b:1,sz:32,jc:'center',after:60})+wPara(rg.label+'　產出日期：'+fmtD(today()),{jc:'center',sz:20,color:'5D6779',after:200});
+    for(const el of box.children){
+      if(el.id==='stList') continue;
+      if(el.classList.contains('st-sum')) body+=wPara(txt(el),{b:1,shade:el.classList.contains('warn')?'FDECEA':'E6F5EC',after:120});
+      else if(el.classList.contains('st-tiles')){ const t=[...el.querySelectorAll('.st-tile')]; body+=wTable([t.map(x=>txt(x.querySelector('.l'))),t.map(x=>txt(x.querySelector('.n'))+' 件'),t.map(x=>txt(x.querySelector('.d:not(.tchg)'))),t.map(x=>txt(x.querySelector('.tchg')))]); }
+      else if(el.classList.contains('st-extra')) body+=wTable([...el.querySelectorAll('.box')].map(x=>[txt(x.querySelector('.l')),txt(x.querySelector('.n')),txt(x.querySelector('.st-note'))]),false);
+      else if(el.classList.contains('st-note')) body+=wPara(txt(el),{sz:17,color:'5D6779'});
+      else if(el.classList.contains('st-sec')) body+=H2(txt(el));
+      else if(el.classList.contains('st-bar')){ if(!(el.previousElementSibling&&el.previousElementSibling.classList.contains('st-bar'))){ const rows=[['項目','件數','比上期']]; let n=el; while(n&&n.classList.contains('st-bar')){ rows.push([txt(n.children[0]),txt(n.querySelector('.v')),txt(n.querySelector('.c'))]); n=n.nextElementSibling; } body+=wTable(rows); } }
+      else if(el.querySelector&&el.querySelector('table')){ const tb=el.querySelector('table'); body+=wTable([...tb.rows].map(r=>[...r.cells].map(txt))); }
+      else if(txt(el)) body+=wPara(txt(el),{sz:19,color:'5D6779'});
+    }
+    const tm=$('#trendMain svg'); body+=H2(`趨勢（${stY} 年每月）`);
+    try{ body+=pic(await chartPng(tm,`${stY} 年每月新增與結案件數`,[['新增件數','#16213a'],['結案件數','#167a3e',1]]),5040000); }catch(e){ body+=wPara('（趨勢圖無資料）',{sz:19,color:'5D6779'}); }
+    body+=wPara('Casevoras 異常矯正工作台．本報表依本機資料產生',{sz:16,color:'888888',before:120,jc:'center'});
     const doc=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"><w:body>${body}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="567" w:footer="567" w:gutter="0"/></w:sectPr></w:body></w:document>`;
     const files=[['[Content_Types].xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>'],
       ['_rels/.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>'],
       ['word/_rels/document.xml.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+media.map((_,i)=>`<Relationship Id="rImg${i+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/chart${i+1}.png"/>`).join('')+'</Relationships>'],
-      ['word/document.xml',doc], ...media.map((p,i)=>[`word/media/chart${i+1}.png`,p])];
-    download(zipStore(files),`CAPA_異常矯正統計${stName()}_${rg.label}`.replace(/\s+/g,'').replace(/[\\/:*?"<>|：（）～]+/g,'_')+'.docx'); toast('Word 報表已下載 ✦');
+      ['word/document.xml',doc],...media.map((m,i)=>[`word/media/chart${i+1}.png`,m])];
+    download(zipStore(files),`Casevoras_異常矯正統計${name}_${rg.label}`.replace(/\s+/g,'').replace(/[\\/:*?"<>|：（）～]+/g,'_')+'.docx'); toast('已送出下載：Word 報表 ✦');
   }catch(e){ say('Word 報表產生失敗，請再試一次。'); }
   btn.disabled=false; btn.textContent=old; }
 
