@@ -370,7 +370,7 @@ function renderList(){
   const sel=(id,v,opts,ph)=>`<select onchange="F.${id}=this.value;drawList()" aria-label="${ph}"><option value="">${ph}</option>${opts.map(o=>`<option value="${esc(o[0])}" ${String(v)===String(o[0])?'selected':''}>${esc(o[1])}</option>`).join('')}</select>`;
   const chip=(k,n)=>`<button class="${F.status===k?'on':''}" onclick="F.status='${k}';renderList()">${n}</button>`;
   $('#app').innerHTML=`${headHTML('異常矯正工作台','CORRECTIVE &amp; PREVENTIVE ACTION','從發現異常、原因分析、矯正預防到成效確認，讓每一件異常都有紀錄、有對策、有結案。','異常案件清單',
-     `<button class="pri pnew" onclick="go('new')">＋ 新增異常案件</button><button class="lite" onclick="$('#xlsxIn').click()">從 Excel 匯入</button><button class="lite" onclick="go('trash')">最近刪除（${C.filter(c=>c.deleted).length}）</button>${backupTools()}`)}
+     `<button class="pri pnew" onclick="go('new')">＋ 新增異常案件</button><button class="lite" onclick="impIntro()">從 Excel 匯入</button><button class="lite" onclick="go('trash')">最近刪除（${C.filter(c=>c.deleted).length}）</button>${backupTools()}`)}
    ${listKpis()}
    ${listGuide()}
    <div class="card"><div class="phd"><b>異常案件清單</b><span class="small muted">共 ${all.length} 件・未結 ${all.length-cnt('done')} 件</span></div>
@@ -420,7 +420,7 @@ function drawList(){
        <div class="row" style="gap:6px"><b class="small" style="font-variant-numeric:tabular-nums">${esc(c.no)}</b>${stBadge(c)}</div>
        <div class="t">${esc(c.item||'（未填品項）')}${c.vendor?'・'+esc(c.vendor):''}</div><div class="small muted">${fmtD(c.date)}${c.station?'・'+esc(c.station):''}</div>
        <div class="small" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.desc)}</div><div>${catTag(c)}</div></div></div>`).join('')}</div>`
-   :`<div class="empty">${live().length?'沒有符合條件的案件':'目前還沒有案件，請按「＋ 新增異常案件」開始'}</div>`}`;
+   :`<div class="empty">${live().length?'沒有符合條件的案件':'目前還沒有案件，請按「＋ 新增異常案件」開始；已經有 Excel 紀錄的，可以按上面的「從 Excel 匯入」'}</div>`}`;
   fillPhotos(el);
 }
 function sortBy(k){ if(F.sort===k) F.dir=-F.dir; else { F.sort=k; F.dir=['date','no','due','closeDate','expiry'].includes(k)?-1:1; } drawList(); }
@@ -433,6 +433,7 @@ function openView(id){ const c=C.find(x=>x.id===id); if(!c||c.deleted) return; v
   const kv=(rows)=>`<dl class="kv">${rows.map(([k,v])=>`<dt>${k}</dt><dd>${v===''||v==null?'<span class="muted">—</span>':v}</dd>`).join('')}</dl>`, t=v=>esc(v||'');
   $('#app').innerHTML=`${headHTML(`案件 ${esc(c.no)} ${stBadge(c)}`,'CASE DETAIL',esc(c.item||'（未填品項）')+(c.vendor?'・'+esc(c.vendor):'')+'・發現日期 '+fmtD(c.date),'案件 '+esc(c.no),
      `<button class="lite" onclick="go('${back==='view'?'list':back}')">← 返回清單</button><button class="pri pnew" onclick="openForm('${c.id}')">編輯</button><button class="dng" onclick="delCase('${c.id}')">刪除</button>`)}
+   ${viewGuide()}
    <div class="card"><h2>A. 基本資料</h2>${kv([['案件編號',t(c.no)],['發現日期',fmtD(c.date)],['工作站／發生部門',t(c.station)],['品項名稱',t(c.item)],['廠商名稱',t(c.vendor)],['批號',t(c.lot)],['有效日期',fmtD(c.expiry)],['異常發現人員',t(c.finder)],['分類一：異常來源',t(c.cat1)],['分類二：異常原因',t(c.cat2)],['備註',t(c.note)]])}</div>
    <div class="card"><h2>B. 異常內容</h2>${kv([['異常描述',t(c.desc)]])}
      <div class="phs" style="margin-top:10px">${(c.photos||[]).map((p,i)=>`<div class="ph"><img data-ph="${p}" alt="異常照片 ${i+1}" onclick="viewPhoto('${p}')"><div class="bar"><span>照片 ${i+1}</span><button class="sm" onclick="savePhotoFile('${p}','${esc(c.no)}_照片${i+1}')">下載</button></div></div>`).join('')||'<span class="muted small">沒有照片</span>'}</div></div>
@@ -550,7 +551,9 @@ function listGuide(){ return guideBox('list','異常案件清單使用說明',
     `<p>預設依緊急程度排，最急的在最上面。</p><p>電腦版可以點表格的<b>欄位標題</b>${gN(1)}改成依那一欄排序，再點一次反過來；要回到緊急程度，按「改回緊急程度」。</p>`)+
   gS(5,'看案件、編輯、刪除',`${gBtn('編輯')}${gIn('刪除')}<span class="small muted">→ 最近刪除（30 天）</span>`,
     `<p>點任一列（手機是點卡片）會打開案件的完整內容和照片，右上角可以「編輯」或「刪除」。</p><p>刪除會先跳出確認，並移到「最近刪除」，30 天內都能救回來。</p>`)+
-  gS(6,'電腦和手機',`<span class="small">電腦：表格　手機：卡片</span>`,
+  gS(6,'從 Excel 匯入',`${gIn('從 Excel 匯入')}${gN(1)}${gIn('下載匯入範本')}${gN(2)}`,
+    `<p>按上方「從 Excel 匯入」${gN(1)}，會先看到<b>匯入表格要放哪些欄位</b>：案件編號、發現日期、工作站、品項、廠商、批號、效期、異常、圖片(1)、圖片(2)、備註、處理辦法、結案日期、分類一、分類二。不確定就按「下載匯入範本」${gN(2)}照著填。</p><p>匯入只會<b>新增</b>，不會覆蓋原本的案件；分好幾個檔案匯入也可以，重複的會自動略過。</p>`)+
+  gS(7,'電腦和手機',`<span class="small">電腦：表格　手機：卡片</span>`,
     `<p>電腦看到的是表格，紅底是逾期、橘底是即將到期；手機會自動改成卡片，左邊的色條代表一樣的意思。</p>`)); }
 function formGuide(){ return guideBox('form','新增／編輯案件使用說明',
   gS(1,'最少要填什麼',`${gIn('發現日期 *')}<span class="small">＋</span>${gIn('品項名稱')}<span class="small">或</span>${gIn('異常描述')}`,
@@ -563,6 +566,15 @@ function formGuide(){ return guideBox('form','新增／編輯案件使用說明'
     `<p>填了<b>預計完成日期</b>，到期前 3 天會變「即將到期」，過了還沒結案會變「逾期未結」。</p><p>填了<b>結案日期</b>，狀態就會變成「已結案」。結案日期、預計完成日期都不能早於發現日期。</p>`)+
   gS(5,'儲存',`${gBtn('儲存')}${gIn('取消')}<span class="dirty small">● 有尚未儲存的修改</span>`,
     `<p>儲存按鈕固定在畫面最下面。改了東西還沒存，會顯示「● 有尚未儲存的修改」；這時離開頁面，系統會先問你確定要離開嗎。</p>`)); }
+function viewGuide(){ return guideBox('view','案件內容使用說明',
+  gS(1,'看完整內容',`${gBtn('A')}<span class="small">基本資料</span>${gBtn('B')}<span class="small">異常內容</span>${gBtn('C')}<span class="small">原因分析</span>${gBtn('D')}<span class="small">改善追蹤</span>`,
+    `<p>這一頁列出這件案件的所有欄位，沒填的顯示「—」。最下面有建立和最後修改的時間。</p>`)+
+  gS(2,'看照片、下載照片',`<span class="gdonut" style="border-radius:6px;-webkit-mask:none;mask:none;background:#c9bda6"></span>${gIn('下載')}${gN(1)}`,
+    `<p>點照片可以放大看，再點一下關掉。每張照片下面的「下載」${gN(1)}可以存成 JPG。</p>`)+
+  gS(3,'狀態標籤',`${gBadge('改善追蹤中','track')}${gBadge('即將到期','soon')}${gBadge('逾期未結','over')}${gBadge('已結案','done')}`,
+    `<p>標題旁邊的狀態是系統依日期和內容自動判斷的；要改狀態，就去「編輯」補上進度、預計完成日期或結案日期。</p>`)+
+  gS(4,'編輯、刪除、返回',`${gIn('← 返回清單')}${gBtn('編輯')}<span class="gin" style="color:#b42318">刪除</span>`,
+    `<p>「編輯」修改內容，改完按最下面的「儲存」。</p><p>「刪除」會先問一次，再移到「最近刪除」，30 天內可以還原。</p>`)); }
 function trashGuide(){ return guideBox('trash','最近刪除使用說明',
   gS(1,'刪除的案件會先放這裡',`<span class="small">保留 <b>30 天</b>・剩 12 天</span>`,
     `<p>在案件裡按「刪除」，不會馬上消失，會先移到這裡保留 30 天，按錯了還能救回來。超過 30 天的會在下次打開系統時永久刪除，照片一起刪除。</p>`)+
@@ -580,7 +592,7 @@ function settingsGuide(){ return guideBox('settings','設定與資料使用說�
   gS(3,'備份（每兩週到一個月一次）',`${gBtn('下載備份（含照片）')}${gN(1)}${gIn('從備份還原')}${gN(2)}`,
     `<p>「下載備份」${gN(1)}會存成一個檔案（CAPA_backup_日期.json），裡面有全部案件、照片、分類和常用選項，包含「最近刪除」裡的。請存到<b>這台電腦以外的地方</b>，例如公司雲端硬碟或隨身碟。</p><p>「從備份還原」${gN(2)}會<b>取代</b>這台電腦目前所有資料，按之前會再問一次。換電腦時也是用這個方法搬資料。</p>`)+
   gS(4,'從 Excel 匯入舊資料',`${gBtn('從 Excel 匯入（.xlsx）')}${gN(1)}${gIn('下載匯入範本')}${gN(2)}`,
-    `<p>按「從 Excel 匯入」${gN(1)}選 .xlsx 檔，系統會先列出「Excel 欄名 → 系統欄位」和可以匯入幾件，確認後才存。清單頁上方也有同一個按鈕。</p><p>欄名只看<b>括號、冒號外面的字</b>，例如「品項」→品項名稱、「效期」→有效日期、「異常」→異常描述、「圖片(1)」「圖片(2)」→照片 2 格。案件編號照 Excel，重複的會略過；沒填發現日期就用當天。不確定格式就按「下載匯入範本」${gN(2)}。</p>`)+
+    `<p>按「從 Excel 匯入」${gN(1)}，先看匯入表格說明，再選 .xlsx 檔；系統會先列出「Excel 欄名 → 系統欄位」和可以匯入幾件，確認後才存。清單頁上方也有同一個按鈕。</p><p>欄名只看<b>括號、冒號外面的字</b>，例如「品項」→品項名稱、「效期」→有效日期、「異常」→異常描述、「圖片(1)」「圖片(2)」→照片 2 格。案件編號照 Excel，重複的會略過；沒填發現日期就用當天。匯入只會<b>新增</b>，分好幾個檔案匯入也不會覆蓋原本的案件。不確定格式就按「下載匯入範本」${gN(2)}。</p>`)+
   gS(5,'資料存在哪裡',`<span class="small" style="color:#8a1c12;font-weight:700">本機儲存 · 僅在此裝置此瀏覽器有效</span>`,
     `<p>所有資料只存在<b>這台電腦、這個瀏覽器</b>：換電腦、換瀏覽器、用無痕視窗都看不到；清除瀏覽資料會全部消失。</p><p>沒有登入和權限控管，請用電腦的開機密碼保護。下面會顯示目前用了多少空間。</p>`)); }
 /* ============ 統計分析（月／季／年），版面比照衛生追蹤 ============ */
@@ -795,7 +807,7 @@ async function readXlsxCAPA(file){
   return out; }
 /* 把 Excel 內容整理成案件（還不存），回傳要給使用者確認的摘要 */
 function impPlan(sheets){ const plan={add:[],dup:[],empty:0,badDate:[],cols:new Map(),skipCols:new Set(),pics:0};
-  const nos=new Set(C.map(c=>String(c.no))), t=today();
+  const nos=new Set(C.map(c=>String(c.no))), t=today(), sig=o=>[o.date,o.item,o.lot,o.desc].map(x=>String(x||'').trim()).join('|'), sigs=new Set(C.map(sig)); plan.same=0;
   for(const sh of sheets){ let hr=-1;
     for(let r=0;r<Math.min(sh.rows.length,15);r++){ const fs=(sh.rows[r]||[]).map(impField); if(fs.filter(Boolean).length>=3&&(fs.includes('item')||fs.includes('desc'))){ hr=r; break; } }
     if(hr<0) continue; const hdr=sh.rows[hr]||[], fmap=[];
@@ -811,6 +823,7 @@ function impPlan(sheets){ const plan={add:[],dup:[],empty:0,badDate:[],cols:new 
       if(!o.item&&!o.desc){ plan.empty++; continue; }
       if(!o.date) o.date=t;
       if(o.no&&nos.has(o.no)){ plan.dup.push(o.no); continue; }
+      if(!o.no&&sigs.has(sig(o))){ plan.same++; continue; } sigs.add(sig(o));
       o._pics=pics.map(pc=>({path:pc.path,blobOf:sh.blobOf})); plan.pics+=o._pics.length;
       if(o.no) nos.add(o.no); plan.add.push(o); } }
   return plan; }
@@ -827,9 +840,10 @@ async function importXlsx(inp){ const f=inp.files[0]; inp.value=''; if(!f) retur
     (P.skipCols.size?`\n\n沒有對應、不會匯入的欄位：${[...P.skipCols].join('、')}`:'')+
     `\n\n可以匯入：${P.add.length} 件（照片 ${P.pics} 張）`+
     (P.dup.length?`\n略過 ${P.dup.length} 件：案件編號已經存在（${P.dup.slice(0,5).join('、')}${P.dup.length>5?'…':''}）`:'')+
+    (P.same?`\n略過 ${P.same} 件：沒有案件編號，但發現日期、品項、批號、異常描述跟現有案件完全一樣`:'')+
     (P.empty?`\n略過 ${P.empty} 列：沒有品項也沒有異常描述`:'')+
     (P.badDate.length?`\n\n看不懂的日期（已留空${P.badDate.some(x=>x.includes('效期')||x.includes('校期'))?'，效期原文放進備註':''}）：\n${P.badDate.slice(0,6).map(x=>'・'+x).join('\n')}${P.badDate.length>6?'\n…':''}`:'')+
-    `\n\n沒填發現日期的，會用今天（${fmtD(today())}）；沒填案件編號的，會自動產生。`;
+    `\n\n沒填發現日期的，會用今天（${fmtD(today())}）；沒填案件編號的，會自動產生。\n匯入只會「新增」案件，不會覆蓋或刪除系統裡原本的案件。`;
   if(!P.add.length){ await say(msg+'\n\n沒有可以匯入的案件。'); return; }
   if(!(await ask(msg,`匯入 ${P.add.length} 件`))) return;
   toast('正在匯入…'); const oC=JSON.stringify(C), oS=JSON.stringify(S), newPh=[], now=new Date().toISOString(); let badPh=0;
@@ -841,6 +855,16 @@ async function importXlsx(inp){ const f=inp.files[0]; inp.value=''; if(!f) retur
   if(!persist()){ C=JSON.parse(oC); S=JSON.parse(oS); for(const id of newPh){ try{ await PDB.del(id); }catch(e){} delete PHC[id]; } return; }
   Object.assign(F,{q:'',year:'',month:'',station:'',vendor:'',cat1:'',cat2:'',status:''}); page='list'; renderList();
   await say(`已匯入 ${P.add.length} 件 ✦${badPh?`\n其中 ${badPh} 張圖片讀不出來，已略過。`:''}\n\n建議現在到「設定與資料」下載一份備份。`); }
+/* 按「從 Excel 匯入」先說明表格要長什麼樣子 */
+function impIntro(){ const m=document.createElement('div'); m.className='modal';
+  const rows=[['案件編號','自訂編號；空白就自動產生'],['發現日期','空白就用匯入當天'],['工作站',''],['品項','必填（或填「異常」）'],['廠商',''],['批號',''],['效期','日期，例：2026.12.31'],['異常','必填（或填「品項」）'],['圖片(1)、圖片(2)','插在格子上的圖片，最多 2 張'],['備註',''],['處理辦法',''],['結案日期','有填就是「已結案」'],['分類一','供應商／廠內異常'],['分類二','天然異物、非天然異物…']];
+  m.innerHTML=`<div class="box" style="max-width:620px"><h2 style="margin:0 0 6px;font-size:17px">📥 從 Excel 匯入</h2>
+    <div class="small muted" style="margin-bottom:8px">請用 <b>.xlsx</b> 檔，第一列（或最上面幾列內）放下面的欄位名稱，一列一件案件。欄位順序不拘，系統只看<b>括號、冒號外面的字</b>（「圖片(1)」＝圖片）。</div>
+    <div class="tw" style="display:block;max-height:46vh"><table><thead><tr><th class="ns">Excel 欄名</th><th class="ns">說明</th></tr></thead><tbody>${rows.map(r=>`<tr style="cursor:default"><td style="white-space:nowrap"><b>${r[0]}</b></td><td class="small muted">${r[1]}</td></tr>`).join('')}</tbody></table></div>
+    <ul class="small" style="margin:8px 0 12px;padding-left:18px"><li>匯入只會<b>新增</b>案件，不會覆蓋或刪除原本的案件；分好幾個檔案匯入也沒關係。</li><li>案件編號已經存在的、或沒編號但內容完全一樣的，會自動略過，不會重複。</li><li>按下匯入前，會先列出每一欄對到哪裡、可以匯入幾件，確認後才存。</li></ul>
+    <div class="row" style="justify-content:flex-end"><button id="iN">取消</button><button id="iT">下載匯入範本</button><button class="pri" id="iY">選擇 Excel 檔</button></div></div>`;
+  document.body.appendChild(m); m.querySelector('#iN').onclick=()=>m.remove(); m.querySelector('#iT').onclick=()=>dlImpTemplate();
+  m.querySelector('#iY').onclick=()=>{ m.remove(); $('#xlsxIn').click(); }; m.querySelector('#iY').focus(); }
 /* 匯入範本：只有標題列，欄名跟系統對得上 */
 function dlImpTemplate(){ const H=['案件編號','發現日期','工作站','品項','廠商','批號','效期','異常','圖片(1)','圖片(2)','備註','處理辦法','結案日期','分類一：供應商、廠內異常','分類二：天然異物、非天然異物'];
   const col=i=>String.fromCharCode(65+i), cell=(v,i)=>`<c r="${col(i)}1" t="inlineStr" s="1"><is><t>${wx(v)}</t></is></c>`;
@@ -855,7 +879,7 @@ function dlImpTemplate(){ const H=['案件編號','發現日期','工作站','�
 /* 設定頁：匯入說明卡（Excel 欄名 → 系統欄位對照） */
 function impCard(){ const show=['no','date','station','item','vendor','lot','expiry','desc','ph','note','method','closeDate','cat1','cat2'];
   return `<div class="card" style="margin-top:14px"><h2>📥 從 Excel 匯入</h2>
-   <div class="row" style="margin-bottom:8px"><button class="pri" onclick="$('#xlsxIn').click()">從 Excel 匯入（.xlsx）</button><button onclick="dlImpTemplate()">下載匯入範本</button></div>
+   <div class="row" style="margin-bottom:8px"><button class="pri" onclick="impIntro()">從 Excel 匯入（.xlsx）</button><button onclick="dlImpTemplate()">下載匯入範本</button></div>
    <div class="small muted" style="margin-bottom:6px">Excel 第一列（或標題在上面幾列內）放欄位名稱。系統只看<b>括號、冒號外面的字</b>：「圖片(1)」＝圖片、「分類一：供應商、廠內異常」＝分類一。按「匯入」前會先列出對應結果讓你確認。</div>
    <div class="tw" style="display:block"><table><thead><tr><th class="ns">Excel 欄名（任一個都可以）</th><th class="ns">匯入到系統的哪一欄</th><th class="ns">說明</th></tr></thead><tbody>
    ${show.map(k=>{ const m=IMP_MAP.find(x=>x[0]===k); const tip={no:'自訂編號照 Excel；空白就自動產生；跟現有案件重複的會略過',date:'空白就用匯入當天',expiry:'看得懂的日期才放進效期，看不懂的原文放進備註',ph:'圖片(1)、圖片(2) 兩格，插在格子上的圖片會一起匯入（最多 2 張）',closeDate:'有填就變成「已結案」',cat1:'跟設定裡的選項比對，沒有的會自動新增',cat2:'例：「其它品質因素」會對到「其它品質因素（含包裝／標示不良）」'}[k]||'';
