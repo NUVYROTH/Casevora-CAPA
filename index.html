@@ -348,7 +348,7 @@ let page='list', back='list', cur=null, dirty=false, viewId=null;
 const NAV=[['list','📋','異常案件清單'],['new','➕','新增異常案件'],['stats','📊','統計分析'],['trash','🗑️','最近刪除'],['settings','⚙️','設定與資料']];
 function nav(){ const lg=(document.querySelector('header .logo')||{}).src||'';
   $('#nav').innerHTML=`<div class="sbrand"><img src="${lg}" alt="Casevoras 標誌" width="44" height="44"><div><div class="sbn">Casevoras</div><div class="sbs">FOOD QUALITY TOOLS</div></div></div><div class="slab">工作台 WORKSPACE</div>`+
-  NAV.map(([k,i,n])=>`<button class="${(page===k||(k==='new'&&page==='edit'&&cur&&cur._isNew))?'on':''}" onclick="go('${k}')"><span class="ic">${i}</span>${n}</button>`).join('')+
+  NAV.map(([k,i,n])=>`<button class="${(page===k||(k==='new'&&page==='edit'&&cur&&cur._isNew))?'on':''}" onclick="navGo('${k}')"><span class="ic">${i}</span>${n}</button>`).join('')+
   `<span class="spacer"></span><button onclick="openGuide()"><span class="ic">?</span>使用說明</button><div class="sfoot"><b>CASEVORAS CAPA</b><br>個人工作站・本機資料模式<br>v1.3</div>`; }
 /* 每頁共用的頁首：標題、英文小標、說明、本機資料模式、誠實提醒、麵包屑、工具按鈕（與衛生追蹤、文件追蹤一致） */
 function headHTML(title,eb,desc,crumb,tools){
@@ -441,15 +441,15 @@ function drawList(){
    :`<div class="empty">${live().length?(F.status==='notdone'&&!anyF?'✅ 目前沒有未結案的案件（要看已結案的，請按「已結案」或「全部」）':'沒有符合條件的案件'):'目前還沒有案件，請按「＋ 新增異常案件」開始；已經有 Excel 紀錄的，可以按上面的「從 Excel 匯入」'}</div>`}`;
   fillPhotos(el);
 }
-function sortBy(k){ if(F.sort===k) F.dir=-F.dir; else { F.sort=k; F.dir=['date','no','due','closeDate','expiry'].includes(k)?-1:1; } saveSort(); drawList(); }
-/* 排序選單（選了會記住，下次打開一樣） */
+function sortBy(k){ if(F.sort===k) F.dir=-F.dir; else { F.sort=k; F.dir=['date','no','due','closeDate','expiry'].includes(k)?-1:1; } drawList(); }
+/* 排序選單：只在這次瀏覽有效；重新打開網頁或從左邊選單點「異常案件清單」就回到緊急程度（預設） */
 const SORTS=[['urgent:1','緊急程度（預設）'],['date:-1','發現日期：新 → 舊'],['date:1','發現日期：舊 → 新'],['no:-1','案件編號：大 → 小'],['due:1','預計完成日期：近 → 遠']];
-const SORT_KEY='casevoraCAPA_v1_sort';
 function sortSel(){ const v=F.sort+':'+F.dir, has=SORTS.some(o=>o[0]===v||(F.sort==='urgent'&&o[0]==='urgent:1')), cn=(COLS.find(c=>c[0]===F.sort)||[0,F.sort])[1];
   return `<select id="srtSel" style="width:auto;padding:4px 8px;font-size:13px" onchange="setSort(this.value)">${SORTS.map(([k,n])=>`<option value="${k}" ${(F.sort==='urgent'?k==='urgent:1':k===v)?'selected':''}>${n}</option>`).join('')}${has?'':`<option selected value="${esc(v)}">${esc(cn)}：${F.dir>0?'小 → 大':'大 → 小'}</option>`}</select>`; }
-function setSort(v){ const [k,d]=v.split(':'); F.sort=k; F.dir=+d||1; saveSort(); drawList(); }
-function saveSort(){ try{ localStorage.setItem(SORT_KEY,F.sort+':'+F.dir); }catch(e){} }
-(function(){ try{ const v=localStorage.getItem(SORT_KEY); if(v){ const [k,d]=v.split(':'); if(k==='urgent'||COLS.some(c=>c[0]===k)){ F.sort=k; F.dir=+d||1; } } }catch(e){} })();
+function setSort(v){ const [k,d]=v.split(':'); F.sort=k; F.dir=+d||1; drawList(); }
+/* 從左邊選單點「異常案件清單」：排序回到預設 */
+function navGo(k){ if(k==='list'){ F.sort='urgent'; F.dir=1; } go(k); }
+try{ localStorage.removeItem('casevoraCAPA_v1_sort'); }catch(e){}
 function tog(id,v){ v?SEL.add(id):SEL.delete(id); drawList(); }
 function selAll(v){ const rows=filtered(); rows.forEach(c=>v?SEL.add(c.id):SEL.delete(c.id)); drawList(); }
 function clearF(){ Object.assign(F,{q:'',year:'',month:'',station:'',vendor:'',cat1:'',cat2:'',status:'notdone'}); renderList(); }
@@ -579,7 +579,7 @@ function listGuide(){ return guideBox('list','異常案件清單使用說明',
   gS(3,'搜尋與篩選',`${gIn('🔍 包裝區 黑色異物')}${gN(1)}${gIn('全部年度 ▾')}${gIn('全部廠商 ▾')}${gN(2)}`,
     `<p>搜尋欄${gN(1)}可以打案件編號、品項、廠商、批號、異常描述、處理辦法等；用<b>空格</b>分開可以同時找多個關鍵字。</p><p>下拉選單${gN(2)}可以依年度、月份、工作站、廠商、分類一、分類二篩選。按「清除篩選」回到全部。</p>`)+
   gS(4,'排序',`<span class="small">排序：</span>${gIn('緊急程度（預設） ▾')}${gN(1)}<span class="small">→ 發現日期：新 → 舊</span>`,
-    `<p>預設依<b>緊急程度</b>排：逾期未結 → 即將到期 → 其他，最急的在最上面。</p><p>表格上方的「排序」選單${gN(1)}可以改成<b>發現日期（新 → 舊／舊 → 新）</b>、案件編號、預計完成日期；選了會記住，下次打開一樣。要回來就選「緊急程度（預設）」。</p><p>電腦版也可以直接點表格的<b>欄位標題</b>排序，再點一次反過來。</p>`)+
+    `<p>預設依<b>緊急程度</b>排：逾期未結 → 即將到期 → 其他，最急的在最上面。</p><p>表格上方的「排序」選單${gN(1)}可以改成<b>發現日期（新 → 舊／舊 → 新）</b>、案件編號、預計完成日期，看這一次用。<b>重新打開網頁，或點左邊的「異常案件清單」，就會回到緊急程度（預設）</b>；從案件按「返回」回清單時，維持剛剛選的排序。</p><p>電腦版也可以直接點表格的<b>欄位標題</b>排序，再點一次反過來。</p>`)+
   gS(5,'點一列直接編輯',`${gIn('← 返回')}${gIn('看案件內容')}<span class="gin" style="color:#b42318">刪除</span>${gBtn('儲存')}`,
     `<p>點任一列（手機是點卡片）會<b>直接打開編輯表單</b>，改完按最下面的「儲存」。</p><p>上方的「看案件內容」可以看整理好的內容和照片大圖；「刪除」會先問一次，再移到「最近刪除」，30 天內都能救回來。</p>`)+
   gS(6,'從 Excel 匯入',`${gIn('從 Excel 匯入')}${gN(1)}${gIn('下載匯入範本')}${gN(2)}`,
