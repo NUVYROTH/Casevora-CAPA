@@ -170,10 +170,6 @@ dl.kv dd{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
 .ogrid .card{margin:0}
 .note{background:var(--info-soft);border:1px solid #b9cdeb;border-radius:8px;padding:8px 12px;font-size:13px;color:#1d3f73}
 /* 統計分析 */
-.seg{display:inline-flex;border:1px solid var(--field);border-radius:8px;overflow:hidden}
-.seg button{border:0;border-radius:0;padding:6px 14px}
-.seg button.on{background:var(--brand);color:#fffdf8}
-.st-title{font-size:18px;margin:4px 0 10px}
 .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}
 .kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 58px 12px 16px;position:relative;overflow:hidden;min-width:0}
 .kpi:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--gold)}
@@ -211,6 +207,65 @@ dl.kv dd{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
 .leg2 span{display:inline-flex;align-items:center;gap:6px}
 .leg2 i{width:24px;height:0;border-radius:0;border-top:3px solid #16213a;background:none!important}
 .leg2 i.dash{border-top:3px dashed var(--ok)}
+/* 使用說明（衛生追蹤同款） */
+.gcard{margin-top:14px}.gcard summary{cursor:pointer;display:flex;gap:10px;align-items:baseline;list-style:none;font-size:16px}
+.gcard summary::-webkit-details-marker{display:none}.gcard summary::before{content:'▸';color:var(--gold)}.gcard details[open] summary::before{content:'▾'}
+.gx{background:#f3ece0;border-radius:10px;padding:10px;display:grid;gap:8px;align-content:start;font-size:12px}
+.gx-c{background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px;display:grid;gap:6px}
+.gx-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.gx-b{display:inline-flex;align-items:center;padding:3px 9px;border:1px solid var(--field);border-radius:6px;background:#fff;font-size:11.5px;white-space:nowrap;color:var(--ink)}
+.gx-b.dk{background:var(--brand);color:#fff;border-color:var(--brand)}
+.gx-n{display:inline-flex;width:18px;height:18px;border-radius:50%;background:var(--gold);color:#fff;font-size:11px;font-weight:800;align-items:center;justify-content:center;flex:none;vertical-align:middle;margin:0 1px}
+.gx-in{background:#f5efe3;border:1px solid var(--line);border-radius:4px;padding:2px 7px;color:var(--muted);font-size:11.5px;white-space:nowrap}
+.gx-seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:2px;background:#fff}.gx-seg i{font-style:normal;padding:2px 9px;border-radius:999px;font-size:11px}.gx-seg i.on{background:var(--brand);color:#fff}
+.gx-k{display:inline-flex;flex-direction:column;align-items:center;min-width:44px;padding:4px 6px;border:1px solid var(--line);border-radius:6px;font-weight:800;font-size:14px;background:#fff}.gx-k small{font-weight:400;font-size:9.5px;color:var(--muted)}
+.gx-k.ok{color:var(--ok)}.gx-k.b{color:#1d4f91}.gx-k.rd{color:var(--bad);background:#fdecea}
+.gx .gin{background:#fff;border:1px solid var(--field);border-radius:6px;padding:3px 9px;font-size:11.5px}
+.gx .gin.dk{background:var(--brand);color:#fff;border-color:var(--brand)}
+.gx .gk{font-size:14px}
+.mg-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}
+.mg-step{display:grid;grid-template-columns:260px minmax(0,1fr);gap:12px;align-items:start;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--card)}
+.mg-h{font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.mg-h .no{display:inline-flex;width:22px;height:22px;border-radius:50%;background:var(--brand);color:#fff;align-items:center;justify-content:center;font-size:12px;flex:none}
+.mg-txt p{margin:0 0 6px;font-size:14px}.mg-txt .gx-n{width:17px;height:17px;font-size:10.5px}
+@media (max-width:1199px){.mg-grid{grid-template-columns:1fr}}
+@media (max-width:599px){.mg-step{grid-template-columns:1fr}}
+/* 統計分析（衛生追蹤同款） */
+.seg{display:inline-flex;gap:2px;background:#f3ece0;border:1px solid var(--line);border-radius:999px;padding:4px;overflow:visible}
+.seg button{border:0;background:none;border-radius:999px;padding:6px 18px;font-weight:700;color:var(--muted)}
+.seg button.on,.seg button.on:hover{background:var(--brand);color:#fffdf8}
+.dgrid{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;align-items:start}
+.dgrid>.card{margin-bottom:0}.dgrid>*{min-width:0}
+.rcol{display:flex;flex-direction:column;gap:14px}.rcol .card{margin-bottom:0}
+.lccard{margin-top:16px}
+.lcgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 24px}
+.lcgrid>*{min-width:0}
+.st-head{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.st-title{font-size:20px;font-weight:700;margin:4px 0 0}
+.st-sum{border-radius:8px;padding:12px 14px;font-size:16px;font-weight:700;margin:8px 0 14px;line-height:1.5}
+.st-sum.ok{background:var(--ok-soft);color:#0f5a2d}.st-sum.warn{background:var(--warn-soft);color:#7a3d06}
+.st-tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px}
+.st-tile{border:1px solid var(--line);border-radius:10px;padding:12px 10px;text-align:center;background:#fff}
+.st-tile .n{font-size:34px;font-weight:700;line-height:1.1}.st-tile .l{font-size:14px;font-weight:700;margin-top:4px}.st-tile .d{font-size:12px;color:var(--muted);margin-top:2px}
+.st-tile.t-done .n{color:var(--ok)} .st-tile.t-open .n{color:var(--info)} .st-tile.t-over .n{color:var(--bad)}
+.st-tile.t-over{border-color:#e7b4ae;background:var(--bad-soft)}
+.st-tile.click{cursor:pointer}.st-tile.click:hover,.st-tile.pick{box-shadow:0 0 0 2px var(--gold)}
+.st-note{font-size:12px;color:var(--muted);margin:2px 0 10px}
+.st-sec{margin:18px 0 6px;font-size:16px;font-weight:700;border-left:4px solid var(--brand);padding-left:8px;break-after:avoid}
+.st-bar{display:grid;grid-template-columns:minmax(80px,170px) 1fr 44px 70px;gap:8px;align-items:center;margin:4px 0;font-size:14px;padding:2px 4px;border-radius:6px}
+.st-bar.click{cursor:pointer}.st-bar.click:hover,.hb.click:hover{background:#fffaf0}
+.st-bar .b,.hb .b{display:block;background:#efe7d8;border-radius:4px;height:16px}
+.st-bar .b i,.hb .b i{display:block;height:100%;background:var(--brand);border-radius:4px;min-width:2px}
+.st-bar .v{text-align:right;font-weight:700}.st-bar .c{text-align:right}
+.hb{padding:5px 4px;border-radius:6px}.hb .b{height:10px;margin-top:4px}
+.hb-t{display:flex;gap:6px;align-items:baseline;font-size:13.5px}.hb-t span{flex:1;min-width:0;overflow-wrap:anywhere}
+.hb.click{cursor:pointer}
+table.mini{font-size:13px}table.mini td{min-width:0}table.mini td.nw{white-space:nowrap}
+.leg3{display:flex;gap:6px 14px;flex-wrap:wrap;justify-content:center;font-size:12.5px;color:var(--muted);margin-top:4px}
+.leg3 span{display:inline-flex;align-items:center;gap:6px}.leg3 i{display:inline-block;width:18px;height:3px;border-radius:2px}
+.kpi .n.nt{font-size:19px;line-height:1.5;overflow-wrap:anywhere}
+@media(max-width:1100px){ .dgrid{grid-template-columns:1fr} .lcgrid{grid-template-columns:1fr} }
+@media (max-width:640px){ .st-tiles{grid-template-columns:repeat(2,1fr)} .st-tile .n{font-size:30px} .st-bar{grid-template-columns:minmax(70px,110px) 1fr 34px 64px;font-size:13px} }
 @media(max-width:900px){
   .appg{grid-template-columns:1fr}
   .snav{position:static;flex-direction:row;overflow-x:auto;padding:6px}
@@ -246,7 +301,6 @@ dl.kv dd{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
   body{background:#fff;padding-left:0!important} main{padding:0} .appg{display:block} .card,.kpi{break-inside:avoid}
 }
 /* 使用說明 */
-.gcard summary{cursor:pointer;font-weight:800;font-size:15px;list-style:none}
 .gcard summary::-webkit-details-marker{display:none}
 .gwrap{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:12px;margin-top:12px}
 .gstep{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#fff}
@@ -389,7 +443,6 @@ function renderList(){
   $('#app').innerHTML=`${headHTML('異常矯正工作台','CORRECTIVE &amp; PREVENTIVE ACTION','從發現異常、原因分析、矯正預防到成效確認，讓每一件異常都有紀錄、有對策、有結案。','異常案件清單',
      `<button class="pri pnew" onclick="go('new')">＋ 新增異常案件</button><button class="lite" onclick="impIntro()">從 Excel 匯入</button><button class="lite" onclick="go('trash')">最近刪除（${C.filter(c=>c.deleted).length}）</button>${backupTools()}`)}
    ${listKpis()}
-   ${listGuide()}
    <div class="card"><div class="phd"><b>異常案件清單</b><span class="small muted">共 ${all.length} 件・未結 ${all.length-cnt('done')} 件</span></div>
     <div class="chips">${chip('notdone','未結案（'+(all.length-cnt('done'))+'）')}${chip('open','未處理（'+cnt('open')+'）')}${chip('track','改善追蹤中（'+cnt('track')+'）')}${chip('over','逾期未結（'+cnt('over')+'）')}${chip('soon','即將到期（'+cnt('soon')+'）')}${chip('done','已結案（'+cnt('done')+'）')}${chip('','全部（'+all.length+'）')}</div>
     <input type="search" id="fq" placeholder="搜尋：案件編號、品項、廠商、批號、異常描述、處理辦法…（空格可多個關鍵字）" value="${esc(F.q)}" oninput="F.q=this.value;if(!event.isComposing)drawList()" oncompositionend="F.q=this.value;drawList()" style="margin-bottom:8px">
@@ -401,7 +454,8 @@ function renderList(){
       ${sel('cat1',F.cat1,[...new Set([...S.cat1.map(x=>x.n),...all.map(c=>c.cat1).filter(Boolean)])].map(x=>[x,x]),'分類一：全部')}
       ${sel('cat2',F.cat2,[...new Set([...S.cat2.map(x=>x.n),...all.map(c=>c.cat2).filter(Boolean)])].map(x=>[x,x]),'分類二：全部')}
     </div>
-    <div id="lres"></div></div>`;
+    <div id="lres"></div></div>
+   ${listGuide()}`;
   drawList();
 }
 /* 一打開就看到：未結（含逾期、即將到期）、逾期、3 天內到期 */
@@ -459,13 +513,13 @@ function openView(id){ const c=C.find(x=>x.id===id); if(!c||c.deleted) return; v
   const kv=(rows)=>`<dl class="kv">${rows.map(([k,v])=>`<dt>${k}</dt><dd>${v===''||v==null?'<span class="muted">—</span>':v}</dd>`).join('')}</dl>`, t=v=>esc(v||'');
   $('#app').innerHTML=`${headHTML(`案件 ${esc(c.no)} ${stBadge(c)}`,'CASE DETAIL',esc(c.item||'（未填品項）')+(c.vendor?'・'+esc(c.vendor):'')+'・發現日期 '+fmtD(c.date),'案件 '+esc(c.no),
      `<button class="lite" onclick="go('${back==='view'?'list':back}')">← 返回清單</button><button class="pri pnew" onclick="openForm('${c.id}')">編輯</button><button class="dng" onclick="delCase('${c.id}')">刪除</button>`)}
-   ${viewGuide()}
    <div class="card"><h2>A. 基本資料</h2>${kv([['案件編號',t(c.no)],['發現日期',fmtD(c.date)],['工作站',t(c.station)],['產品品項',t(c.item)],['廠商',t(c.vendor)],['批號',t(c.lot)],['有效日期',fmtD(c.expiry)]])}</div>
    <div class="card"><h2>B. 異常與圖片</h2>${kv([['異常描述',t(c.desc)]])}
      <div class="phs" style="margin-top:10px">${(c.photos||[]).map((p,i)=>`<div class="ph"><img data-ph="${p}" alt="圖片(${i+1})" onclick="viewPhoto('${p}')"><div class="bar"><span>${i<2?`圖片(${i+1})`:`其他圖片 ${i+1}`}</span><button class="sm" onclick="savePhotoFile('${p}','${esc(c.no)}_照片${i+1}')">下載</button></div></div>`).join('')||'<span class="muted small">沒有照片</span>'}</div></div>
    <div class="card"><h2>C. 處理與結案</h2>${kv([['備註',t(c.note)],['處理辦法',t(c.method)],['結案日期',fmtD(c.closeDate)],['分類一',t(c.cat1)],['分類二',t(c.cat2)],['預計完成日期',fmtD(dueOf(c))+(c.due?'':' <span class="small muted">（沒填，以發現日期＋15 天計）</span>')]])}</div>
    ${(()=>{ const old=OLD_F.filter(([k])=>String(c[k]||'').trim()); return old.length?`<div class="card"><h2>其他（舊欄位，表單已不使用）</h2><div class="small muted" style="margin-bottom:6px">這些是以前填過的內容，資料都還在、也在備份裡；表單已經不再顯示這些欄位。</div>${kv(old.map(([k,n])=>[n,t(c[k])]))}</div>`:''; })()}
-   <div class="small muted">建立：${new Date(c.createdAt).toLocaleString('zh-TW')}・最後修改：${new Date(c.updatedAt).toLocaleString('zh-TW')}</div>`;
+   <div class="small muted">建立：${new Date(c.createdAt).toLocaleString('zh-TW')}・最後修改：${new Date(c.updatedAt).toLocaleString('zh-TW')}</div>
+   ${viewGuide()}`;
   fillPhotos($('#app')); window.scrollTo(0,0); }
 
 /* ============ 新增／編輯表單 ============ */
@@ -485,7 +539,6 @@ function inp(k,label,type,o){ o=o||{}; const v=esc(cur[k]); const on=`oninput="s
 function drawForm(){
   const c=cur, on1=S.cat1.filter(x=>x.on).map(x=>x.n), on2=S.cat2.filter(x=>x.on).map(x=>x.n);
   $('#app').innerHTML=`${headHTML(c._isNew?'新增異常案件':'編輯案件 '+esc(c.no),c._isNew?'NEW CASE':'EDIT CASE',c._isNew?'案件編號可以自己填，空白就自動產生（發現日期＋流水號）。':'修改後記得按最下面的「儲存」。',c._isNew?'新增異常案件':'編輯案件',`<button class="lite" onclick="cancelForm()">← 返回</button>${c._isNew?'':`<button class="lite" onclick="formView()">看案件內容</button><button class="dng" onclick="formDel()">刪除</button>`}`)}
-   ${formGuide()}
    <div class="note" style="margin-bottom:12px">欄位跟 Excel 一樣，只多一格「預計完成日期」。只有「發現日期」必填，另外「產品品項」或「異常描述」至少填一個；其他還沒拿到資料可以先空白。</div>
    <details class="sec" open><summary><span class="no">A</span>基本資料</summary><div class="body"><div class="grid">
      ${inp('no','案件編號','text',{ph:'空白會自動產生（發現日期＋流水號）'})}${inp('date','發現日期','date',{req:true})}${inp('station','工作站','list',{opts:optsOf('stations','station')})}${inp('item','產品品項','text')}
@@ -502,6 +555,7 @@ function drawForm(){
      <div class="wide small muted">分類二：天然異物、非天然異物、規格不符、風味口感不良、其它品質因素（含包裝／標示不良）、其它異常原因。2 項以上之原因時，以較多或較嚴重之問題歸類。</div>
      <div style="background:var(--info-soft);border-radius:8px;padding:6px 10px">${inp('due','預計完成日期（Excel 沒有，系統用）','date')}</div>
      <div class="small muted" style="align-self:end">預計完成日期預設是發現日期＋15 天，可以改；過了還沒結案會變「逾期未結」。填了「結案日期」，狀態就會變成「已結案」。</div></div></div></details>
+   ${formGuide()}
    <div class="savebar"><div class="in"><button class="pri" onclick="saveForm()">儲存</button><button onclick="cancelForm()">取消</button><span id="dm"></span></div></div>`;
   drawPhotos(); markDirty(false);
 }
@@ -524,7 +578,7 @@ async function formDel(){ if(dirty&&!(await ask('有尚未儲存的修改，確�
   const id=cur.id; await delCase(id); const c=C.find(x=>x.id===id);
   if(c&&c.deleted){ await dropNewPhotos(); dirty=false; cur=null; } }
 async function cancelForm(){ if(dirty&&!(await ask('有尚未儲存的修改，確定要放棄嗎？','放棄修改',true))) return; await dropNewPhotos(); const wasNew=cur._isNew, id=cur.id; dirty=false; cur=null;
-  if(!wasNew&&back==='view') openView(id); else { page=back==='view'?'list':back; ({list:renderList,trash:renderTrash,settings:renderSettings}[page]||renderList)(); } }
+  if(!wasNew&&back==='view') openView(id); else { page=back==='view'?'list':back; ({list:renderList,trash:renderTrash,settings:renderSettings,stats:renderStats}[page]||renderList)(); } }
 async function saveForm(){
   const c=cur; ['no','item','desc','station','vendor','lot'].forEach(k=>c[k]=String(c[k]||'').trim()); c.no=c.no.slice(0,30);
   if(c.no&&C.some(x=>x.id!==c.id&&String(x.no)===c.no)){ await say(`案件編號「${c.no}」已經有別的案件在用了（也可能在「最近刪除」裡），請換一個，或留空白自動產生。`); return; }
@@ -542,34 +596,28 @@ async function saveForm(){
 }
 
 /* ---------- 統計分析使用說明（打開／收起會記住） ---------- */
-const GUIDE_KEY='casevoraCAPA_v1_guide_stats';
-const gN=n=>`<span class="gn">${n}</span>`;
-const gS=(n,t,demo,txt)=>`<div class="gstep"><div class="gh"><span class="gno">${n}</span><b>${t}</b></div><div class="gdemo">${demo}</div><div class="gtxt">${txt}</div></div>`;
-function statsGuide(){ let open=false; try{ open=localStorage.getItem(GUIDE_KEY)==='1'; }catch(e){}
-  const k=(n,l,c)=>`<span class="gk ${c||''}">${n}<small>${l}</small></span>`, bar=(l,w,hl)=>`<div class="gbr"><span>${l}</span><i style="width:${w}%"></i>${hl?gN(hl):''}</div>`;
-  return `<div class="card gcard noprint"><details id="sguide" ${open?'open':''} ontoggle="try{localStorage.setItem(GUIDE_KEY,this.open?'1':'0')}catch(e){}">
-   <summary>📖 統計分析使用說明 <span class="small muted">（點這裡打開／收起）</span></summary>
-   <div class="gwrap">
-    ${gS(1,'選期間',`${gN(1)}<span class="seg gseg"><i>年度</i><i>每季</i><i class="on">每月</i></span> ${gN(2)}<span class="gin">2026 年 ▾</span><span class="gin">11 月 ▾</span> ${gN(3)}<span class="gin">◀ ▶</span>`,
-      `<p>先選「年度／每季／每月」${gN(1)}，再選年份、月份或第幾季${gN(2)}。</p><p>按 ◀ ▶${gN(3)}可以直接跳到上一期、下一期。下面所有數字、長條和圖表都會跟著換。</p>`)}
-    ${gS(2,'看四個數字',`${k(12,'本期新增')}${k(9,'本期結案','ok')}${k(3,'尚未結案','warn')}${k(1,'逾期未結','bad')}`,
-      `<p><b>本期新增</b>：發現日期在這一期的案件。</p><p><b>本期結案</b>：結案日期在這一期的案件，<b>也包含以前發生、這期才結案的</b>，所以有時會比新增還多。</p><p><b>尚未結案、逾期未結</b>：本期新增的案件裡，到<b>今天</b>為止還沒結案、已經超過預計完成日期的件數。</p>`)}
-    ${gS(3,'▲▼ 跟上期比幾 %',`${k(12,'新增<br><b style="color:#b42318">▲ +20%</b>')}${k(9,'結案<br><b style="color:#167a3e">▲ +12%</b>','ok')}`,
-      `<p>數字卡和長條旁邊的百分比，是跟「上一期」比較的結果，給主管一眼就看出變多還是變少。</p><p><b style="color:#b42318">紅色＝變差</b>（異常變多，或結案變少）；<b style="color:#167a3e">綠色＝變好</b>。</p><p>這一期還沒過完時，上期只算到<b>同一天</b>（例：11/1～11/19 比 10/1～10/19），不會拿半個月去比一整個月。</p>`)}
-    ${gS(4,'處理狀態圓餅圖',`<span class="gdonut"></span><span class="small">未處理・改善追蹤中・即將到期・逾期未結・已結案</span>`,
-      `<p>本期新增的案件，現在各在哪個處理狀態，跟清單上的狀態標籤是同一套判斷。</p>`)}
-    ${gS(5,'四張長條：點一下看案件',`<div style="flex:1">${bar('供應商',80,1)}${bar('廠內異常',45)}${bar('（未填）',15)}</div>`,
-      `<p>依<b>分類一：異常來源、分類二：異常原因、工作站／發生部門、廠商</b>統計本期新增的件數和佔比，前 10 名以外的合計在最下面。</p><p>點任一列${gN(1)}，會跳到「異常案件清單」並自動篩好那些案件；看「每季」時，清單只能依年度篩，會列出全年。「（未填）」代表那個欄位沒填，點不了，記得回案件補上。</p>`)}
-    ${gS(6,'每月趨勢折線圖',`<span class="small"><b style="color:#16213a">── 新增</b>　<b style="color:#167a3e">- - 結案</b></span>`,
-      `<p>最下面是所選年份 1～12 月的新增件數（實線）和結案件數（虛線），還沒到的月份不畫。手機上可以左右滑動看完整的圖。</p>`)}
-    ${gS(7,'下載 Word 報表、列印',`<span class="gin dk">下載 Word 報表</span><span class="gin">列印／存成 PDF</span>`,
-      `<p>「下載 Word 報表」會依目前選的期間產生<b>月報／季報／年報</b>（.docx），內容有總覽、處理狀態（含圓餅圖）、四種分類件數表、每月趨勢表和折線圖，可以直接拿去開會或交給主管。</p><p>「列印／存成 PDF」會隱藏選單和按鈕，只印統計內容。</p>`)}
-    ${gS(8,'資料從哪裡來',`<span class="small" style="color:#8a1c12;font-weight:700">本機儲存 · 僅在此裝置此瀏覽器有效</span>`,
-      `<p>統計只算<b>這台電腦、這個瀏覽器</b>裡的案件，「最近刪除」裡的不算。換電腦看到的數字會不一樣，要合併請用「設定與資料」的備份與還原。</p>`)}
-   </div></details></div>`; }
+/* ---------- 使用說明（跟衛生追蹤同一個樣式：左邊示意圖、右邊文字；放在每頁最下方） ---------- */
+const gN=n=>`<span class="gx-n">${n}</span>`;
+const gS=(n,t,demo,txt)=>`<div class="mg-step"><div class="gx"><div class="gx-c"><div class="gx-row">${demo}</div></div></div><div class="mg-txt"><div class="mg-h"><span class="no">${n}</span>${t}</div>${txt}</div></div>`;
+function statsGuide(){ const k=(n,l,c)=>`<span class="gx-k ${c||''}">${n}<small>${l}</small></span>`, bar=(l,w,hl)=>`<div class="gbr"><span>${l}</span><i style="width:${w}%"></i>${hl?gN(hl):''}</div>`;
+  return guideBox('stats','統計分析使用說明',
+    gS(1,'選期間',`${gN(1)}<span class="gx-seg"><i>年度</i><i>每季</i><i class="on">每月</i></span></div><div class="gx-row">${gN(2)}<span class="gx-b">◀</span><span class="gx-in">2026 年 ▾</span><span class="gx-in">11 月 ▾</span><span class="gx-b">▶</span>`,
+      `<p>先選「年度／每季／每月」${gN(1)}，再選年份、月份或第幾季${gN(2)}；◀ ▶ 可以直接跳上一期、下一期。左邊「統計報表」的數字、明細和排行都會跟著換。</p>`)+
+    gS(2,'看四個數字、點開案件',`${k(12,'新增')}${k(5,'已結案','ok')}${k(5,'尚未結案','b')}${gN(1)}${k(2,'逾期未結','rd')}`,
+      `<p>新增 ＝ 已結案 ＋ 尚未結案 ＋ 逾期未結，都是看本期新增的案件「到今天」的狀態。</p><p>點任一格${gN(1)}，下面會列出是哪幾件；再點案件就能直接打開編輯。</p>`)+
+    gS(3,'逾期明細、各分類排行',`<div style="flex:1">${bar('包裝組',80,1)}${bar('打漿組',45)}${bar('生產',25)}</div>`,
+      `<p>「逾期未結明細」列出本期逾期的案件和逾期幾天，最久的在最上面。</p><p>下面依<b>工作站、分類一、分類二、廠商</b>排行；點任一列${gN(1)}會跳到清單並篩好那些案件（看「每季」時清單只能篩年度，會列出全年）。</p>`)+
+    gS(4,'右側三張卡',`<span class="gdonut"></span><div style="flex:1">${bar('天然異物',70)}${bar('規格不符',40)}</div>`,
+      `<p>右邊是<b>所選年份</b>的處理狀態（圓餅圖）、異常原因（分類二）、廠商件數，旁邊的 ▲▼ 是跟<b>去年同期</b>比。每一列也都能點。</p>`)+
+    gS(5,'📈 每月趨勢',`<span class="small"><b style="color:#16213a">── 新增</b>　<b style="color:#167a3e">- - 結案</b></span>`,
+      `<p>最下面三張折線圖看所選年份 1～12 月：<b>每月異常總數</b>（新增、結案）、<b>各工作站每月件數</b>、<b>各異常原因每月件數</b>（各取前 5 名）。還沒到的月份不畫；手機上可以左右滑動。</p>`)+
+    gS(6,'▲▼ 跟上期比幾 %',`${k(12,'新增 <b style="color:#b42318">▲ +20%</b>')}${k(5,'已結案 <b style="color:#167a3e">▲ +8%</b>','ok')}`,
+      `<p><b style="color:#b42318">紅色＝變差</b>（異常、逾期變多，或結案變少）；<b style="color:#167a3e">綠色＝變好</b>。本期還沒過完時，上期只算到<b>同一天</b>（例：11/1～11/19 比 10/1～10/19）。</p>`)+
+    gS(7,'下載 Word 報表、列印',`<span class="gx-b">下載 Word 報表</span><span class="gx-b">列印／存成 PDF</span>`,
+      `<p>「下載 Word 報表」依目前選的期間產生<b>月報／季報／年報</b>（.docx）：總覽、逾期明細、各分類排行、處理狀態、每月趨勢和圖表。「列印／存成 PDF」只印統計內容。</p><p>統計只算<b>這台電腦、這個瀏覽器</b>裡的案件，「最近刪除」裡的不算。</p>`)); }
 /* ---------- 各分頁的使用說明（打開／收起會記住） ---------- */
 function guideBox(k,title,body){ const key='casevoraCAPA_v1_guide_'+k; let open=false; try{ open=localStorage.getItem(key)==='1'; }catch(e){}
-  return `<div class="card gcard noprint"><details id="guide_${k}" ${open?'open':''} ontoggle="try{localStorage.setItem('${key}',this.open?'1':'0')}catch(e){}"><summary>📖 ${title} <span class="small muted">（點這裡打開／收起）</span></summary><div class="gwrap">${body}</div></details></div>`; }
+  return `<div class="card gcard noprint"><details id="guide_${k}" ${open?'open':''} ontoggle="try{localStorage.setItem('${key}',this.open?'1':'0')}catch(e){}"><summary><b>📖 ${title}</b><span class="muted small">（點這裡展開／收合）</span></summary><div class="mg-grid">${body}</div></details></div>`; }
 const gBadge=(t,c)=>`<span class="st ${c}">${t}</span>`, gIn=t=>`<span class="gin">${t}</span>`, gBtn=t=>`<span class="gin dk">${t}</span>`;
 function listGuide(){ return guideBox('list','異常案件清單使用說明',
   gS(1,'一打開先看四格數字',`<span class="gk">5<small>未結案</small></span>${gN(1)}<span class="gk bad">2<small>逾期未結</small></span><span class="gk warn">1<small>3 天內到期</small></span><span class="gk">3<small>本月新增</small></span>`,
@@ -643,53 +691,108 @@ function pShift(v,y,a,k){ if(v==='month'){ const t=y*12+a-1+k; return {y:Math.fl
 function prevRange(v,y,a){ const rg=pRange(v,y,a), pv=pShift(v,y,a,-1), pr=pRange(v,pv.y,pv.a), t=today();
   if(t>=rg.start&&t<rg.end){ const e=addDays(pr.start,daysBetween(rg.start,t)); if(e<pr.end){ pr.end=e; pr.same=true; } } return pr; }
 function stCompute(rg){ const a=live(), inP=d=>d&&d>=rg.start&&d<=rg.end, cases=a.filter(c=>inP(c.date));
-  return {cases, closed:a.filter(c=>inP(c.closeDate)), open:cases.filter(c=>statusOf(c)!=='done'), over:cases.filter(c=>statusOf(c)==='over')}; }
+  const done=cases.filter(c=>statusOf(c)==='done'), over=cases.filter(c=>statusOf(c)==='over'), open=cases.filter(c=>{ const s=statusOf(c); return s!=='done'&&s!=='over'; });
+  return {cases,done,open,over}; }
 function chg(n,pn,good){ if(pn==null) return ''; let t, cls;
   if(n===pn){ t='＝ 持平'; cls='eq'; } else if(!pn){ t='▲ 新增'; cls=good?'good':'bad'; } else { const p=Math.round(Math.abs(n-pn)/pn*100); t=(n>pn?'▲ +':'▼ −')+(p||'<1')+'%'; cls=((n>pn)!==!!good)?'bad':'good'; }
   return `<span class="chg ${cls}" title="上期 ${pn} 件 → 本期 ${n} 件">${t}</span>`; }
-const SGRP=[['cat1','分類一：異常來源'],['cat2','分類二：異常原因'],['station','工作站／發生部門'],['vendor','廠商']];
+const SGRP=[['station','哪個工作站異常最多'],['cat1','分類一（供應商／廠內異常）'],['cat2','分類二（異常原因）排行'],['vendor','廠商排行']];
 const SCOL={open:'#c0392b',track:'#d4a017',soon:'#f97316',over:'#7a1010',done:'#167a3e'};
+const LCOL=['#16213a','#b8955a','#1d4f91','#167a3e','#b42318'];
 function countBy(list,f){ const m=new Map(); list.forEach(c=>{ const k=String(c[f]||'').trim(); m.set(k,(m.get(k)||0)+1); }); return [...m].sort((x,y)=>y[1]-x[1]||(x[0]===''?1:y[0]===''?-1:x[0].localeCompare(y[0]))); }
+/* 今年（所選年份）到今天為止，跟去年同期比 */
+function yearRanges(y){ const t=today(), cy=+t.slice(0,4), md=t.slice(5);
+  const end=y===cy?`${y}-${md}`:`${y}-12-31`, pend=y===cy?`${y-1}-${md==='02-29'?'02-28':md}`:`${y-1}-12-31`;
+  return {cur:{start:`${y}-01-01`,end},prev:{start:`${y-1}-01-01`,end:pend},same:y===cy}; }
 /* 統計資料（畫面和 Word 共用同一份，數字一定一致） */
 function stData(){ stInit(); const rg=pRange(stV,stY,stA()), pr=prevRange(stV,stY,stA()), cur=stCompute(rg), prv=stCompute(pr), tot=cur.cases.length;
   const groups=SGRP.map(([f,n])=>{ const pm=new Map(countBy(prv.cases,f)); return {f,n,rows:countBy(cur.cases,f).map(([k,v])=>({k,v,pct:tot?Math.round(v/tot*100):0,pv:pm.get(k)||0}))}; });
   const status=['open','track','soon','over','done'].map(k=>({k,n:ST[k][0],v:cur.cases.filter(c=>statusOf(c)===k).length}));
+  const YR=yearRanges(stY), yC=stCompute(YR.cur), yP=stCompute(YR.prev);
+  const yStatus=['open','track','soon','over','done'].map(k=>({k,n:ST[k][0],v:yC.cases.filter(c=>statusOf(c)===k).length}));
+  const ySide=f=>{ const pm=new Map(countBy(yP.cases,f)); return countBy(yC.cases,f).map(([k,v])=>({k,v,pv:pm.get(k)||0})); };
   const t=today(), months=[...Array(12)].map((_,i)=>{ const pre=`${stY}-${p2(i+1)}`, fut=pre>t.slice(0,7);
     return {m:i+1,fut,nw:fut?null:live().filter(c=>(c.date||'').startsWith(pre)).length,cl:fut?null:live().filter(c=>(c.closeDate||'').startsWith(pre)).length}; });
-  return {rg,pr,cur,prv,tot,groups,status,months}; }
+  const topSeries=f=>{ const yr=live().filter(c=>(c.date||'').startsWith(stY+'-')); return countBy(yr,f).filter(([k])=>k).slice(0,5).map(([k],i)=>({name:k,color:LCOL[i],vals:months.map(m=>m.fut?null:yr.filter(c=>String(c[f]||'').trim()===k&&(c.date||'').slice(5,7)===p2(m.m)).length)})); };
+  const overList=cur.over.slice().sort((a,b)=>dueOf(a).localeCompare(dueOf(b)));
+  return {rg,pr,cur,prv,tot,groups,status,months,yStatus,yTot:yC.cases.length,yCat2:ySide('cat2'),yVendor:ySide('vendor'),YR,stSeries:topSeries('station'),c2Series:topSeries('cat2'),overList}; }
 function stName(){ return stV==='month'?'月報':stV==='quarter'?'季報':'年報'; }
+/* 上方四格：跟衛生追蹤一樣看「現在」 */
+function statKpis(){ const a=live(), t=today(), thisM=t.slice(0,7), [yy,mm]=thisM.split('-').map(Number), lm=mm===1?`${yy-1}-12`:`${yy}-${p2(mm-1)}`;
+  const nM=a.filter(c=>(c.date||'').startsWith(thisM)).length, nLM=a.filter(c=>(c.date||'').startsWith(lm)).length;
+  const nd=a.filter(c=>statusOf(c)!=='done'), ov=nd.filter(c=>statusOf(c)==='over').length;
+  const Y=a.filter(c=>(c.date||'').startsWith(String(yy)+'-')), yd=Y.filter(c=>statusOf(c)==='done').length, rate=Y.length?Math.round(yd/Y.length*100):null;
+  const top=countBy(Y,'cat2').filter(([k])=>k)[0];
+  return `<div class="kpis">
+    <div class="kpi"><span class="kic" aria-hidden="true">${KIC.doc}</span><div class="l">本月新增</div><div class="n">${nM}<small>件</small></div><div class="d">上月 ${nLM} 件</div></div>
+    <div class="kpi warn go" onclick="F.status='notdone';F.sort='urgent';go('list')"><span class="kic kw" aria-hidden="true">${KIC.clock}</span><div class="l">未結案</div><div class="n">${nd.length}<small>件</small></div><div class="d">${nd.length?`其中逾期 ${ov} 件`:'目前沒有未結案'}</div></div>
+    <div class="kpi ok"><span class="kic kok" aria-hidden="true">${KIC.ok}</span><div class="l">今年結案率</div><div class="n">${rate==null?'—':rate+'<small>%</small>'}</div><div class="d">${Y.length?`今年 ${Y.length} 件・已結案 ${yd} 件`:'今年還沒有案件'}</div></div>
+    <div class="kpi info"><span class="kic kin" aria-hidden="true">${KIC.cal}</span><div class="l">最多的異常原因</div><div class="n nt">${top?esc(top[0]):'—'}</div><div class="d">${top?`今年 ${top[1]} 件`:'今年還沒有案件'}</div></div>
+  </div>`; }
+let stPick='';
+function stPickSet(k){ stPick=stPick===k?'':k; renderStats(); const el=$('#stList'); if(el) el.scrollIntoView({behavior:'smooth',block:'nearest'}); }
+function caseMini(list,extra){ return list.length?`<div class="tw" style="display:block"><table class="mini"><thead><tr><th class="ns">案件編號</th><th class="ns">發現日期</th><th class="ns">產品品項</th><th class="ns">廠商</th><th class="ns">預計完成</th><th class="ns">狀態</th>${extra?`<th class="ns">${extra[0]}</th>`:''}</tr></thead><tbody>${list.map(c=>`<tr onclick="openForm('${c.id}')"><td class="nw">${esc(c.no)}</td><td class="nw">${fmtD(c.date)}</td><td>${esc(c.item)}</td><td>${esc(c.vendor)}</td><td class="nw">${fmtD(dueOf(c))}</td><td>${stBadge(c)}</td>${extra?`<td class="nw">${extra[1](c)}</td>`:''}</tr>`).join('')}</tbody></table></div>`:'<div class="small muted">沒有案件。</div>'; }
 function renderStats(){ page='stats'; nav(); stInit(); const D=stData(), {rg,pr,cur,prv,tot}=D; STB=[];
-  const ys=[...new Set([...yearsOf().map(Number),stY])].sort((a,b)=>b-a);
+  const ys=[...new Set([...yearsOf().map(Number),stY])].sort((a,b)=>b-a), pn=stV==='month'?'上月':stV==='quarter'?'上季':'去年';
   const vt=(k,n)=>`<button class="${stV===k?'on':''}" onclick="setStat('v','${k}')">${n}</button>`;
-  const tile=(l,n,d,c,cls,ic,kc)=>`<div class="kpi ${cls||''}"><span class="kic ${kc||''}" aria-hidden="true">${KIC[ic]}</span><div class="l">${l}</div><div class="n">${n}<small> 件</small></div><div class="d">${d}</div>${c?`<div>${c}</div>`:''}</div>`;
-  const barCard=g=>{ const top=g.rows.slice(0,10), rest=g.rows.slice(10), mx=Math.max(1,...g.rows.map(r=>r.v));
-    return `<div class="card"><h2>${g.n}</h2>${top.length?top.map(r=>{ const i=STB.push({f:g.f,v:r.k})-1, can=r.k!=='';
-      return `<div class="sbar ${can?'go':''}" ${can?`onclick="stGo(${i})" title="看這些案件"`:''}><div class="sl">${r.k?esc(r.k):'<span class="muted">（未填）</span>'}</div><div class="strk"><i style="width:${Math.max(2,Math.round(r.v/mx*100))}%"></i></div><div class="sv"><b>${r.v}</b> 件 <span class="muted small">${r.pct}%</span> ${chg(r.v,r.pv)}</div></div>`; }).join('')
-      +(rest.length?`<div class="small muted" style="margin-top:6px">其他 ${rest.length} 項，共 ${rest.reduce((s,r)=>s+r.v,0)} 件</div>`:''):'<div class="empty small">本期沒有案件</div>'}</div>`; };
-  $('#app').innerHTML=`${headHTML('統計分析','STATISTICS','異常案件依月／季／年統計，可以下載 Word 月報、季報、年報。','統計分析',`<button id="wordBtn" class="pri pnew" onclick="dlStatsWord()">下載 Word 報表</button><button class="lite" onclick="window.print()">列印／存成 PDF</button>`)}
-   ${statsGuide()}
-   <div class="card stbar noprint"><div class="row">
-     <div class="seg">${vt('year','年度')}${vt('quarter','每季')}${vt('month','每月')}</div>
-     <button class="sm" onclick="stMove(-1)" aria-label="上一期">◀</button>
-     <select style="width:auto" aria-label="年度" onchange="setStat('y',this.value)">${ys.map(y=>`<option value="${y}" ${y===stY?'selected':''}>${y} 年</option>`).join('')}</select>
-     ${stV==='month'?`<select style="width:auto" aria-label="月份" onchange="setStat('m',this.value)">${[...Array(12)].map((_,i)=>`<option value="${i+1}" ${i+1===stM?'selected':''}>${i+1} 月</option>`).join('')}</select>`:''}
-     ${stV==='quarter'?`<select style="width:auto" aria-label="季" onchange="setStat('q',this.value)">${[1,2,3,4].map(q=>`<option value="${q}" ${q===stQ?'selected':''}>第 ${q} 季</option>`).join('')}</select>`:''}
-     <button class="sm" onclick="stMove(1)" aria-label="下一期">▶</button></div></div>
-   <h2 class="st-title">${esc(rg.label)}　<span class="small muted">異常矯正統計${stName()}</span></h2>
-   <div class="kpis">
-     ${tile('本期新增',tot,'發現日期在本期',chg(tot,prv.cases.length),'info','plus','kin')}
-     ${tile('本期結案',cur.closed.length,'結案日期在本期',chg(cur.closed.length,prv.closed.length,true),'ok','ok','kok')}
-     ${tile('尚未結案',cur.open.length,'本期新增中，到今天還沒結案','','amber','doc','kam')}
-     ${tile('逾期未結',cur.over.length,'本期新增中，已超過預計完成日','','warn','clock','kw')}
+  const tile=(k,cls,n,l,d,c)=>`<div class="st-tile click ${cls} ${stPick===k?'pick':''}" onclick="stPickSet('${k}')" title="點一下列出案件"><div class="n">${n}</div><div class="l">${l}</div><div class="d">${d}</div><div class="d">${c}</div></div>`;
+  const pickName={all:'新增',done:'已結案',open:'尚未結案',over:'逾期未結'}[stPick], pickList={all:cur.cases,done:cur.done,open:cur.open,over:cur.over}[stPick]||[];
+  const bars=g=>{ const top=g.rows.slice(0,10), rest=g.rows.slice(10), mx=Math.max(1,...g.rows.map(r=>r.v));
+    return `<div class="st-sec">${g.n}</div>${top.length?top.map(r=>{ const i=STB.push({f:g.f,v:r.k})-1, can=r.k!=='';
+      return `<div class="st-bar ${can?'click':''}" ${can?`onclick="stGo(${i})" title="看這些案件"`:''}><span>${r.k?esc(r.k):'<span class="muted">（未填）</span>'}</span><span class="b"><i style="width:${Math.max(2,Math.round(r.v/mx*100))}%"></i></span><span class="v">${r.v}</span><span class="c">${chg(r.v,r.pv)}</span></div>`; }).join('')
+      +(rest.length?`<div class="st-note">其他 ${rest.length} 項，共 ${rest.reduce((s,r)=>s+r.v,0)} 件</div>`:''):'<div class="st-note">尚無資料</div>'}`; };
+  const side=(title,sub,rows)=>{ const mx=Math.max(1,...rows.map(r=>r.v)); return `<div class="card"><div class="phd"><b>${title}</b><span class="small muted">${sub}</span></div>${rows.length?rows.slice(0,8).map(r=>{ const i=STB.push({f:r.f,v:r.k,year:1})-1, can=r.k!=='';
+      return `<div class="hb ${can?'click':''}" ${can?`onclick="stGo(${i})"`:''}><div class="hb-t"><span>${r.k?esc(r.k):'（未填）'}</span><b>${r.v}</b>${chg(r.v,r.pv)}</div><span class="b"><i style="width:${Math.max(2,Math.round(r.v/mx*100))}%"></i></span></div>`; }).join(''):`<div class="small muted">${stY} 年還沒有案件。</div>`}</div>`; };
+  const ysub=D.YR.same?`${stY} 年・▲▼ 比去年同期`:`${stY} 年・▲▼ 比前一年`;
+  const sum=!tot?['ok',`${rg.label}：尚無資料`]:cur.over.length?['warn',`${rg.label}：${tot} 件中有 ${cur.over.length} 件逾期未結，請優先追蹤`]:cur.open.length?['ok',`${rg.label}：${tot} 件，已結案 ${cur.done.length} 件，處理中 ${cur.open.length} 件，沒有逾期`]:['ok',`${rg.label}：${tot} 件全部結案 ✓`];
+  $('#app').innerHTML=`${headHTML('統計分析','STATISTICS','異常案件依月／季／年統計，可以下載 Word 月報、季報、年報。','統計分析',`<button id="wordBtn" class="lite" onclick="dlStatsWord()">下載 Word 報表</button><button class="lite" onclick="window.print()">列印／存成 PDF</button>`)}
+   ${statKpis()}
+   <div class="dgrid">
+    <div class="card">
+     <div class="phd"><b>統計報表</b></div>
+     <div class="st-head noprint"><div class="seg">${vt('year','年度')}${vt('quarter','每季')}${vt('month','每月')}</div></div>
+     <div class="st-head noprint"><button class="sm" onclick="stMove(-1)" aria-label="上一期">◀</button>
+      <select style="width:auto" aria-label="年度" onchange="setStat('y',this.value)">${ys.map(y=>`<option value="${y}" ${y===stY?'selected':''}>${y} 年</option>`).join('')}</select>
+      ${stV==='month'?`<select style="width:auto" aria-label="月份" onchange="setStat('m',this.value)">${[...Array(12)].map((_,i)=>`<option value="${i+1}" ${i+1===stM?'selected':''}>${i+1} 月</option>`).join('')}</select>`:''}
+      ${stV==='quarter'?`<select style="width:auto" aria-label="季" onchange="setStat('q',this.value)">${[1,2,3,4].map(q=>`<option value="${q}" ${q===stQ?'selected':''}>第 ${q} 季</option>`).join('')}</select>`:''}
+      <button class="sm" onclick="stMove(1)" aria-label="下一期">▶</button></div>
+     <h3 class="st-title">${esc(rg.label)}</h3>
+     <div class="st-sum ${sum[0]}">${sum[1]}</div>
+     <div class="st-tiles">
+      ${tile('all','',tot,'新增','發現日期在本期',chg(tot,prv.cases.length)+` <span class="muted">比${pn}${pr.same?'同期':''}（${prv.cases.length}）</span>`)}
+      ${tile('done','t-done',cur.done.length,'已結案','有填結案日期',chg(cur.done.length,prv.done.length,true)+` <span class="muted">（${prv.done.length}）</span>`)}
+      ${tile('open','t-open',cur.open.length,'尚未結案','還沒到預計完成日',chg(cur.open.length,prv.open.length)+` <span class="muted">（${prv.open.length}）</span>`)}
+      ${tile('over','t-over',cur.over.length,'逾期未結','超過預計完成日還沒結',chg(cur.over.length,prv.over.length)+` <span class="muted">（${prv.over.length}）</span>`)}
+     </div>
+     <div class="st-note">新增 ＝ 已結案 ＋ 尚未結案 ＋ 逾期未結（${tot} ＝ ${cur.done.length} ＋ ${cur.open.length} ＋ ${cur.over.length}），都是看本期新增案件「到今天」的狀態。點任一格可以列出是哪幾件。</div>
+     <div class="st-note">▲▼ 百分比＝跟${pn}${pr.same?'同期':''}（${fmtD(pr.start)}～${fmtD(pr.end)}）比：<b style="color:var(--bad)">紅色＝變差</b>（異常、逾期變多，或結案變少）、<b style="color:var(--ok)">綠色＝變好</b>。${pr.same?'本期還沒過完，所以上期也只算到同一天。':''}</div>
+     ${stPick?`<div id="stList"><div class="st-sec">本期「${pickName}」的案件（${pickList.length} 件）<button class="sm noprint" style="margin-left:8px" onclick="stPickSet('${stPick}')">收起</button></div>${caseMini(pickList)}</div>`:''}
+     <div class="st-sec">逾期未結明細（需追蹤）</div>${D.overList.length?caseMini(D.overList,['逾期',c=>`<b style="color:var(--bad)">${daysBetween(dueOf(c),today())} 天</b>`]):'<div class="st-note">本期沒有逾期未結的案件。</div>'}
+     ${D.groups.map(bars).join('')}
+    </div>
+    <div class="rcol">
+     <div class="card"><div class="phd"><b>處理狀態</b><span class="small muted">${stY} 年</span></div>${D.yTot?`<div class="pie"><figure data-title="${stY} 年處理狀態">${pieSVG(D.yStatus)}</figure><ul class="leg">${D.yStatus.map(s=>`<li><i style="background:${SCOL[s.k]}"></i>${s.n}<b>${s.v}</b><span class="muted small">${Math.round(s.v/D.yTot*100)}%</span></li>`).join('')}</ul></div>`:`<div class="small muted">${stY} 年還沒有案件。</div>`}</div>
+     ${side('異常原因（分類二）',ysub,D.yCat2.map(r=>({...r,f:'cat2'})))}
+     ${side('廠商件數',ysub,D.yVendor.map(r=>({...r,f:'vendor'})))}
+    </div>
    </div>
-   <div class="small muted" style="margin:-4px 0 12px">比上期：${pr.same?`上期只算到同一天（${fmtD(pr.start)}～${fmtD(pr.end)}），才不會拿沒過完的本期比整期`:`和 ${fmtD(pr.start)}～${fmtD(pr.end)} 比較`}。新增變多是紅色 ▲，結案變多是綠色 ▲。點長條可以看那些案件。</div>
-   <div class="sgrid">
-     <div class="card"><h2>處理狀態</h2>${tot?`<div class="pie"><figure data-title="處理狀態">${pieSVG(D.status)}</figure><ul class="leg">${D.status.map(s=>`<li><i style="background:${SCOL[s.k]}"></i>${s.n}<b>${s.v} 件</b><span class="muted small">${Math.round(s.v/tot*100)}%</span></li>`).join('')}</ul></div>`:'<div class="empty small">本期沒有案件</div>'}</div>
-     ${D.groups.map(barCard).join('')}
-   </div>
-   <div class="card"><h2>${stY} 年每月趨勢</h2><figure class="trend" data-title="${stY} 年每月新增與結案件數">${lineSVG(D.months)}</figure>
-     <div class="leg2"><span><i style="background:#16213a"></i>新增件數</span><span><i class="dash"></i>結案件數</span></div></div>`;
+   <div class="card lccard"><div class="phd"><b>📈 每月趨勢</b><span class="small muted">${stY} 年・依發現日期（結案依結案日期）</span></div>
+    <div class="lcgrid">
+     <div><div class="st-sec">每月異常總數</div><figure class="trend" id="trendMain" data-title="${stY} 年每月新增與結案件數">${lineSVG(D.months)}</figure><div class="leg2"><span><i style="background:#16213a"></i>新增件數</span><span><i class="dash"></i>結案件數</span></div></div>
+     <div><div class="st-sec">各工作站每月件數（前 5 名）</div>${multiHTML(D.stSeries,D.months)}</div>
+     <div><div class="st-sec">各異常原因每月件數（前 5 名）</div>${multiHTML(D.c2Series,D.months)}</div>
+    </div></div>
+   ${statsGuide()}`;
 }
+function multiHTML(series,months){ if(!series.length) return '<div class="st-note">這一年還沒有資料。</div>';
+  return `<figure class="trend">${multiSVG(series,months)}</figure><div class="leg3">${series.map(s=>`<span><i style="background:${s.color}"></i>${esc(s.name)}</span>`).join('')}</div>`; }
+function multiSVG(series,ms){ const W=640, H=220, L=36, R=12, T=14, B=28, vals=series.flatMap(s=>s.vals).filter(v=>v!=null), mx=Math.max(4,...vals), step=Math.ceil(mx/4), top=step*4;
+  const x=i=>L+(W-L-R)*i/11, y=v=>T+(H-T-B)*(1-v/top); let g='';
+  for(let k=0;k<=4;k++){ const v=step*k; g+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="#e3d9c6"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end" font-size="11" fill="#5d6779">${v}</text>`; }
+  ms.forEach((m,i)=>{ g+=`<text x="${x(i)}" y="${H-8}" text-anchor="middle" font-size="11" fill="#5d6779">${m.m}月</text>`; });
+  series.forEach(s=>{ const pts=s.vals.map((v,i)=>v==null?null:[x(i),y(v)]).filter(Boolean); if(!pts.length) return;
+    g+=`<polyline points="${pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ')}" fill="none" stroke="${s.color}" stroke-width="2.2"/>`+pts.map(p=>`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3" fill="${s.color}"/>`).join(''); });
+  return `<svg role="img" aria-label="每月件數折線圖" viewBox="0 0 ${W} ${H}" width="100%" font-family="Microsoft JhengHei,PingFang TC,Noto Sans TC,sans-serif">${g}</svg>`; }
 function pieSVG(st){ const tot=st.reduce((s,x)=>s+x.v,0), cx=100, cy=100, r=88, ri=52; let a0=-Math.PI/2, out='';
   const pt=(a,rr)=>`${(cx+rr*Math.cos(a)).toFixed(2)},${(cy+rr*Math.sin(a)).toFixed(2)}`;
   st.filter(s=>s.v).forEach(s=>{ const f=s.v/tot;
@@ -708,8 +811,8 @@ function lineSVG(ms){ const W=640, H=240, L=36, R=12, T=18, B=30, vals=ms.flatMa
 function setStat(k,v){ stInit(); if(k==='v') stV=v; else if(k==='y') stY=+v; else if(k==='m') stM=+v; else if(k==='q') stQ=+v; renderStats(); }
 function stMove(k){ stInit(); const p=pShift(stV,stY,stA(),k); stY=p.y; if(stV==='month') stM=p.a; if(stV==='quarter') stQ=p.a; renderStats(); }
 /* 點長條 → 到清單看那些案件（清單只能篩年度、月份；看「每季」時會列出全年） */
-function stGo(i){ const b=STB[i]; if(!b) return; Object.assign(F,{q:'',year:String(stY),month:stV==='month'?p2(stM):'',station:'',vendor:'',cat1:'',cat2:'',status:'',sort:'urgent',dir:1}); F[b.f]=b.v;
-  go('list'); if(stV==='quarter') toast(`清單只能依年度篩選，目前列出 ${stY} 全年`); }
+function stGo(i){ const b=STB[i]; if(!b) return; Object.assign(F,{q:'',year:String(stY),month:(!b.year&&stV==='month')?p2(stM):'',station:'',vendor:'',cat1:'',cat2:'',status:'',sort:'urgent',dir:1}); F[b.f]=b.v;
+  go('list'); if(!b.year&&stV==='quarter') toast(`清單只能依年度篩選，目前列出 ${stY} 全年`); }
 
 /* ---------- 統計報表下載成 Word（.docx） ---------- */
 function zipStore(files){ const T=zipStore.t||(zipStore.t=Array.from({length:256},(_,n)=>{ let c=n; for(let k=0;k<8;k++) c=c&1?0xEDB88320^(c>>>1):c>>>1; return c>>>0; }));
@@ -739,15 +842,17 @@ async function dlStatsWord(){ const btn=$('#wordBtn'); if(!btn) return; btn.disa
     const img=async(svgEl,cxEmu)=>{ if(!svgEl) return ''; try{ const r=await svgPng(svgEl); media.push(r.png); const id=media.length, cy=Math.round(cxEmu*r.h/r.w);
       return `<w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:drawing><wp:inline><wp:extent cx="${cxEmu}" cy="${cy}"/><wp:docPr id="${id}" name="chart${id}"/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="${id}" name="chart${id}.png"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="rImg${id}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cxEmu}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>`; }catch(e){ return wPara('（圖表無法轉成圖片）',{sz:18,color:'5D6779'}); } };
     let body=wPara('異常矯正統計'+stName(),{b:1,sz:32,jc:'center',after:60})+wPara(rg.label+'　產出日期：'+fmtD(today()),{jc:'center',sz:20,color:'5D6779',after:200});
-    body+=H2('一、總覽')+wTable([['項目','件數','比上期','說明'],['本期新增',tot+' 件',pct(tot,prv.cases.length),'發現日期在本期'],['本期結案',cur.closed.length+' 件',pct(cur.closed.length,prv.closed.length,true),'結案日期在本期'],
-      ['尚未結案',cur.open.length+' 件','','本期新增中，到今天還沒結案'],['逾期未結',cur.over.length+' 件','','本期新增中，已超過預計完成日']]);
-    body+=wPara(`比上期：和 ${fmtD(pr.start)}～${fmtD(pr.end)} 比較${pr.same?'（本期還沒過完，上期只算到同一天）':''}。`,{sz:17,color:'5D6779'});
-    body+=H2('二、處理狀態')+wTable([['狀態','件數','佔比'],...D.status.map(s=>[s.n,s.v+' 件',tot?Math.round(s.v/tot*100)+'%':'—'])]);
-    if(tot) body+=await img(document.querySelector('.pie svg'),2160000);
+    const pn=stV==='month'?'上月':stV==='quarter'?'上季':'去年';
+    body+=H2('一、總覽')+wTable([['項目','件數',`比${pn}${pr.same?'同期':''}`,'說明'],['新增',tot+' 件',pct(tot,prv.cases.length),'發現日期在本期'],['已結案',cur.done.length+' 件',pct(cur.done.length,prv.done.length,true),'本期新增中，已填結案日期'],
+      ['尚未結案',cur.open.length+' 件',pct(cur.open.length,prv.open.length),'本期新增中，還沒到預計完成日'],['逾期未結',cur.over.length+' 件',pct(cur.over.length,prv.over.length),'本期新增中，超過預計完成日還沒結']]);
+    body+=wPara(`新增 ＝ 已結案 ＋ 尚未結案 ＋ 逾期未結（${tot} ＝ ${cur.done.length} ＋ ${cur.open.length} ＋ ${cur.over.length}）。比較期間：${fmtD(pr.start)}～${fmtD(pr.end)}${pr.same?'（本期還沒過完，上期只算到同一天）':''}。`,{sz:17,color:'5D6779'});
+    body+=H2('二、逾期未結明細')+(D.overList.length?wTable([['案件編號','發現日期','產品品項','廠商','預計完成','逾期天數'],...D.overList.map(c=>[c.no,fmtD(c.date),c.item,c.vendor,fmtD(dueOf(c)),daysBetween(dueOf(c),today())+' 天'])]):wPara('本期沒有逾期未結的案件',{sz:19,color:'5D6779'}));
     const nums=['三','四','五','六'];
-    D.groups.forEach((g,i)=>{ body+=H2(`${nums[i]}、${g.n}`)+(g.rows.length?wTable([['項目','件數','佔比','比上期'],...g.rows.map(r=>[r.k||'（未填）',r.v+' 件',r.pct+'%',pct(r.v,r.pv)])]):wPara('本期沒有案件',{sz:19,color:'5D6779'})); });
-    body+=H2(`七、${stY} 年每月趨勢`)+wTable([['月份',...D.months.map(m=>m.m+'月')],['新增',...D.months.map(m=>m.nw==null?'—':String(m.nw))],['結案',...D.months.map(m=>m.cl==null?'—':String(m.cl))]]);
-    body+=await img(document.querySelector('#app figure:last-of-type svg[role=img]')||[...document.querySelectorAll('#app svg[role=img]')].pop(),5760000);
+    D.groups.forEach((g,i)=>{ body+=H2(`${nums[i]}、${g.n}`)+(g.rows.length?wTable([['項目','件數','佔比',`比${pn}`],...g.rows.map(r=>[r.k||'（未填）',r.v+' 件',r.pct+'%',pct(r.v,r.pv)])]):wPara('本期沒有案件',{sz:19,color:'5D6779'})); });
+    body+=H2('七、處理狀態（本期新增）')+wTable([['狀態','件數','佔比'],...D.status.map(s=>[s.n,s.v+' 件',tot?Math.round(s.v/tot*100)+'%':'—'])]);
+    if(D.yTot){ body+=wPara(`${stY} 年處理狀態`,{b:1,sz:19,jc:'center',before:120}); body+=await img(document.querySelector('.pie svg'),2160000); }
+    body+=H2(`八、${stY} 年每月趨勢`)+wTable([['月份',...D.months.map(m=>m.m+'月')],['新增',...D.months.map(m=>m.nw==null?'—':String(m.nw))],['結案',...D.months.map(m=>m.cl==null?'—':String(m.cl))]]);
+    body+=await img(document.querySelector('#trendMain svg'),5760000);
     body+=wPara('實線：新增件數　虛線：結案件數',{sz:17,color:'5D6779',jc:'center'});
     body+=wPara('Casevora-CAPA 異常矯正追蹤．本報表依本機資料產生',{sz:16,color:'888888',before:120,jc:'center'});
     const doc=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"><w:body>${body}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="567" w:footer="567" w:gutter="0"/></w:sectPr></w:body></w:document>`;
@@ -914,11 +1019,11 @@ async function delCase(id){ const c=C.find(x=>x.id===id); if(!c) return;
 let TSEL=new Set();
 function renderTrash(){ page='trash'; nav(); const rs=C.filter(c=>c.deleted).sort((a,b)=>(b.deletedAt||'').localeCompare(a.deletedAt||''));
   $('#app').innerHTML=`${headHTML('最近刪除','RECENTLY DELETED','保留 30 天，超過的會在下次打開系統時永久刪除（照片一起刪除）。','最近刪除','')}
-   ${trashGuide()}
    <div class="card"><div class="row" style="margin-bottom:8px"><button onclick="TSEL=new Set(C.filter(c=>c.deleted).map(c=>c.id));renderTrash()" ${rs.length?'':'disabled'}>全選</button><button onclick="TSEL=new Set();renderTrash()" ${TSEL.size?'':'disabled'}>全部不選</button>
      <button class="pri" onclick="trashRestore()" ${TSEL.size?'':'disabled'}>還原</button><button class="dng" onclick="trashPurge()" ${TSEL.size?'':'disabled'}>永久刪除</button><span class="small muted">${TSEL.size?'已勾選 '+TSEL.size+' 件':'請先勾選'}</span></div>
    ${rs.length?rs.map(c=>`<label class="ccard" style="display:flex;cursor:default"><input type="checkbox" style="width:auto" ${TSEL.has(c.id)?'checked':''} onchange="this.checked?TSEL.add('${c.id}'):TSEL.delete('${c.id}');renderTrash()">
-     <div class="m"><div class="t">${esc(c.no)}・${esc(c.item||c.desc||'')}</div><div class="small muted">發現 ${fmtD(c.date)}・${fmtD(c.deletedAt)} 刪除・剩 ${Math.max(30-daysBetween(c.deletedAt,today()),0)} 天</div></div></label>`).join(''):'<div class="empty">目前沒有刪除的案件</div>'}</div>`; }
+     <div class="m"><div class="t">${esc(c.no)}・${esc(c.item||c.desc||'')}</div><div class="small muted">發現 ${fmtD(c.date)}・${fmtD(c.deletedAt)} 刪除・剩 ${Math.max(30-daysBetween(c.deletedAt,today()),0)} 天</div></div></label>`).join(''):'<div class="empty">目前沒有刪除的案件</div>'}</div>
+   ${trashGuide()}`; }
 function daysBetween(a,b){const [y1,m1,d1]=a.split('-').map(Number),[y2,m2,d2]=b.split('-').map(Number);return Math.round((new Date(y2,m2-1,d2)-new Date(y1,m1-1,d1))/86400000);}
 function trashRestore(){ const ids=[...TSEL]; const back_=[]; C.forEach(c=>{ if(ids.includes(c.id)&&c.deleted){ back_.push([c,c.deletedAt]); c.deleted=false; delete c.deletedAt; } });
   if(!persist()){ back_.forEach(([c,d])=>{c.deleted=true;c.deletedAt=d;}); return; } TSEL=new Set(); renderTrash(); toast('已還原 ✦'); }
@@ -936,7 +1041,6 @@ function renderSettings(){ page='settings'; nav();
   const listBox=(k,title)=>`<div class="card"><h2>${title}</h2><ul class="optl">${S[k].length?S[k].map((x,i)=>`<li><span>${esc(x)}</span><button class="sm dng" onclick="delOpt('${k}',${i})">移除</button></li>`).join(''):'<li><span class="muted small">還沒有，新增案件時輸入過的會自動加進來</span></li>'}</ul>
     <div class="row"><input id="new_${k}" placeholder="新增" style="flex:1;min-width:120px" onkeydown="if(event.key==='Enter')addOpt('${k}')"><button onclick="addOpt('${k}')">新增</button></div></div>`;
   $('#app').innerHTML=`${headHTML('設定與資料','SETTINGS &amp; DATA','管理分類與常用選項，以及備份與還原。','設定與資料',backupTools())}
-   ${settingsGuide()}
    <div class="ogrid">${catBox('cat1','分類一：異常來源','停用後，新增案件時不會出現，但舊案件保留原本的分類。')}${catBox('cat2','分類二：異常原因','兩項以上原因時，以較多或較嚴重之問題歸類。')}</div>
    <div class="ogrid" style="margin-top:14px">${listBox('stations','常用工作站／發生部門')}${listBox('vendors','常用廠商')}</div>
    ${impCard()}
@@ -947,7 +1051,8 @@ function renderSettings(){ page='settings'; nav();
        <li><b>本機儲存 · 僅在此裝置此瀏覽器有效。</b>換電腦、換瀏覽器、用無痕視窗都看不到；清除瀏覽資料會讓案件和照片全部消失，且無法復原。</li>
        <li>請定期「下載備份」，把備份檔存在這台電腦以外的地方（公司雲端硬碟、隨身碟）。</li>
        <li>沒有登入與權限控管：坐在這台電腦前的人都能看到、修改。請用電腦本身的開機密碼保護。</li>
-       <li>這是公司內部資料，是否可以存在這台電腦的瀏覽器裡，請依公司規定。</li></ul></div>`;
+       <li>這是公司內部資料，是否可以存在這台電腦的瀏覽器裡，請依公司規定。</li></ul></div>
+   ${settingsGuide()}`;
   if(navigator.storage&&navigator.storage.estimate) navigator.storage.estimate().then(e=>{ const el=$('#usage'); if(el) el.textContent=`這個網站目前用了約 ${(e.usage/1048576).toFixed(1)} MB（瀏覽器允許約 ${(e.quota/1048576/1024).toFixed(1)} GB）。`; }).catch(()=>{});
   else { const el=$('#usage'); if(el) el.textContent=''; } }
 async function addCat(k){ const el=$('#new_'+k), v=el.value.trim(); if(!v) return; if(S[k].some(x=>x.n===v)){ await say('已經有這個選項了'); return; } S[k].push({n:v.slice(0,40),on:true}); if(persist()) renderSettings(); }
