@@ -718,7 +718,7 @@ function statsGuide(){ const k=(n,l,c)=>`<span class="gx-k ${c||''}">${n}<small>
     gS(1,'選期間',`${gN(1)}<span class="gx-seg"><i>年度</i><i>每季</i><i class="on">每月</i></span></div><div class="gx-row">${gN(2)}<span class="gx-b">◀</span><span class="gx-in">2026 年 ▾</span><span class="gx-in">11 月 ▾</span><span class="gx-b">▶</span>`,
       `<p>先選「年度／每季／每月」${gN(1)}，再選年份、月份或第幾季${gN(2)}；◀ ▶ 可以直接跳上一期、下一期。左邊「統計報表」的數字、明細和排行都會跟著換。</p>`)+
     gS(2,'看四個數字、點開案件',`${k(12,'新增')}${k(5,'已結案','ok')}${k(5,'尚未結案','b')}${gN(1)}${k(2,'逾期未結','rd')}`,
-      `<p>新增 ＝ 已結案 ＋ 尚未結案 ＋ 逾期未結，都是看本期新增的案件「到今天」的狀態。下面的虛線框是<b>平均處理天數</b>（發現日期 → 結案日期），也會跟上期比多幾天、少幾天。</p><p>點任一格${gN(1)}，下面會列出是哪幾件；再點案件就能直接打開編輯。</p>`)+
+      `<p><b>最上面四格是現在的總覽</b>（不跟著期間變）：本月新增（附上月件數）、未結案（其中逾期幾件，點了會到清單看全部年度的未結案）、今年結案率、今年最多的異常原因。</p><p>左邊「統計報表」的四個大數字：新增 ＝ 已結案 ＋ 尚未結案 ＋ 逾期未結，都是看本期新增的案件「到今天」的狀態。下面的虛線框是<b>平均處理天數</b>（發現日期 → 結案日期），也會跟上期比多幾天、少幾天。</p><p>點任一格${gN(1)}，下面會列出是哪幾件；再點案件就能直接打開編輯。</p>`)+
     gS(3,'逾期明細、各分類排行',`<div style="flex:1">${bar('包裝組',80,1)}${bar('打漿組',45)}${bar('生產',25)}</div>`,
       `<p>「逾期未結明細」列出本期逾期的案件和逾期幾天，最久的在最上面。</p><p>下面依<b>工作站、分類一、分類二、廠商</b>排行（廠商沒填的＝公司內部，不列入廠商排行）；<b>工作站、分類一、分類二</b>下面還有<b>圓餅圖</b>（本期各分類佔多少，前 5 名＋其它）和<b>曲線圖</b>（所選年份每月件數），同一個分類兩張圖同一個顏色，點圓餅或旁邊清單也能看案件；點任一列${gN(1)}會跳出那幾件案件，再點案件就直接打開編輯。工作站、分類二一件選了兩個以上的，會各算一件。</p>`)+
     gS(4,'右側三張卡',`<span class="gdonut"></span><div style="flex:1">${bar('天然異物',70)}${bar('規格不符',40)}</div>`,
@@ -857,7 +857,7 @@ function statKpis(){ const a=live(), t=today(), thisM=t.slice(0,7), [yy,mm]=this
   const top=countBy(Y,'cat2').filter(([k])=>k)[0];
   return `<div class="kpis">
     <div class="kpi"><span class="kic" aria-hidden="true">${KIC.doc}</span><div class="l">本月新增</div><div class="n">${nM}<small>件</small></div><div class="d">上月 ${nLM} 件</div></div>
-    <div class="kpi warn go" onclick="F.status='notdone';F.sort='urgent';go('list')"><span class="kic kw" aria-hidden="true">${KIC.clock}</span><div class="l">未結案</div><div class="n">${nd.length}<small>件</small></div><div class="d">${nd.length?`其中逾期 ${ov} 件`:'目前沒有未結案'}</div></div>
+    <div class="kpi warn go" onclick="F.status='notdone';F.year='';F.month='';F.sort='urgent';go('list')"><span class="kic kw" aria-hidden="true">${KIC.clock}</span><div class="l">未結案</div><div class="n">${nd.length}<small>件</small></div><div class="d">${nd.length?`其中逾期 ${ov} 件`:'目前沒有未結案'}</div></div>
     <div class="kpi ok"><span class="kic kok" aria-hidden="true">${KIC.ok}</span><div class="l">今年結案率</div><div class="n">${rate==null?'—':rate+'<small>%</small>'}</div><div class="d">${Y.length?`今年 ${Y.length} 件・已結案 ${yd} 件`:'今年還沒有案件'}</div></div>
     <div class="kpi info"><span class="kic kin" aria-hidden="true">${KIC.cal}</span><div class="l">最多的異常原因</div><div class="n nt">${top?esc(top[0]):'—'}</div><div class="d">${top?`今年 ${top[1]} 件`:'今年還沒有案件'}</div></div>
   </div>`; }
