@@ -433,13 +433,15 @@ async function savePhotoFile(id,name){ const v=await phGet(id); if(!v) return; c
 /* ============ 資料 ============ */
 const CAT1_DEF=['供應商','廠內異常'];
 const CAT2_DEF=['天然異物','非天然異物','規格不符','風味口感不良','其它品質因素（含包裝／標示不良）','其它異常原因'];
-function defaultS(){ return {cat1:CAT1_DEF.map(n=>({n,on:true})),cat2:CAT2_DEF.map(n=>({n,on:true})),stations:[],vendors:[],units:[]}; }
+function defaultS(){ return {cat1:CAT1_DEF.map(n=>({n,on:true})),cat2:CAT2_DEF.map(n=>({n,on:true})),stations:[],vendors:[],units:[],holidays:[]}; }
 function loadC(){ try{ const a=JSON.parse(localStorage.getItem(KEY_C)); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
 function loadS(){ try{ return fixS(Object.assign(defaultS(),JSON.parse(localStorage.getItem(KEY_S))||{})); }catch(e){ return defaultS(); } }
 function fixS(s){ const ol=a=>Array.isArray(a)?a.filter(x=>x&&String(x.n||'').trim()).map(x=>({n:String(x.n).trim().slice(0,40),on:x.on!==false})):[];
   const sl=a=>Array.isArray(a)?[...new Set(a.map(x=>String(x||'').trim()).filter(Boolean).map(x=>x.slice(0,40)))]:[];
   s.cat1=ol(s.cat1); s.cat2=ol(s.cat2); if(!s.cat1.length) s.cat1=defaultS().cat1; if(!s.cat2.length) s.cat2=defaultS().cat2;
-  s.stations=sl(s.stations); s.vendors=sl(s.vendors); s.units=sl(s.units); return s; }
+  s.stations=sl(s.stations); s.vendors=sl(s.vendors); s.units=sl(s.units); s.holidays=holList(s.holidays); return s; }
+/* 公司休假日：[{d:'2026-01-01', n:'元旦'}]，算處理天數時跟六日一樣不算（跟衛生追蹤一樣） */
+function holList(a){ if(!Array.isArray(a)) return []; const m=new Map(); a.forEach(x=>{ if(x&&/^\d{4}-\d{2}-\d{2}$/.test(x.d||'')) m.set(x.d,{d:x.d,n:String(x.n||'').slice(0,30)}); }); return [...m.values()].sort((x,y)=>x.d.localeCompare(y.d)); }
 let C=loadC(), S=loadS();
 function persist(){ try{ localStorage.setItem(KEY_C,JSON.stringify(C)); localStorage.setItem(KEY_S,JSON.stringify(S)); return true; }
   catch(e){ say('儲存失敗！瀏覽器的儲存空間可能已滿。請先「下載備份」，再刪除部分案件。'); return false; } }
@@ -467,8 +469,12 @@ const stJoin=a=>[...new Set(a)].join('、');
 function c2Tok(v){ return [...new Set(String(v||'').split(/[、,，;；]+/).map(x=>x.trim()).filter(Boolean))]; }
 function valsOf(c,f){ if(f==='station'){ const t=stTok(c.station); return t.length?t:['']; } if(f==='cat2'){ const t=c2Tok(c.cat2); return t.length?t:['']; } return [String(c[f]||'').trim()]; }
 /* 處理天數：發現日期 → 結案日期（還沒結案就是到今天已經過幾天） */
-function procDays(c){ return c.closeDate&&c.date?daysBetween(c.date,c.closeDate):null; }
-function openDays(c){ return !c.closeDate&&c.date?daysBetween(c.date,today()):null; }
+/* 工作天：發現日期隔天起算，只算週一～週五，也不算「公司休假日」（跟衛生追蹤一樣） */
+function workDays(a,b){ if(!a||!b||b<a) return null; const [y,m,d]=a.split('-').map(Number), [y2,m2,d2]=b.split('-').map(Number), t=new Date(y,m-1,d), e=new Date(y2,m2-1,d2);
+  const H=new Set((S.holidays||[]).map(x=>x.d)), ymd=x=>x.getFullYear()+'-'+p2(x.getMonth()+1)+'-'+p2(x.getDate()); let n=0;
+  while(t<e){ t.setDate(t.getDate()+1); const w=t.getDay(); if(w!==0&&w!==6&&!H.has(ymd(t))) n++; } return n; }
+function procDays(c){ return c.closeDate&&c.date?workDays(c.date,c.closeDate):null; }
+function openDays(c){ return !c.closeDate&&c.date?workDays(c.date,today()):null; }
 
 /* ============ 版面 ============ */
 let page='list', back='list', cur=null, dirty=false, viewId=null;
@@ -561,7 +567,7 @@ function drawList(){
      ${rows.map(c=>`<tr class="r-${statusOf(c)}" onclick="openForm('${c.id}')">
        <td style="white-space:nowrap;font-variant-numeric:tabular-nums">${esc(c.no)}</td><td style="white-space:nowrap">${fmtD(c.date)}</td><td>${esc(c.station)}</td><td>${esc(c.item)}</td><td>${esc(c.vendor)}</td><td>${esc(c.lot)}</td><td style="white-space:nowrap">${fmtD(c.expiry)}</td>
        <td class="desc"><div class="clip">${esc(c.desc)}</div></td><td><div class="ths">${(c.photos||[]).slice(0,2).map((p,i)=>`<img class="th zoom" data-ph="${p}" alt="圖片(${i+1})" title="點一下看大圖" onclick="event.stopPropagation();viewCasePhotos('${c.id}',${i})">`).join('')}</div></td>
-       <td class="desc"><div class="clip">${esc(c.note)}</div></td><td class="desc"><div class="clip">${esc(c.method)}</div></td><td style="white-space:nowrap">${fmtD(c.closeDate)}${procDays(c)!=null?`<div class="small muted">${procDays(c)} 天</div>`:''}</td>
+       <td class="desc"><div class="clip">${esc(c.note)}</div></td><td class="desc"><div class="clip">${esc(c.method)}</div></td><td style="white-space:nowrap">${fmtD(c.closeDate)}${procDays(c)!=null?`<div class="small muted">${procDays(c)} 工作天</div>`:''}</td>
        <td>${c.cat1?`<span class="tag ${c.cat1==='供應商'?'sup':'fac'}">${esc(c.cat1)}</span>`:''}</td><td>${c2Tok(c.cat2).map(x=>`<span class="tag">${esc(x)}</span>`).join('')}</td>
        <td style="white-space:nowrap">${fmtD(dueOf(c))}</td><td>${stBadge(c)}${(c.photos||[]).length>2?`<div class="small muted">另有 ${c.photos.length-2} 張圖</div>`:''}</td></tr>`).join('')}
      </tbody></table></div>
@@ -631,7 +637,7 @@ function drawForm(){
      <div class="pzone" tabindex="0" role="button" aria-label="貼上或拖曳照片">📋 在表單任何地方直接按 <b>Ctrl+V</b> 就能貼上照片（也可以把照片拖進這個框）</div>
    </div></details>
    <details class="sec" open><summary><span class="no">C</span>處理與結案</summary><div class="body"><div class="grid">
-     ${inp('note','備註','ta',{wide:true})}${inp('method','處理辦法','ta',{wide:true})}${inp('closeDate','結案日期','date')}<div><label class="f">處理天數（自動計算）</label><div class="pdays" id="pdays">${daysTxt(c)}</div></div>
+     ${inp('note','備註','ta',{wide:true})}${inp('method','處理辦法','ta',{wide:true})}${inp('closeDate','結案日期','date')}<div><label class="f">處理天數（自動計算，工作天）</label><div class="pdays" id="pdays">${daysTxt(c)}</div></div>
      ${inp('cat1','分類一：供應商、廠內異常','sel',{opts:on1})}${c2Picker(on2)}
      <div class="wide small muted">分類二<b>可以選兩個以上</b>（一件有多個問題時都選起來，統計時分開計算）。<b>規格不符</b>：可為數量／重量／配方。</div>
      <div style="background:var(--info-soft);border-radius:8px;padding:6px 10px">${inp('due','預計完成日期（Excel 沒有，系統用）','date')}</div>
@@ -651,7 +657,7 @@ function stToggle(i){ const n=STO[i]; if(!n) return; const sel=stTok(cur.station
 function stAddOther(){ const el=$('#stOther'), v=normStation(el.value).slice(0,40); if(!v) return;
   if($('#stKeep').checked&&!S.stations.includes(v)){ S.stations.push(v); persist(); }
   setF('station',stJoin([...stTok(cur.station),v])); el.value=''; stRedraw(); toast(`已加入「${v}」`); }
-function daysTxt(c){ const d=procDays(c), o=openDays(c); return d!=null?(d<0?'—':`<b>${d}</b> 天（發現日期 → 結案日期）`):o!=null?`尚未結案，已經過 <b>${Math.max(0,o)}</b> 天`:'—'; }
+function daysTxt(c){ const d=procDays(c), o=openDays(c); return d!=null?`<b>${d}</b> 個工作天（發現日期 → 結案日期，不算六日和公司休假日）`:o!=null?`尚未結案，已經過 <b>${o}</b> 個工作天`:'—'; }
 let C2O=[];
 function c2Picker(on2){ const sel=c2Tok(cur.cat2); C2O=[...new Set([...on2,...sel])];
   return `<div class="wide"><label class="f">分類二：異常原因（可以選兩個以上）</label><div class="stpick" id="c2pick">${C2O.map((n,i)=>`<button type="button" class="${sel.includes(n)?'on':''}" onclick="c2Toggle(${i})">${sel.includes(n)?'✓ ':''}${esc(n)}</button>`).join('')}</div>
@@ -719,7 +725,7 @@ function statsGuide(){ const k=(n,l,c)=>`<span class="gx-k ${c||''}">${n}<small>
     gS(1,'選期間',`${gN(1)}<span class="gx-seg"><i>年度</i><i>每季</i><i class="on">每月</i></span></div><div class="gx-row">${gN(2)}<span class="gx-b">◀</span><span class="gx-in">2026 年 ▾</span><span class="gx-in">11 月 ▾</span><span class="gx-b">▶</span>`,
       `<p>先選「年度／每季／每月」${gN(1)}，再選年份、月份或第幾季${gN(2)}；◀ ▶ 可以直接跳上一期、下一期。左邊「統計報表」的數字、明細和排行都會跟著換。</p>`)+
     gS(2,'看四個數字、點開案件',`${k(12,'新增')}${k(5,'已結案','ok')}${k(5,'尚未結案','b')}${gN(1)}${k(2,'逾期未結','rd')}</div><div class="gx-row"><span class="gin" style="border:2px dashed #b42318;background:#fff"><b style="color:#b42318">48</b> 跨月逾期</span><span class="gin" style="border:2px dashed #c9bda6;background:#fff"><b style="color:#c9bda6">1</b> 刪除件數</span></div><div class="gx-row"><span class="small"><b>⏱ 結案率</b> 20%　<b>平均</b> 5 天</span>`,
-      `<p><b>最上面四格是現在的總覽</b>（不跟著期間變）：本月新增（附上月件數）、未結案（其中逾期幾件，點了會到清單看全部年度的未結案）、今年結案率、今年最多的異常原因。</p><p>左邊「統計報表」的四個大數字：新增 ＝ 已結案 ＋ 尚未結案 ＋ 逾期未結，都是看本期新增的案件「到今天」的狀態。下面兩個虛線框跟衛生追蹤一樣：<b>跨月逾期</b>（比本期早發現、到今天還沒結又逾期的，不含在四個數字裡）和<b>刪除件數</b>。再往下「<b>⏱ 結案率與處理天數</b>」表比較本期和上期的結案率、平均處理天數（日曆天），另有各工作站、各異常原因的平均處理天數。</p><p>點任一格${gN(1)}，下面會列出是哪幾件；再點案件就能直接打開編輯。</p>`)+
+      `<p><b>最上面四格是現在的總覽</b>（不跟著期間變）：本月新增（附上月件數）、未結案（其中逾期幾件，點了會到清單看全部年度的未結案）、今年結案率、今年最多的異常原因。</p><p>左邊「統計報表」的四個大數字：新增 ＝ 已結案 ＋ 尚未結案 ＋ 逾期未結，都是看本期新增的案件「到今天」的狀態。下面兩個虛線框跟衛生追蹤一樣：<b>跨月逾期</b>（比本期早發現、到今天還沒結又逾期的，不含在四個數字裡）和<b>刪除件數</b>。再往下「<b>⏱ 結案率與處理天數</b>」表比較本期和上期的結案率、平均處理天數（<b>工作天</b>，不算六日和公司休假日），另有各工作站、各異常原因的平均處理天數。</p><p>點任一格${gN(1)}，下面會列出是哪幾件；再點案件就能直接打開編輯。</p>`)+
     gS(3,'逾期明細、各分類排行',`<div style="flex:1">${bar('包裝組',80,1)}${bar('打漿組',45)}${bar('生產課',25)}</div><span class="small" style="color:#b42318;font-weight:700">逾期 2</span></div><div class="gx-row"><span class="small">逾期未結明細・<b>跨月逾期明細</b></span>`,
       `<p>「逾期未結明細」列出本期逾期的案件和逾期幾天，最久的在最上面；「<b>跨月逾期明細</b>」列出以前月份還沒結、已逾期的案件，避免舊案被忘記。</p><p>下面依<b>工作站、分類一、分類二、廠商</b>排行，每一列最右邊紅字是「<b>其中逾期</b>」幾件（廠商沒填的＝公司內部，不列入廠商排行）；<b>工作站、分類一、分類二</b>下面還有<b>圓餅圖</b>（本期各分類佔多少，前 5 名＋其它）和<b>曲線圖</b>（所選年份每月件數），同一個分類兩張圖同一個顏色，點圓餅或旁邊清單也能看案件；點任一列${gN(1)}會跳出那幾件案件，再點案件就直接打開編輯。工作站、分類二一件選了兩個以上的，會各算一件。</p>`)+
     gS(4,'右側三張卡',`<span class="gdonut"></span><div style="flex:1">${bar('天然異物',70)}${bar('規格不符',40)}</div>`,
@@ -729,7 +735,7 @@ function statsGuide(){ const k=(n,l,c)=>`<span class="gx-k ${c||''}">${n}<small>
     gS(6,'▲▼ 跟上期比幾 %',`${k(12,'新增 <b style="color:#b42318">▲ +20%</b>')}${k(5,'已結案 <b style="color:#167a3e">▲ +8%</b>','ok')}`,
       `<p><b style="color:#b42318">紅色＝變差</b>（異常、逾期變多，或結案變少）；<b style="color:#167a3e">綠色＝變好</b>。本期還沒過完時，上期只算到<b>同一天</b>（例：11/1～11/19 比 10/1～10/19）。</p>`)+
     gS(7,'下載 Word 報表、列印',`<span class="gx-b">下載 Word 報表</span><span class="gx-b">列印／存成 PDF</span>`,
-      `<p>「下載 Word 報表」依目前選的期間產生<b>月報／季報／年報</b>（.docx），格式跟衛生追蹤一樣：照左邊「統計報表」由上到下轉成 Word（總結含比上月同期、四個數字表、跨月逾期與刪除件數、結案率與處理天數、各工作站／原因平均天數、逾期與跨月逾期明細、各排行含其中逾期），圖表跟衛生追蹤的 Word 一樣，<b>上方有標題、下方有圖例</b>：工作站、分類一、分類二的圓餅圖和曲線圖，以及最後的趨勢圖（最近 12 個月／4 季／5 年，含比前期），圖下面還有一張<b>各期件數與比前期</b>的表格。最後一段是<b>報表說明</b>（每個數字、▲▼、圖表怎麼看），主管不用開網頁也看得懂。「列印／存成 PDF」只印統計內容。</p><p>統計只算<b>這台電腦、這個瀏覽器</b>裡的案件，「最近刪除」裡的不算。</p>`)); }
+      `<p>「下載 Word 報表」依目前選的期間產生<b>月報／季報／年報</b>（.docx），格式跟衛生追蹤一樣：照左邊「統計報表」由上到下轉成 Word（總結含比上月同期、四個數字表、跨月逾期與刪除件數、結案率與處理天數、各工作站／原因平均天數、逾期與跨月逾期明細、各排行含其中逾期），圖表跟衛生追蹤的 Word 一樣，<b>上方有標題、下方有圖例</b>：工作站、分類一、分類二的圓餅圖和曲線圖，以及最後的趨勢圖（最近 12 個月／4 季／5 年，含比前期）。「列印／存成 PDF」只印統計內容。</p><p>統計只算<b>這台電腦、這個瀏覽器</b>裡的案件，「最近刪除」裡的不算。</p>`)); }
 /* ---------- 各分頁的使用說明（打開／收起會記住） ---------- */
 function guideBox(k,title,body){ const key='casevoraCAPA_v1_guide_'+k; let open=false; try{ open=localStorage.getItem(key)==='1'; }catch(e){}
   return `<div class="card gcard noprint"><details id="guide_${k}" ${open?'open':''} ontoggle="try{localStorage.setItem('${key}',this.open?'1':'0')}catch(e){}"><summary><b>📖 ${title}</b><span class="muted small">（點這裡展開／收合）</span></summary><div class="mg-grid">${body}</div></details></div>`; }
@@ -757,7 +763,7 @@ function formGuide(){ return guideBox('form','新增／編輯案件使用說明'
   gS(3,'加照片、貼上、刪除',`<span class="gdonut" style="border-radius:6px;-webkit-mask:none;mask:none;background:#cfe3d6;width:40px;height:30px"></span><span class="gin">＋ 加入照片</span>${gN(1)}</div><div class="gx-row"><span class="gin" style="border:2px dashed #b8955a;background:#fff4e0;color:#7a3d06">📋 直接按 Ctrl+V 貼上</span>${gN(2)}`,
     `<p>「＋ 加入照片」${gN(1)}選照片；電腦上截圖或複製圖片後，<b>在表單任何地方直接按 Ctrl+V</b> 就能貼上，不用先點虛線框${gN(2)}；也可以把照片拖進虛線框。游標在文字欄位、剪貼簿裡又有文字時（例如從 Excel 複製），會照常貼文字。</p><p><b>點照片看大圖</b>；要刪掉就點照片右上角的 <b>✕</b>（按「儲存」才會真的刪除，按「取消」可以復原）。前 2 張就是 Excel 的<b>圖片(1)、圖片(2)</b>，按 ◀ 調整順序。照片只存在這台電腦的瀏覽器裡。</p>`)+
   gS(4,'日期決定狀態',`${gIn('預計完成日期')}<span class="small">→</span>${gBadge('即將到期','soon')}${gBadge('逾期未結','over')}<br>${gIn('結案日期')}<span class="small">→</span>${gBadge('已結案','done')}`,
-    `<p><b>預計完成日期</b>預設是發現日期＋15 天（改發現日期會跟著變，也可以自己改）。到期前 3 天會變「即將到期」，過了還沒結案會變「逾期未結」。</p><p>填了<b>結案日期</b>，狀態就會變成「已結案」，旁邊的<b>處理天數</b>會自動算出發現日期到結案日期幾天（例：11/1 發現、11/13 結案＝12 天；同一天結案＝0 天；還沒結案就顯示已經過幾天）；清單的結案日期下面也會顯示天數。結案日期、預計完成日期都不能早於發現日期。</p>`)+
+    `<p><b>預計完成日期</b>預設是發現日期＋15 天（改發現日期會跟著變，也可以自己改）。到期前 3 天會變「即將到期」，過了還沒結案會變「逾期未結」。</p><p>填了<b>結案日期</b>，狀態就會變成「已結案」，旁邊的<b>處理天數</b>會自動算出發現日期到結案日期幾天（<b>工作天</b>：發現日期隔天起算，只算週一～週五，也不算「設定與資料」裡的公司休假日。例：11/2（一）發現、11/13（五）結案＝9 個工作天；同一天結案＝0；還沒結案就顯示已經過幾個工作天）；清單的結案日期下面也會顯示工作天數。結案日期、預計完成日期都不能早於發現日期。</p>`)+
   gS(5,'工作站、分類二可以選兩個以上',`${gBtn('✓ 打漿組')}${gIn('包裝組')}${gBtn('✓ 倉儲組')}</div><div class="gx-row">${gBtn('✓ 天然異物')}${gBtn('✓ 規格不符')}${gIn('風味口感不良')}</div><div class="gx-row">${gIn('其它：自己打字')}<span class="small">☑ 也加入常用</span>${gIn('＋ 加入')}`,
     `<p><b>工作站</b>：點選常用的，可以選兩個以上（例：打漿組、倉儲組），再點一次取消。不在清單上的，在「其它」自己打字按「＋ 加入」。</p><p><b>分類二（異常原因）</b>：一件有多個問題時都點起來（例：天然異物、規格不符）；清單上沒有的原因，在「其它異常原因」自己打字按「＋ 加入」。<b>規格不符</b>可為數量／重量／配方。</p><p>勾「也加入常用選項」，下次就能直接點。統計時，兩個工作站、兩個原因都會<b>各算一件</b>。</p>`)+
   gS(6,'儲存',`${gBtn('儲存')}${gIn('取消')}<span class="dirty small">● 有尚未儲存的修改</span>`,
@@ -776,11 +782,13 @@ function settingsGuide(){ return guideBox('settings','設定與資料使用說�
     `<p>工作站、廠商、分類一、分類二四張卡，跟衛生追蹤一樣：<b>↑ ↓</b>${gN(1)}調整順序（選單、點選的順序跟著變）；<b>編輯</b>${gN(2)}改名稱，用到這個名稱的案件會一起改；<b>刪除</b>${gN(3)}只是從常用選項拿掉，已經存好的案件不會改。</p><p>最下面的輸入框打字按「新增」；在編輯表單用「其它」加入並勾「也加入常用選項」的，也會出現在這裡。旁邊的「N 件」是有幾件案件用到這個選項。</p>`)+
   gS(2,'工作站名稱自動統一',`${gIn('生產包裝組')}<span class="small">→</span>${gBtn('包裝組')}</div><div class="gx-row">${gIn('打漿')}<span class="small">→</span>${gBtn('打漿組')}${gIn('儲運')}<span class="small">→</span>${gBtn('儲運組')}`,
     `<p>同一個單位的不同寫法會自動統一：生產包裝組、生產課包裝組 → <b>包裝組</b>；打漿 → <b>打漿組</b>；生產 → <b>生產課</b>；生產課-儲運組、儲運 → <b>儲運組</b>。已經存好的案件、之後匯入或新增的都一樣。</p><p>分類二的<b>規格不符</b>：可為數量／重量／配方。</p>`)+
-  gS(3,'備份（每兩週到一個月一次）',`${gBtn('下載備份（含照片）')}${gN(1)}${gIn('從備份還原')}${gN(2)}`,
+  gS(3,'📅 公司休假日',`${gIn('從 2027/02/05')}${gIn('到 2027/02/13')}</div><div class="gx-row">${gIn('春節連假')}${gBtn('新增')}${gN(1)}`,
+    `<p>「處理天數」只算工作天，不算六日；國定假日、連假、颱風假、公司停工也不想算的話，在「📅 公司休假日」選<b>從～到</b>、打名稱，按「新增」${gN(1)}（只有一天時「到」可以不填；六日會自動略過）。</p><p>加好後表單、清單、統計和 Word 的天數都會自動重算。休假日會跟著「下載備份」一起存。</p>`)+
+  gS(4,'備份（每兩週到一個月一次）',`${gBtn('下載備份（含照片）')}${gN(1)}${gIn('從備份還原')}${gN(2)}`,
     `<p>「下載備份」${gN(1)}會存成一個檔案（CAPA_backup_日期.json），裡面有全部案件、照片、分類和常用選項，包含「最近刪除」裡的。請存到<b>這台電腦以外的地方</b>，例如公司雲端硬碟或隨身碟。</p><p>「從備份還原」${gN(2)}會<b>取代</b>這台電腦目前所有資料，按之前會再問一次。換電腦時也是用這個方法搬資料。</p>`)+
-  gS(4,'從 Excel 匯入舊資料',`${gBtn('從 Excel 匯入（.xlsx）')}${gN(1)}${gIn('下載匯入範本')}${gN(2)}`,
+  gS(5,'從 Excel 匯入舊資料',`${gBtn('從 Excel 匯入（.xlsx）')}${gN(1)}${gIn('下載匯入範本')}${gN(2)}`,
     `<p>按「從 Excel 匯入」${gN(1)}，先看匯入表格說明，再選 .xlsx 檔；系統會先列出「Excel 欄名 → 系統欄位」和可以匯入幾件，確認後才存。清單頁上方也有同一個按鈕。</p><p>欄名只看<b>括號、冒號外面的字</b>，例如「品項」→產品品項、「效期（或校期）」→有效日期、「異常」→異常描述、「圖片(1)」「圖片(2)」→圖片 2 格；工作站會自動統一名稱，分類二一格寫兩個原因（用「、」隔開）也會分開記錄。案件編號照 Excel，重複的會略過；沒填發現日期就用當天。匯入只會<b>新增</b>，分好幾個檔案匯入也不會覆蓋原本的案件。不確定格式就按「下載匯入範本」${gN(2)}。</p>`)+
-  gS(5,'資料存在哪裡',`<span class="small" style="color:#8a1c12;font-weight:700">本機儲存 · 僅在此裝置此瀏覽器有效</span>`,
+  gS(6,'資料存在哪裡',`<span class="small" style="color:#8a1c12;font-weight:700">本機儲存 · 僅在此裝置此瀏覽器有效</span>`,
     `<p>所有資料只存在<b>這台電腦、這個瀏覽器</b>：換電腦、換瀏覽器、用無痕視窗都看不到；清除瀏覽資料會全部消失。</p><p>沒有登入和權限控管，請用電腦的開機密碼保護。下面會顯示目前用了多少空間。</p>`)); }
 /* ============ 統計分析（月／季／年），版面比照衛生追蹤 ============ */
 let stV='month', stY=null, stM=null, stQ=null, STB=[];
@@ -917,8 +925,8 @@ function renderStats(){ page='stats'; nav(); stInit(); const D=stData(), {rg,pr,
      <div class="st-note">新增 ＝ 已結案 ＋ 尚未結案 ＋ 逾期未結（${tot} ＝ ${cur.done.length} ＋ ${cur.open.length} ＋ ${cur.over.length}），都是看本期新增案件「到今天」的狀態。點任一格可以列出是哪幾件。</div>
      <div class="st-note">▲▼ 百分比＝跟${pn}${pr.same?'同期':''}（${fmtD(pr.start)}～${fmtD(pr.end)}）比：<b style="color:var(--bad)">紅色＝變差</b>（異常、逾期變多，或結案變少）、<b style="color:var(--ok)">綠色＝變好</b>。${pr.same?'本期還沒過完，所以上期也只算到同一天。':''}</div>
      <div class="st-extra"><div class="box"><div class="n">${crossN}<small> 件</small></div><div class="l">跨月逾期（不含在上面四項）</div><div class="st-note" style="margin:2px 0 0">比本期早發現、到今天還沒結案且已逾期的案件（累計）</div></div><div class="box del"><div class="n">${D.delN}<small> 件</small></div><div class="l">刪除件數（不立案）</div><div class="st-note" style="margin:2px 0 0">本期發現、已刪除（在「最近刪除」裡）不列入新增的案件</div></div></div>
-     <div class="st-sec">⏱ 結案率與處理天數（日曆天）</div>
-     <div class="st-note">處理天數＝發現日期 → 結案日期的日曆天（同一天結案＝0 天），只算本期新增、已結案的案件；跟${pw}（${fmtD(pr.start)}～${fmtD(pr.end)}）比。結案率變高＝綠（變好）、天數變多＝紅（變差）。</div>
+     <div class="st-sec">⏱ 結案率與處理天數（工作天，不含六日）</div>
+     <div class="st-note">處理天數＝發現日期隔天到結案日期的<b>工作天</b>，只算週一～週五，也不算「設定與資料」裡的<b>公司休假日</b>（同一天結案＝0 天），只算本期新增、已結案的案件；跟${pw}（${fmtD(pr.start)}～${fmtD(pr.end)}）比。結案率變高＝綠（變好）、天數變多＝紅（變差）。</div>
      ${(()=>{ const rt=x=>x.cases.length?Math.round(x.done.length/x.cases.length*100):null, r1=rt(cur), r0=rt(prv);
        const rc=r1==null||r0==null?'—':r1===r0?'＝ 持平':`<span class="chg ${r1>r0?'good':'bad'}">${r1>r0?'▲ +':'▼ −'}${Math.abs(r1-r0)} 個百分點</span>`;
        return `<div class="tw" style="display:block"><table class="mini"><thead><tr><th class="ns">項目</th><th class="ns">本期</th><th class="ns">${pw}</th><th class="ns">比${pw}</th></tr></thead><tbody>
@@ -1037,30 +1045,12 @@ async function dlStatsWord(){ const box=$('#statBody'), btn=$('#wordBtn'); if(!b
       else if(el.classList.contains('st-bar')){ if(!(el.previousElementSibling&&el.previousElementSibling.classList.contains('st-bar'))){ const pwW=(stV==='month'?'上月':stV==='quarter'?'上季':'去年')+'同期'; const rows=[['項目','件數','比'+pwW,'其中逾期']]; let n=el; while(n&&n.classList.contains('st-bar')){ rows.push([txt(n.children[0]),txt(n.querySelector('.v')),txt(n.querySelector('.c')),(txt(n.querySelector('.o')).replace('逾期 ',''))||'0']); n=n.nextElementSibling; } body+=wTable(rows); } }
       else if(el.classList.contains('st-block')){ const sec=el.querySelector('.st-sec'), fig=el.querySelector('figure'), sv=fig&&fig.querySelector('svg[role=img]'); if(sec) body+=H2(txt(sec));
         if(sv){ let lg=[]; try{ lg=JSON.parse(fig.dataset.legend||'[]'); }catch(e){} try{ body+=pic(await chartPng(sv,fig.dataset.title,lg),5040000); }catch(e){ body+=wPara('（趨勢圖無資料）',{sz:19,color:'5D6779'}); } } else body+=wPara('（趨勢圖無資料）',{sz:19,color:'5D6779'});
-        /* 比前期：每一期跟前一期比，寫成表格 */
-        const ser=stSeries(stV,stY,stA()), lb=p=>stV==='month'?`${p.y} 年 ${p.a} 月`:stV==='quarter'?`${p.y} 年第 ${p.a} 季`:`${p.y} 年`;
-        const ar=(n,pn)=>n===pn?'＝ 持平':!pn?'▲ 新增':(n>pn?'▲ +':'▼ −')+(Math.round(Math.abs(n-pn)/pn*100)||'<1')+'%';
-        body+=wPara('各期件數與比前期',{b:1,sz:20,before:120,after:60,keep:1});
-        body+=wTable([['期間','總件數（新增）','總件數比前期','逾期件數','逾期比前期'],...ser.map((p,i)=>[lb(p),p.total+' 件',i?ar(p.total,ser[i-1].total):'—',p.over+' 件',i?ar(p.over,ser[i-1].over):'—'])]); }
+       }
       else if(el.classList.contains('st-charts')){ for(const fig of el.querySelectorAll('figure')){ const sv=fig.querySelector('svg'); let lg=[]; try{ lg=JSON.parse(fig.dataset.legend||'[]'); }catch(e){}
           try{ const r=await chartPng(sv,fig.dataset.title,lg); body+=pic(r,sv.viewBox.baseVal.width<=200?3000000:5040000); }catch(e){} } }
       else if(el.querySelector&&el.querySelector('table')){ const tb=el.querySelector('table'); body+=wTable([...tb.rows].map(r=>[...r.cells].map(txt))); }
       else if(txt(el)) body+=wPara(txt(el),{sz:19,color:'5D6779'});
     }
-    /* 報表說明：主管不用開網頁也看得懂 */
-    const pn2=stV==='month'?'上月':stV==='quarter'?'上季':'去年';
-    body+=H2('報表說明');
-    [`統計範圍：「發現日期」在 ${rg.label} 的異常案件；資料來源是這台電腦瀏覽器裡的紀錄，「最近刪除」裡的案件不計。`,
-     `四個數字：新增 ＝ 已結案 ＋ 尚未結案 ＋ 逾期未結，都是本期新增的案件到產出日（${fmtD(today())}）為止的狀態。`,
-     '已結案＝已填結案日期；尚未結案＝還沒到預計完成日期（預設發現日期＋15 天）；逾期未結＝超過預計完成日期還沒結案。',
-     '平均處理天數：已結案案件從「發現日期」到「結案日期」的日曆天平均（同一天結案算 0 天）；結案率＝本期新增中已結案的比例。',
-     '跨月逾期：比本期早發現、到產出日還沒結案且已逾期的案件，不含在四個數字裡，另列明細追蹤；刪除件數：本期發現、已移到「最近刪除」不列入新增的案件。',
-     `▲▼：跟${pn2}比較；本期還沒過完時，上期只算到同一天（例：11/1～11/19 比 10/1～10/19）。異常、逾期變多或結案變少＝變差；反之＝變好。`,
-     '工作站、分類二（異常原因）：一件可以有兩個以上，統計時各算一件，所以加總可能比件數多。',
-     '廠商排行：廠商空白代表公司內部，不列入排行，件數另外註明。',
-     '圓餅圖：前 5 名各一塊，其餘合併成灰色的「其它」；曲線圖：所選年份每月件數（前 5 名）。同一個項目在兩張圖是同一個顏色。',
-     '趨勢圖：月報看最近 12 個月、季報看最近 4 季、年報看最近 5 年；實線＝總件數（新增），紅色虛線＝逾期件數，最下面一列是跟前一期比的 %；圖下面的表格逐期列出件數和「比前期」。'
-    ].forEach(t=>{ body+=wPara('・'+t,{sz:19,color:'333333',after:60}); });
     body+=wPara('Casevoras 異常矯正工作台．本報表依本機資料產生',{sz:16,color:'888888',before:120,jc:'center'});
     const doc=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"><w:body>${body}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="567" w:footer="567" w:gutter="0"/></w:sectPr></w:body></w:document>`;
     const files=[['[Content_Types].xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>'],
@@ -1244,7 +1234,7 @@ async function purgeExpired(){ const lim=addDays(today(),-30), gone=C.filter(c=>
 function renderSettings(){ page='settings'; nav();
   $('#app').innerHTML=`${headHTML('設定與資料','SETTINGS &amp; DATA','設定常用資料（工作站、廠商、分類），以及匯入、備份與還原。','設定與資料',backupTools())}
    <div class="note">把常用的工作站、廠商、分類加進來，填案件時就能直接點選或用下拉選單選。常用選項只存在此裝置此瀏覽器，「下載備份」會一起備份。<b>刪除選項不會改到已經存好的案件</b>；「編輯」改名時，用到這個名稱的案件會一起改。</div>
-   <div class="ogrid4">${['stations','vendors','cat1','cat2'].map(optCard).join('')}</div>
+   <div class="ogrid4">${['stations','vendors','cat1','cat2'].map(optCard).join('')}${holCard()}</div>
    ${impCard()}
    <div class="card" style="margin-top:14px"><h2>📦 備份與還原</h2>
      <div class="row"><button class="pri" onclick="backup()">下載備份（含照片）</button><button onclick="$('#rsIn').click()">從備份還原</button><input type="file" id="rsIn" accept=".json" hidden onchange="restore(this)"></div>
@@ -1274,6 +1264,19 @@ function optCard(k){ const L=S[k];
     ${k==='cat2'?'<div class="muted small" style="margin-bottom:8px">一件可以選兩個以上，統計時分開計算。規格不符：可為數量／重量／配方。</div>':''}
     ${k==='stations'?'<div class="muted small" style="margin-bottom:8px">同一單位的不同寫法會自動統一：生產包裝組、生產課包裝組 → 包裝組；打漿 → 打漿組；生產 → 生產課；生產課-儲運組、儲運 → 儲運組。</div>':''}
     <div class="oadd"><input type="text" id="oi_${k}" placeholder="${OPT_PH[k]}" onkeydown="if(event.key==='Enter')optAdd('${k}')"><button class="pri" onclick="optAdd('${k}')">新增</button></div></div>`; }
+/* 📅 公司休假日（跟衛生追蹤一樣：從～到、自動略過六日） */
+function holCard(){ const H=S.holidays||[], ys=[...new Set(H.map(x=>x.d.slice(0,4)))].sort().reverse();
+  return `<div class="card"><h2>📅 公司休假日</h2><div class="muted small">用在：「處理天數」，這些日子跟六日一樣不算（例：國定假日、連假、颱風假、公司停工）。</div>
+    ${H.length?ys.map(y=>`<div class="st-sec" style="margin-top:10px">${y} 年（${H.filter(x=>x.d.startsWith(y)).length} 天）</div><ul class="optl">${H.filter(x=>x.d.startsWith(y)).sort((a,b)=>b.d.localeCompare(a.d)).map(x=>`<li><span>${fmtD(x.d)}（${'日一二三四五六'[new Date(x.d+'T00:00').getDay()]}）${x.n?'　'+esc(x.n):''}</span><button class="danger" onclick="holDel('${x.d}')">刪除</button></li>`).join('')}</ul>`).join(''):'<div class="muted small" style="margin:10px 0">還沒有設定休假日（只扣六日）。</div>'}
+    <div class="grid" style="grid-template-columns:1fr 1fr;gap:6px;margin-top:8px"><div><label class="f">從</label><input type="date" id="hoF"></div><div><label class="f">到（只有一天可以不填）</label><input type="date" id="hoT"></div></div>
+    <div class="oadd" style="margin-top:6px"><input type="text" id="hoN" placeholder="名稱（例：春節連假、颱風假）" onkeydown="if(event.key==='Enter')holAdd()"><button class="pri" onclick="holAdd()">新增</button></div>
+    <div class="muted small" style="margin-top:4px">連假選「從～到」一次加好；六日不用加。</div></div>`; }
+async function holAdd(){ const f=$('#hoF').value, t=$('#hoT').value||f, n=$('#hoN').value.trim();
+  if(!f){ await say('請選休假日期。'); return; } if(t<f){ await say('「到」不能比「從」早。'); return; } if(daysBetween(f,t)>60){ await say('一次最多加 60 天。'); return; }
+  const add=[]; for(let d=f; d<=t; d=addDays(d,1)){ const w=new Date(d+'T00:00').getDay(); if(w!==0&&w!==6) add.push({d,n}); }
+  if(!add.length){ await say('選的日子都是六日，本來就不算，不用加。'); return; }
+  const old=S.holidays; S.holidays=holList([...(S.holidays||[]),...add]); if(!persist()){ S.holidays=old; return; } renderSettings(); toast(`已加入 ${add.length} 天休假日`); }
+async function holDel(d){ if(!(await ask(`刪除休假日 ${fmtD(d)}？`,'刪除',true))) return; S.holidays=(S.holidays||[]).filter(x=>x.d!==d); persist(); renderSettings(); }
 function optMove(k,i,d){ const L=S[k]; if(!L[i+d]) return; [L[i],L[i+d]]=[L[i+d],L[i]]; persist(); renderSettings(); }
 async function optAdd(k){ const el=$('#oi_'+k); let v=el.value.trim().slice(0,40); if(k==='stations') v=normStation(v); if(!v) return;
   if(S[k].some((_,i)=>onm(k,i)===v)){ await say('已經有這個選項了'); return; }
