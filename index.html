@@ -78,6 +78,7 @@ button.lite:hover{background:#f3ece0}
 button.pnew{font-size:13.5px;padding:6px 12px;border:1px solid var(--brand)}
 .phd{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:8px}
 .phd b{font-size:16px}
+.yearnote{background:var(--warn-soft);color:#7a3d06;border:1px solid #f1c88b;border-radius:8px;padding:7px 12px;margin-bottom:8px;font-size:13.5px}.yearnote a{margin-left:8px;font-weight:700;color:#7a3d06}
 .kpi.go{cursor:pointer}.kpi.go:hover{box-shadow:0 0 0 2px var(--gold)}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px}
 .card h2{font-size:16px;margin:0 0 10px}
@@ -493,7 +494,9 @@ window.addEventListener('beforeunload',e=>{ if(dirty){ e.preventDefault(); e.ret
 
 /* ============ 清單 ============ */
 /* 打開清單預設只看「未結案」（跟衛生追蹤一樣） */
-const F={q:'',year:'',month:'',station:'',vendor:'',cat1:'',cat2:'',status:'notdone',sort:'urgent',dir:1}; let SEL=new Set();
+/* 年度預設＝今年（跨年後自動變成新的一年） */
+const curYear=()=>today().slice(0,4);
+const F={q:'',year:curYear(),month:'',station:'',vendor:'',cat1:'',cat2:'',status:'notdone',sort:'urgent',dir:1}; let SEL=new Set();
 function yearsOf(){ return [...new Set([today().slice(0,4),...live().map(c=>(c.date||'').slice(0,4)).filter(Boolean)])].sort().reverse(); }
 function caseText(c){ return [c.no,c.date,c.station,c.item,c.vendor,c.lot,c.expiry,c.finder,c.note,c.desc,c.cause,c.immediate,c.corrective,c.preventive,c.method,c.unit,c.owner,c.progress,c.result,c.verify,c.verifier,c.note2,c.cat1,c.cat2].join(' ').toLowerCase(); }
 function filtered(){ const ws=F.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
@@ -549,8 +552,9 @@ function listKpis(){ const a=live(), nd=a.filter(c=>statusOf(c)!=='done').length
 function drawList(){
   const rows=filtered(), el=$('#lres'); if(!el) return; SEL=new Set([...SEL].filter(id=>rows.some(c=>c.id===id)));
   const ar=k=>F.sort===k?(F.dir>0?' ▲':' ▼'):'';
-  const anyF=F.q||F.year||F.month||F.station||F.vendor||F.cat1||F.cat2||F.status!=='notdone';
-  el.innerHTML=`<div class="row small muted" style="margin-bottom:6px"><span>符合 <b>${rows.length}</b> 件</span>${SEL.size?`<span>・已勾選 <b>${SEL.size}</b> 件（匯出功能在第 3 段加入）</span>`:''}<span class="sp"></span><span class="row" style="gap:6px"><label for="srtSel">排序：</label>${sortSel()}${F.sort==='urgent'?`<span>（<span class="st over">逾期未結</span> → <span class="st soon">即將到期</span> → 其他）</span>`:''}</span>${anyF?'・<a href="#" onclick="clearF();return false">清除篩選</a>':''}</div>
+  const anyF=F.q||F.year!==curYear()||F.month||F.station||F.vendor||F.cat1||F.cat2||F.status!=='notdone';
+  const oy=F.year; let other=0; if(oy){ F.year=''; other=filtered().length-rows.length; F.year=oy; }
+  el.innerHTML=`${other>0?`<div class="yearnote">⚠ 其他年份還有 <b>${other}</b> 件符合目前條件的案件${F.status==='notdone'||F.status==='over'?'（可能有去年還沒結案的）':''}。<a href="#" onclick="F.year='';renderList();return false">看全部年度</a></div>`:''}<div class="row small muted" style="margin-bottom:6px"><span>符合 <b>${rows.length}</b> 件</span>${SEL.size?`<span>・已勾選 <b>${SEL.size}</b> 件（匯出功能在第 3 段加入）</span>`:''}<span class="sp"></span><span class="row" style="gap:6px"><label for="srtSel">排序：</label>${sortSel()}${F.sort==='urgent'?`<span>（<span class="st over">逾期未結</span> → <span class="st soon">即將到期</span> → 其他）</span>`:''}</span>${anyF?'・<a href="#" onclick="clearF();return false">清除篩選</a>':''}</div>
    ${rows.length?`<div class="tw"><table class="lt"><colgroup>${COLS.map(([k])=>`<col style="width:${COLW[k]||'auto'}">`).join('')}</colgroup><thead><tr>
      ${COLS.map(([k,n])=>k.startsWith('ph')?`<th class="ns">${n}</th>`:`<th onclick="sortBy('${k}')">${n}${ar(k)}</th>`).join('')}</tr></thead><tbody>
      ${rows.map(c=>`<tr class="r-${statusOf(c)}" onclick="openForm('${c.id}')">
@@ -582,7 +586,7 @@ function navGo(k){ if(k==='list'){ F.sort='urgent'; F.dir=1; } go(k); }
 try{ localStorage.removeItem('casevoraCAPA_v1_sort'); }catch(e){}
 function tog(id,v){ v?SEL.add(id):SEL.delete(id); drawList(); }
 function selAll(v){ const rows=filtered(); rows.forEach(c=>v?SEL.add(c.id):SEL.delete(c.id)); drawList(); }
-function clearF(){ Object.assign(F,{q:'',year:'',month:'',station:'',vendor:'',cat1:'',cat2:'',status:'notdone'}); renderList(); }
+function clearF(){ Object.assign(F,{q:'',year:curYear(),month:'',station:'',vendor:'',cat1:'',cat2:'',status:'notdone'}); renderList(); }
 
 /* ============ 詳細內容 ============ */
 function openView(id){ const c=C.find(x=>x.id===id); if(!c||c.deleted) return; viewId=id; back=page==='view'?back:page; page='view'; nav();
@@ -724,7 +728,7 @@ function statsGuide(){ const k=(n,l,c)=>`<span class="gx-k ${c||''}">${n}<small>
     gS(6,'▲▼ 跟上期比幾 %',`${k(12,'新增 <b style="color:#b42318">▲ +20%</b>')}${k(5,'已結案 <b style="color:#167a3e">▲ +8%</b>','ok')}`,
       `<p><b style="color:#b42318">紅色＝變差</b>（異常、逾期變多，或結案變少）；<b style="color:#167a3e">綠色＝變好</b>。本期還沒過完時，上期只算到<b>同一天</b>（例：11/1～11/19 比 10/1～10/19）。</p>`)+
     gS(7,'下載 Word 報表、列印',`<span class="gx-b">下載 Word 報表</span><span class="gx-b">列印／存成 PDF</span>`,
-      `<p>「下載 Word 報表」依目前選的期間產生<b>月報／季報／年報</b>（.docx），格式跟衛生追蹤一樣：照左邊「統計報表」由上到下轉成 Word（總結、四個數字表、平均處理天數、逾期明細、各分類排行），圖表跟衛生追蹤的 Word 一樣，<b>上方有標題、下方有圖例</b>：工作站、分類一、分類二的圓餅圖和曲線圖，以及最後的趨勢圖（最近 12 個月／4 季／5 年，含比前期）。最後一段是<b>報表說明</b>（每個數字、▲▼、圖表怎麼看），主管不用開網頁也看得懂。「列印／存成 PDF」只印統計內容。</p><p>統計只算<b>這台電腦、這個瀏覽器</b>裡的案件，「最近刪除」裡的不算。</p>`)); }
+      `<p>「下載 Word 報表」依目前選的期間產生<b>月報／季報／年報</b>（.docx），格式跟衛生追蹤一樣：照左邊「統計報表」由上到下轉成 Word（總結、四個數字表、平均處理天數、逾期明細、各分類排行），圖表跟衛生追蹤的 Word 一樣，<b>上方有標題、下方有圖例</b>：工作站、分類一、分類二的圓餅圖和曲線圖，以及最後的趨勢圖（最近 12 個月／4 季／5 年，含比前期），圖下面還有一張<b>各期件數與比前期</b>的表格。最後一段是<b>報表說明</b>（每個數字、▲▼、圖表怎麼看），主管不用開網頁也看得懂。「列印／存成 PDF」只印統計內容。</p><p>統計只算<b>這台電腦、這個瀏覽器</b>裡的案件，「最近刪除」裡的不算。</p>`)); }
 /* ---------- 各分頁的使用說明（打開／收起會記住） ---------- */
 function guideBox(k,title,body){ const key='casevoraCAPA_v1_guide_'+k; let open=false; try{ open=localStorage.getItem(key)==='1'; }catch(e){}
   return `<div class="card gcard noprint"><details id="guide_${k}" ${open?'open':''} ontoggle="try{localStorage.setItem('${key}',this.open?'1':'0')}catch(e){}"><summary><b>📖 ${title}</b><span class="muted small">（點這裡展開／收合）</span></summary><div class="mg-grid">${body}</div></details></div>`; }
@@ -735,7 +739,7 @@ function listGuide(){ return guideBox('list','異常案件清單使用說明',
   gS(2,'依狀態切換',`${gBtn('未結案')}${gIn('未處理')}${gIn('改善追蹤中')}${gIn('逾期未結')}${gIn('即將到期')}${gIn('已結案')}${gIn('全部')}`,
     `<p>一打開清單<b>預設只顯示「未結案」</b>（跟衛生追蹤一樣），要看全部請按最右邊的「全部」；按「清除篩選」也會回到未結案。</p><p>狀態是系統<b>自動判斷</b>的，不用自己改：</p><p>${gBadge('已結案','done')} 有填結案日期<br>${gBadge('逾期未結','over')} 過了預計完成日期還沒結案<br>${gBadge('即將到期','soon')} 3 天內到期<br>${gBadge('改善追蹤中','track')} 有填處理辦法<br>${gBadge('未處理','open')} 其他</p>`)+
   gS(3,'搜尋與篩選',`${gIn('🔍 包裝區 黑色異物')}${gN(1)}${gIn('全部年度 ▾')}${gIn('全部廠商 ▾')}${gN(2)}`,
-    `<p>搜尋欄${gN(1)}可以打案件編號、產品品項、廠商、批號、異常描述、處理辦法等；用<b>空格</b>分開可以同時找多個關鍵字。</p><p>下拉選單${gN(2)}可以依年度、月份、工作站、廠商、分類一、分類二篩選；一件有兩個工作站或兩個異常原因的，選其中任一個都找得到；選項後面的（數字）是全部案件裡有幾件。如果篩完沒有結果，但「全部」裡有，會出現「看全部 N 件」按鈕，按一下就切過去。按「清除篩選」會回到預設的「未結案」。</p>`)+
+    `<p>搜尋欄${gN(1)}可以打案件編號、產品品項、廠商、批號、異常描述、處理辦法等；用<b>空格</b>分開可以同時找多個關鍵字。</p><p>下拉選單${gN(2)}可以依年度、月份、工作站、廠商、分類一、分類二篩選；<b>年度預設是今年</b>（跨年後自動變成新的一年），其他年份還有符合的案件時，上方會出現黃色提醒和「看全部年度」；一件有兩個工作站或兩個異常原因的，選其中任一個都找得到；選項後面的（數字）是全部案件裡有幾件。如果篩完沒有結果，但「全部」裡有，會出現「看全部 N 件」按鈕，按一下就切過去。按「清除篩選」會回到預設：今年、未結案。</p>`)+
   gS(4,'排序',`<span class="small">排序：</span>${gIn('緊急程度（預設） ▾')}${gN(1)}<span class="small">→ 發現日期：新 → 舊</span>`,
     `<p>預設依<b>緊急程度</b>排：逾期未結 → 即將到期 → 其他，最急的在最上面。</p><p>表格上方的「排序」選單${gN(1)}可以改成<b>發現日期（新 → 舊／舊 → 新）</b>、案件編號、預計完成日期，看這一次用。<b>重新打開網頁，或點左邊的「異常案件清單」，就會回到緊急程度（預設）</b>；從案件按「返回」回清單時，維持剛剛選的排序。</p><p>電腦版也可以直接點表格的<b>欄位標題</b>排序，再點一次反過來。</p>`)+
   gS(5,'點一列直接編輯',`${gIn('← 返回')}<span class="gin" style="color:#b42318">刪除</span>${gBtn('儲存')}`,
@@ -1013,7 +1017,12 @@ async function dlStatsWord(){ const box=$('#statBody'), btn=$('#wordBtn'); if(!b
       else if(el.classList.contains('st-sec')) body+=H2(txt(el));
       else if(el.classList.contains('st-bar')){ if(!(el.previousElementSibling&&el.previousElementSibling.classList.contains('st-bar'))){ const rows=[['項目','件數','比上期']]; let n=el; while(n&&n.classList.contains('st-bar')){ rows.push([txt(n.children[0]),txt(n.querySelector('.v')),txt(n.querySelector('.c'))]); n=n.nextElementSibling; } body+=wTable(rows); } }
       else if(el.classList.contains('st-block')){ const sec=el.querySelector('.st-sec'), fig=el.querySelector('figure'), sv=fig&&fig.querySelector('svg[role=img]'); if(sec) body+=H2(txt(sec));
-        if(sv){ let lg=[]; try{ lg=JSON.parse(fig.dataset.legend||'[]'); }catch(e){} try{ body+=pic(await chartPng(sv,fig.dataset.title,lg),5040000); }catch(e){ body+=wPara('（趨勢圖無資料）',{sz:19,color:'5D6779'}); } } else body+=wPara('（趨勢圖無資料）',{sz:19,color:'5D6779'}); }
+        if(sv){ let lg=[]; try{ lg=JSON.parse(fig.dataset.legend||'[]'); }catch(e){} try{ body+=pic(await chartPng(sv,fig.dataset.title,lg),5040000); }catch(e){ body+=wPara('（趨勢圖無資料）',{sz:19,color:'5D6779'}); } } else body+=wPara('（趨勢圖無資料）',{sz:19,color:'5D6779'});
+        /* 比前期：每一期跟前一期比，寫成表格 */
+        const ser=stSeries(stV,stY,stA()), lb=p=>stV==='month'?`${p.y} 年 ${p.a} 月`:stV==='quarter'?`${p.y} 年第 ${p.a} 季`:`${p.y} 年`;
+        const ar=(n,pn)=>n===pn?'＝ 持平':!pn?'▲ 新增':(n>pn?'▲ +':'▼ −')+(Math.round(Math.abs(n-pn)/pn*100)||'<1')+'%';
+        body+=wPara('各期件數與比前期',{b:1,sz:20,before:120,after:60,keep:1});
+        body+=wTable([['期間','總件數（新增）','總件數比前期','逾期件數','逾期比前期'],...ser.map((p,i)=>[lb(p),p.total+' 件',i?ar(p.total,ser[i-1].total):'—',p.over+' 件',i?ar(p.over,ser[i-1].over):'—'])]); }
       else if(el.classList.contains('st-charts')){ for(const fig of el.querySelectorAll('figure')){ const sv=fig.querySelector('svg'); let lg=[]; try{ lg=JSON.parse(fig.dataset.legend||'[]'); }catch(e){}
           try{ const r=await chartPng(sv,fig.dataset.title,lg); body+=pic(r,sv.viewBox.baseVal.width<=200?3000000:5040000); }catch(e){} } }
       else if(el.querySelector&&el.querySelector('table')){ const tb=el.querySelector('table'); body+=wTable([...tb.rows].map(r=>[...r.cells].map(txt))); }
@@ -1030,7 +1039,7 @@ async function dlStatsWord(){ const box=$('#statBody'), btn=$('#wordBtn'); if(!b
      '工作站、分類二（異常原因）：一件可以有兩個以上，統計時各算一件，所以加總可能比件數多。',
      '廠商排行：廠商空白代表公司內部，不列入排行，件數另外註明。',
      '圓餅圖：前 5 名各一塊，其餘合併成灰色的「其它」；曲線圖：所選年份每月件數（前 5 名）。同一個項目在兩張圖是同一個顏色。',
-     '趨勢圖：月報看最近 12 個月、季報看最近 4 季、年報看最近 5 年；實線＝總件數（新增），紅色虛線＝逾期件數，最下面一列是跟前一期比的 %。'
+     '趨勢圖：月報看最近 12 個月、季報看最近 4 季、年報看最近 5 年；實線＝總件數（新增），紅色虛線＝逾期件數，最下面一列是跟前一期比的 %；圖下面的表格逐期列出件數和「比前期」。'
     ].forEach(t=>{ body+=wPara('・'+t,{sz:19,color:'333333',after:60}); });
     body+=wPara('Casevoras 異常矯正工作台．本報表依本機資料產生',{sz:16,color:'888888',before:120,jc:'center'});
     const doc=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"><w:body>${body}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="567" w:footer="567" w:gutter="0"/></w:sectPr></w:body></w:document>`;
