@@ -145,6 +145,11 @@ table.lt td.desc{min-width:0;max-width:none}
 table.lt td.nw{white-space:nowrap;font-variant-numeric:tabular-nums}
 table.lt img.th{width:38px;height:30px}
 table.lt .ths{display:flex;gap:3px;flex-wrap:wrap}
+table.lt th.ck,table.lt td.ck{padding:7px 4px;text-align:center;cursor:default}
+table.lt input[type=checkbox],.cck{width:17px;height:17px;cursor:pointer;accent-color:var(--brand)}
+table.lt tr.sel td{background:#fff6df}.ccard.sel{background:#fff6df}
+.cck{flex:none;margin-top:2px}
+.selbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:#fff6df;border:1px solid #e8d27a;border-radius:8px;padding:7px 12px;margin-bottom:8px;font-size:14px}
 .stpick{display:flex;gap:6px;flex-wrap:wrap}
 .stpick button{border-radius:999px;padding:4px 12px;font-size:13.5px}
 .stpick button.on{background:var(--brand);border-color:var(--brand);color:#fffdf8}
@@ -561,17 +566,18 @@ function drawList(){
   const ar=k=>F.sort===k?(F.dir>0?' ▲':' ▼'):'';
   const anyF=F.q||F.year!==curYear()||F.month||F.station||F.vendor||F.cat1||F.cat2||F.status!=='notdone';
   const oy=F.year; let other=0; if(oy){ F.year=''; other=filtered().length-rows.length; F.year=oy; }
-  el.innerHTML=`${other>0?`<div class="yearnote">⚠ 其他年份還有 <b>${other}</b> 件符合目前條件的案件${F.status==='notdone'||F.status==='over'?'（可能有去年還沒結案的）':''}。<a href="#" onclick="F.year='';renderList();return false">看全部年度</a></div>`:''}<div class="row small muted" style="margin-bottom:6px"><span>符合 <b>${rows.length}</b> 件</span>${SEL.size?`<span>・已勾選 <b>${SEL.size}</b> 件（匯出功能在第 3 段加入）</span>`:''}<span class="sp"></span><span class="row" style="gap:6px"><label for="srtSel">排序：</label>${sortSel()}${F.sort==='urgent'?`<span>（<span class="st over">逾期未結</span> → <span class="st soon">即將到期</span> → 其他）</span>`:''}</span>${anyF?'・<a href="#" onclick="clearF();return false">清除篩選</a>':''}</div>
-   ${rows.length?`<div class="tw"><table class="lt"><colgroup>${COLS.map(([k])=>`<col style="width:${COLW[k]||'auto'}">`).join('')}</colgroup><thead><tr>
+  el.innerHTML=`${other>0?`<div class="yearnote">⚠ 其他年份還有 <b>${other}</b> 件符合目前條件的案件${F.status==='notdone'||F.status==='over'?'（可能有去年還沒結案的）':''}。<a href="#" onclick="F.year='';renderList();return false">看全部年度</a></div>`:''}<div class="row small muted" style="margin-bottom:6px"><span>符合 <b>${rows.length}</b> 件</span><span class="sp"></span><span class="row" style="gap:6px"><label for="srtSel">排序：</label>${sortSel()}${F.sort==='urgent'?`<span>（<span class="st over">逾期未結</span> → <span class="st soon">即將到期</span> → 其他）</span>`:''}</span>${anyF?'・<a href="#" onclick="clearF();return false">清除篩選</a>':''}</div>
+   ${SEL.size?`<div class="selbar">☑ 已勾選 <b>${SEL.size}</b> 件<span class="sp"></span><button class="pri sm" onclick="expSelected()">📤 匯出勾選的 ${SEL.size} 件</button><button class="sm" onclick="SEL=new Set();drawList()">取消勾選</button></div>`:''}
+   ${rows.length?`<div class="tw"><table class="lt"><colgroup><col style="width:30px">${COLS.map(([k])=>`<col style="width:${COLW[k]||'auto'}">`).join('')}</colgroup><thead><tr><th class="ns ck"><input type="checkbox" aria-label="全選" title="全選／全不選" ${rows.every(c=>SEL.has(c.id))?'checked':''} onclick="event.stopPropagation();selAll(this.checked)"></th>
      ${COLS.map(([k,n])=>k.startsWith('ph')?`<th class="ns">${n}</th>`:`<th onclick="sortBy('${k}')">${n}${ar(k)}</th>`).join('')}</tr></thead><tbody>
-     ${rows.map(c=>`<tr class="r-${statusOf(c)}" onclick="openForm('${c.id}')">
+     ${rows.map(c=>`<tr class="r-${statusOf(c)} ${SEL.has(c.id)?'sel':''}" onclick="openForm('${c.id}')"><td class="ck" onclick="event.stopPropagation()"><input type="checkbox" aria-label="勾選 ${esc(c.no)}" ${SEL.has(c.id)?'checked':''} onchange="tog('${c.id}',this.checked)"></td>
        <td style="white-space:nowrap;font-variant-numeric:tabular-nums">${esc(c.no)}</td><td style="white-space:nowrap">${fmtD(c.date)}</td><td>${esc(c.station)}</td><td>${esc(c.item)}</td><td>${esc(c.vendor)}</td><td>${esc(c.lot)}</td><td style="white-space:nowrap">${fmtD(c.expiry)}</td>
        <td class="desc"><div class="clip">${esc(c.desc)}</div></td><td><div class="ths">${(c.photos||[]).slice(0,2).map((p,i)=>`<img class="th zoom" data-ph="${p}" alt="圖片(${i+1})" title="點一下看大圖" onclick="event.stopPropagation();viewCasePhotos('${c.id}',${i})">`).join('')}</div></td>
        <td class="desc"><div class="clip">${esc(c.note)}</div></td><td class="desc"><div class="clip">${esc(c.method)}</div></td><td style="white-space:nowrap">${fmtD(c.closeDate)}${procDays(c)!=null?`<div class="small muted">${procDays(c)} 工作天</div>`:''}</td>
        <td>${c.cat1?`<span class="tag ${c.cat1==='供應商'?'sup':'fac'}">${esc(c.cat1)}</span>`:''}</td><td>${c2Tok(c.cat2).map(x=>`<span class="tag">${esc(x)}</span>`).join('')}</td>
        <td style="white-space:nowrap">${fmtD(dueOf(c))}</td><td>${stBadge(c)}${(c.photos||[]).length>2?`<div class="small muted">另有 ${c.photos.length-2} 張圖</div>`:''}</td></tr>`).join('')}
      </tbody></table></div>
-     <div class="cards">${rows.map(c=>`<div class="ccard r-${statusOf(c)}" onclick="openForm('${c.id}')">${(c.photos||[]).length?`<img class="zoom" data-ph="${c.photos[0]}" alt="異常照片" title="點一下看大圖" onclick="event.stopPropagation();viewCasePhotos('${c.id}',0)">`:''}<div class="m">
+     <div class="cards">${rows.map(c=>`<div class="ccard r-${statusOf(c)} ${SEL.has(c.id)?'sel':''}" onclick="openForm('${c.id}')"><input type="checkbox" class="cck" aria-label="勾選 ${esc(c.no)}" ${SEL.has(c.id)?'checked':''} onclick="event.stopPropagation()" onchange="tog('${c.id}',this.checked)">${(c.photos||[]).length?`<img class="zoom" data-ph="${c.photos[0]}" alt="異常照片" title="點一下看大圖" onclick="event.stopPropagation();viewCasePhotos('${c.id}',0)">`:''}<div class="m">
        <div class="row" style="gap:6px"><b class="small" style="font-variant-numeric:tabular-nums">${esc(c.no)}</b>${stBadge(c)}</div>
        <div class="t">${esc(c.item||'（未填品項）')}${c.vendor?'・'+esc(c.vendor):''}</div><div class="small muted">${fmtD(c.date)}${c.station?'・'+esc(c.station):''}</div>
        <div class="small" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.desc)}</div><div>${catTag(c)}</div></div></div>`).join('')}</div>`
@@ -751,10 +757,10 @@ function listGuide(){ return guideBox('list','異常案件清單使用說明',
     `<p>預設依<b>緊急程度</b>排：逾期未結 → 即將到期 → 其他，最急的在最上面。</p><p>表格上方的「排序」選單${gN(1)}可以改成<b>發現日期（新 → 舊／舊 → 新）</b>、案件編號、預計完成日期，看這一次用。<b>重新打開網頁，或點左邊的「異常案件清單」，就會回到緊急程度（預設）</b>；從案件按「返回」回清單時，維持剛剛選的排序。</p><p>電腦版也可以直接點表格的<b>欄位標題</b>排序，再點一次反過來。</p>`)+
   gS(5,'點一列直接編輯',`${gIn('← 返回')}<span class="gin" style="color:#b42318">刪除</span>${gBtn('儲存')}`,
     `<p>點任一列（手機是點卡片）會<b>直接打開編輯表單</b>，改完按最下面的「儲存」。</p><p>儲存後會回到清單。<b>點清單上的小圖可以看大圖</b>（不會進入編輯），同一件有兩張以上用 ◀ ▶ 或鍵盤左右鍵切換，Esc 關閉；上方「刪除」會先問一次，再移到「最近刪除」，30 天內都能救回來。</p>`)+
-  gS(6,'從 Excel 匯入、匯出 Excel',`${gIn('從 Excel 匯入')}${gN(1)}${gIn('下載匯入範本')}${gN(2)}</div><div class="gx-row">${gBtn('匯出 Excel')}${gN(3)}${gIn('2026 年 ▾')}${gIn('11 月 ▾')}`,
-    `<p>按上方「從 Excel 匯入」${gN(1)}，會先看到<b>匯入表格要放哪些欄位</b>：案件編號、發現日期、工作站、品項、廠商、批號、效期、異常、圖片(1)、圖片(2)、備註、處理辦法、結案日期、分類一、分類二。不確定就按「下載匯入範本」${gN(2)}照著填。</p><p>匯入只會<b>新增</b>，不會覆蓋原本的案件；分好幾個檔案匯入也可以，重複的會自動略過。</p><p>「<b>匯出 Excel</b>」${gN(3)}有兩種：<b>選期間匯出</b>（選年度，例如 2026 年；也可以再選月份，例如 2026 年 11 月，依發現日期、已結案和未結案都會匯出），或<b>匯出目前清單上篩出來的</b>（例：2026 年、未結案、打漿組）。格式跟原本的「事件記錄表」一樣：第一列標題、15 欄表頭、分類一黃底、分類二藍底，<b>圖片(1)、圖片(2) 直接放在格子裡</b>，日期是 Excel 日期格式，A4 橫印、每頁都有表頭，依發現日期排序。匯出的檔案也可以再用「從 Excel 匯入」讀回來（編號重複的會略過）。</p>`)+
+  gS(6,'從 Excel 匯入、匯出 Excel',`${gIn('從 Excel 匯入')}${gN(1)}${gIn('下載匯入範本')}${gN(2)}</div><div class="gx-row">${gBtn('匯出 Excel')}${gN(3)}${gIn('2026 年 ▾')}${gIn('11 月 ▾')}</div><div class="gx-row"><span class="gin" style="background:#fff6df;border-color:#e8d27a">☑ 已勾選 3 件　📤 匯出勾選的 3 件</span>`,
+    `<p>按上方「從 Excel 匯入」${gN(1)}，會先看到<b>匯入表格要放哪些欄位</b>：案件編號、發現日期、工作站、品項、廠商、批號、效期、異常、圖片(1)、圖片(2)、備註、處理辦法、結案日期、分類一、分類二。不確定就按「下載匯入範本」${gN(2)}照著填。</p><p>匯入只會<b>新增</b>，不會覆蓋原本的案件；分好幾個檔案匯入也可以，重複的會自動略過。</p><p>「<b>匯出 Excel</b>」${gN(3)}有三種：<b>勾選匯出</b>（在清單最左邊打勾，表格上方會出現「📤 匯出勾選的 N 件」，表頭的勾選框可以全選），<b>選期間匯出</b>（選年度，例如 2026 年；也可以再選月份，例如 2026 年 11 月，依發現日期、已結案和未結案都會匯出），或<b>匯出目前清單上篩出來的</b>（例：2026 年、未結案、打漿組）。格式跟原本的「事件記錄表」一樣：第一列標題、15 欄表頭、分類一黃底、分類二藍底，<b>圖片(1)、圖片(2) 直接放在格子裡</b>，日期是 Excel 日期格式，A4 橫印、每頁都有表頭，依發現日期排序。匯出的檔案也可以再用「從 Excel 匯入」讀回來（編號重複的會略過）。</p>`)+
   gS(7,'電腦和手機',`<span class="small">電腦：表格　手機：卡片</span>`,
-    `<p>電腦看到的是表格，表頭跟 Excel 同一個順序，最後多了「預計完成日期」和「狀態」；欄寬固定，一般螢幕一頁就看得完。每一列看最右邊的<b>狀態</b>標籤：<span class="st over">逾期未結</span>、<span class="st soon">即將到期</span>…。手機會自動改成卡片，左邊的色條代表一樣的意思。</p>`)); }
+    `<p>電腦版表格最左邊、手機版卡片左上角有<b>勾選框</b>，勾起來可以匯出；點勾選框不會打開編輯。</p><p>電腦看到的是表格，表頭跟 Excel 同一個順序，最後多了「預計完成日期」和「狀態」；欄寬固定，一般螢幕一頁就看得完。每一列看最右邊的<b>狀態</b>標籤：<span class="st over">逾期未結</span>、<span class="st soon">即將到期</span>…。手機會自動改成卡片，左邊的色條代表一樣的意思。</p>`)); }
 function formGuide(){ return guideBox('form','新增／編輯案件使用說明',
   gS(1,'最少要填什麼',`${gIn('發現日期 *')}<span class="small">＋</span>${gIn('產品品項')}<span class="small">或</span>${gIn('異常描述')}`,
     `<p>只有<b>發現日期</b>必填，另外「產品品項」或「異常描述」至少填一個。其他欄位可以先空白，之後再回來補。</p><p><b>案件編號</b>：新增時會<b>自動帶出</b>，改發現日期會跟著變；也可以自己改（例如照 Excel 的編號），自己改過就不會再自動換。編號規則是<b>發現日期 YYYYMMDD＋三碼流水號</b>，例如 11/20 發現的第 1 件是 20261120001、第 2 件是 20261120002，依「發現日期」那天編。以前匯入的編號不會改。編號不能跟別的案件重複。</p>`)+
@@ -1200,6 +1206,7 @@ function expIntro(){ const rows=filtered(), ys=[...new Set([curYear(),...yearsOf
       <select id="exM" style="width:auto"><option value="">全年</option>${[...Array(12)].map((_,i)=>`<option value="${p2(i+1)}">${i+1} 月</option>`).join('')}</select></div>
       <button class="pri" id="exP" style="margin-top:10px;width:100%"></button></div>
     <div class="card" style="margin:0 0 10px;padding:12px"><b>② 匯出目前清單</b><div class="small muted" style="margin:2px 0 8px">條件：${esc(fDesc())}</div><button id="exA" style="width:100%">匯出目前清單上的 ${rows.length} 件</button></div>
+    <div class="card" style="margin:0 0 10px;padding:12px"><b>③ 匯出勾選的案件</b><div class="small muted" style="margin:2px 0 8px">${SEL.size?'在清單上勾選的案件':'先在清單最左邊打勾，再回來按這裡'}</div><button id="exS" style="width:100%" ${SEL.size?'':'disabled'}>匯出勾選的 ${SEL.size} 件</button></div>
     <div class="row" style="justify-content:flex-end"><button id="exN">取消</button></div></div>`;
   document.body.appendChild(m); const ySel=m.querySelector('#exY'), mSel=m.querySelector('#exM'), pb=m.querySelector('#exP');
   const pick=()=>live().filter(c=>(!ySel.value||(c.date||'').startsWith(ySel.value+'-'))&&(!mSel.value||(c.date||'').slice(5,7)===mSel.value));
@@ -1207,7 +1214,9 @@ function expIntro(){ const rows=filtered(), ys=[...new Set([curYear(),...yearsOf
   ySel.onchange=upd; mSel.onchange=upd; upd();
   m.querySelector('#exN').onclick=()=>m.remove();
   pb.onclick=()=>{ const L=pick(), y=ySel.value, mo=mSel.value; m.remove(); dlExportXlsx(L,y,mo); };
-  m.querySelector('#exA').onclick=()=>{ m.remove(); dlExportXlsx(rows,F.year,F.month); }; }
+  m.querySelector('#exA').onclick=()=>{ m.remove(); dlExportXlsx(rows,F.year,F.month); };
+  m.querySelector('#exS').onclick=()=>{ m.remove(); expSelected(); }; }
+function expSelected(){ const L=C.filter(c=>SEL.has(c.id)&&!c.deleted); if(!L.length){ say('還沒有勾選案件。'); return; } dlExportXlsx(L,'',''); }
 function fDesc(){ const a=[]; a.push(F.year?F.year+' 年':'全部年度'); if(F.month) a.push(+F.month+' 月'); const st={notdone:'未結案',open:'未處理',track:'改善追蹤中',over:'逾期未結',soon:'即將到期',done:'已結案'}[F.status]; a.push(st||'全部狀態');
   ['station','vendor','cat1','cat2'].forEach(k=>{ if(F[k]) a.push(F[k]); }); if(F.q) a.push('搜尋「'+F.q+'」'); return a.join('、'); }
 /* 照片縮小後放進 Excel（最長邊 480px），檔案才不會太大 */
