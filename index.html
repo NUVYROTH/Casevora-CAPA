@@ -523,7 +523,7 @@ function renderList(){
   const cntOf=(f,x)=>all.filter(c=>valsOf(c,f).includes(x)).length, wc=(f,arr)=>arr.map(x=>[x,`${x}（${cntOf(f,x)}）`]);
   const chip=(k,n)=>`<button class="${F.status===k?'on':''}" onclick="F.status='${k}';renderList()">${n}</button>`;
   $('#app').innerHTML=`${headHTML('異常矯正工作台','CORRECTIVE &amp; PREVENTIVE ACTION','從發現異常、原因分析、矯正預防到成效確認，讓每一件異常都有紀錄、有對策、有結案。','異常案件清單',
-     `<button class="pri pnew" onclick="go('new')">＋ 新增異常案件</button><button class="lite" onclick="impIntro()">從 Excel 匯入</button><button class="lite" onclick="go('trash')">最近刪除（${C.filter(c=>c.deleted).length}）</button>${backupTools()}`)}
+     `<button class="pri pnew" onclick="go('new')">＋ 新增異常案件</button><button class="lite" onclick="impIntro()">從 Excel 匯入</button><button class="lite" onclick="expIntro()">匯出 Excel</button><button class="lite" onclick="go('trash')">最近刪除（${C.filter(c=>c.deleted).length}）</button>${backupTools()}`)}
    ${listKpis()}
    <div class="card"><div class="phd"><b>異常案件清單</b><span class="small muted">共 ${all.length} 件・未結 ${all.length-cnt('done')} 件</span></div>
     <div class="chips">${chip('notdone','未結案（'+(all.length-cnt('done'))+'）')}${chip('open','未處理（'+cnt('open')+'）')}${chip('track','改善追蹤中（'+cnt('track')+'）')}${chip('over','逾期未結（'+cnt('over')+'）')}${chip('soon','即將到期（'+cnt('soon')+'）')}${chip('done','已結案（'+cnt('done')+'）')}${chip('','全部（'+all.length+'）')}</div>
@@ -751,8 +751,8 @@ function listGuide(){ return guideBox('list','異常案件清單使用說明',
     `<p>預設依<b>緊急程度</b>排：逾期未結 → 即將到期 → 其他，最急的在最上面。</p><p>表格上方的「排序」選單${gN(1)}可以改成<b>發現日期（新 → 舊／舊 → 新）</b>、案件編號、預計完成日期，看這一次用。<b>重新打開網頁，或點左邊的「異常案件清單」，就會回到緊急程度（預設）</b>；從案件按「返回」回清單時，維持剛剛選的排序。</p><p>電腦版也可以直接點表格的<b>欄位標題</b>排序，再點一次反過來。</p>`)+
   gS(5,'點一列直接編輯',`${gIn('← 返回')}<span class="gin" style="color:#b42318">刪除</span>${gBtn('儲存')}`,
     `<p>點任一列（手機是點卡片）會<b>直接打開編輯表單</b>，改完按最下面的「儲存」。</p><p>儲存後會回到清單。<b>點清單上的小圖可以看大圖</b>（不會進入編輯），同一件有兩張以上用 ◀ ▶ 或鍵盤左右鍵切換，Esc 關閉；上方「刪除」會先問一次，再移到「最近刪除」，30 天內都能救回來。</p>`)+
-  gS(6,'從 Excel 匯入',`${gIn('從 Excel 匯入')}${gN(1)}${gIn('下載匯入範本')}${gN(2)}`,
-    `<p>按上方「從 Excel 匯入」${gN(1)}，會先看到<b>匯入表格要放哪些欄位</b>：案件編號、發現日期、工作站、品項、廠商、批號、效期、異常、圖片(1)、圖片(2)、備註、處理辦法、結案日期、分類一、分類二。不確定就按「下載匯入範本」${gN(2)}照著填。</p><p>匯入只會<b>新增</b>，不會覆蓋原本的案件；分好幾個檔案匯入也可以，重複的會自動略過。</p>`)+
+  gS(6,'從 Excel 匯入、匯出 Excel',`${gIn('從 Excel 匯入')}${gN(1)}${gIn('下載匯入範本')}${gN(2)}</div><div class="gx-row">${gBtn('匯出 Excel')}${gN(3)}<span class="small">→ 目前清單 N 件／全部</span>`,
+    `<p>按上方「從 Excel 匯入」${gN(1)}，會先看到<b>匯入表格要放哪些欄位</b>：案件編號、發現日期、工作站、品項、廠商、批號、效期、異常、圖片(1)、圖片(2)、備註、處理辦法、結案日期、分類一、分類二。不確定就按「下載匯入範本」${gN(2)}照著填。</p><p>匯入只會<b>新增</b>，不會覆蓋原本的案件；分好幾個檔案匯入也可以，重複的會自動略過。</p><p>「<b>匯出 Excel</b>」${gN(3)}可以選匯出<b>目前清單上篩出來的</b>（例：2026 年、未結案、打漿組）或<b>全部</b>案件，格式跟原本的「事件記錄表」一樣：第一列標題、15 欄表頭、分類一黃底、分類二藍底，<b>圖片(1)、圖片(2) 直接放在格子裡</b>，日期是 Excel 日期格式，A4 橫印、每頁都有表頭，依發現日期排序。匯出的檔案也可以再用「從 Excel 匯入」讀回來（編號重複的會略過）。</p>`)+
   gS(7,'電腦和手機',`<span class="small">電腦：表格　手機：卡片</span>`,
     `<p>電腦看到的是表格，表頭跟 Excel 同一個順序，最後多了「預計完成日期」和「狀態」；欄寬固定，一般螢幕一頁就看得完。每一列看最右邊的<b>狀態</b>標籤：<span class="st over">逾期未結</span>、<span class="st soon">即將到期</span>…。手機會自動改成卡片，左邊的色條代表一樣的意思。</p>`)); }
 function formGuide(){ return guideBox('form','新增／編輯案件使用說明',
@@ -1189,6 +1189,69 @@ function impIntro(){ const m=document.createElement('div'); m.className='modal';
   document.body.appendChild(m); m.querySelector('#iN').onclick=()=>m.remove(); m.querySelector('#iT').onclick=()=>dlImpTemplate();
   m.querySelector('#iY').onclick=()=>{ m.remove(); $('#xlsxIn').click(); }; m.querySelector('#iY').focus(); }
 /* 匯入範本：只有標題列，欄名跟系統對得上 */
+/* ============ 匯出 Excel：格式照擁有者原本的「事件記錄表」 ============ */
+const EXP_H=['案件編號','發現日期','工作站','品項','廠商','批號','效期','異常','圖片(1)','圖片(2)','備註','處理辦法','結案日期','分類一：供應商、廠內異常','分類二：天然異物、非天然異物、規格不符、風味口感不良、其它品質因素(含包裝/標示不良)、其它異常原因。 2項以上之原因時，以較多或較嚴重之問題歸類'];
+const EXP_W=[15.4,11.5,10.8,10.8,13,12.8,10.8,26,22,22,14.4,20,11.5,14,22];
+function expIntro(){ const rows=filtered(), all=live(); const m=document.createElement('div'); m.className='modal';
+  m.innerHTML=`<div class="box" style="max-width:520px"><h2 style="margin:0 0 6px;font-size:17px">📤 匯出 Excel</h2>
+    <div class="small muted" style="margin-bottom:10px">格式跟原本的「事件記錄表」一樣：15 欄表頭、分類一黃底、分類二藍底，圖片(1)、圖片(2) 直接放在格子裡，A4 橫印。依發現日期排序。</div>
+    <div class="row" style="flex-direction:column;align-items:stretch;gap:8px"><button class="pri" id="exA">匯出目前清單上的 ${rows.length} 件</button><button id="exB">匯出全部 ${all.length} 件</button><button id="exN">取消</button></div>
+    <div class="small muted" style="margin-top:8px">目前清單的條件：${esc(fDesc())}</div></div>`;
+  document.body.appendChild(m); m.querySelector('#exN').onclick=()=>m.remove();
+  m.querySelector('#exA').onclick=()=>{ m.remove(); dlExportXlsx(rows,F.year); }; m.querySelector('#exB').onclick=()=>{ m.remove(); dlExportXlsx(all,''); }; }
+function fDesc(){ const a=[]; a.push(F.year?F.year+' 年':'全部年度'); if(F.month) a.push(+F.month+' 月'); const st={notdone:'未結案',open:'未處理',track:'改善追蹤中',over:'逾期未結',soon:'即將到期',done:'已結案'}[F.status]; a.push(st||'全部狀態');
+  ['station','vendor','cat1','cat2'].forEach(k=>{ if(F[k]) a.push(F[k]); }); if(F.q) a.push('搜尋「'+F.q+'」'); return a.join('、'); }
+/* 照片縮小後放進 Excel（最長邊 480px），檔案才不會太大 */
+async function expPhoto(id){ const v=await phGet(id); if(!v) return null; const img=new Image(); img.src=v; await img.decode();
+  const k=Math.min(1,480/Math.max(img.width,img.height)), c=document.createElement('canvas'); c.width=Math.round(img.width*k); c.height=Math.round(img.height*k);
+  const g=c.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,c.width,c.height); g.drawImage(img,0,0,c.width,c.height);
+  const b=await new Promise(r=>c.toBlob(r,'image/jpeg',0.82)); return {bytes:new Uint8Array(await b.arrayBuffer()),w:c.width,h:c.height}; }
+const xmlEsc=t=>String(t??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,'');
+const colL=i=>{ let s=''; i++; while(i){ const r=(i-1)%26; s=String.fromCharCode(65+r)+s; i=Math.floor((i-1)/26); } return s; };
+const xlSerial=d=>{ const [y,m,dd]=d.split('-').map(Number); return Math.round((Date.UTC(y,m-1,dd)-Date.UTC(1899,11,30))/86400000); };
+async function dlExportXlsx(list,year){ if(!list.length){ await say('沒有可以匯出的案件。'); return; }
+  toast('正在產生 Excel…'); try{
+  const L=list.slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))||String(a.no).localeCompare(String(b.no)));
+  const Y=year||(()=>{ const ys=[...new Set(L.map(c=>(c.date||'').slice(0,4)).filter(Boolean))].sort(); return ys.length===1?ys[0]:''; })();
+  const sheetName=(Y?Y:'')+'事件記錄表', title=(Y?Y+'年度':'')+'異常矯正與處理記錄一覽表';
+  const cell=(ref,s,v,kind)=>{ if(v==null||v==='') return `<c r="${ref}" s="${s}"/>`; if(kind==='n') return `<c r="${ref}" s="${s}"><v>${v}</v></c>`; return `<c r="${ref}" s="${s}" t="inlineStr"><is><t xml:space="preserve">${xmlEsc(v)}</t></is></c>`; };
+  const media=[], anchors=[]; const colPx=w=>Math.floor(w*7+5), pxEmu=9525;
+  let rowsXml=`<row r="1" ht="30" customHeight="1">${cell('B1',1,title)}${Array.from({length:11},(_,i)=>`<c r="${colL(i+2)}1" s="1"/>`).join('')}</row>`;
+  rowsXml+=`<row r="2" ht="90.75" customHeight="1">${EXP_H.map((h,i)=>cell(colL(i)+'2',i===13?3:i===14?4:2,h)).join('')}</row>`;
+  for(let k=0;k<L.length;k++){ const c=L[k], r=k+3, ph=(c.photos||[]).slice(0,2), ht=ph.length?120:60;
+    const no=String(c.no||''), isNum=/^\d{1,15}$/.test(no);
+    const v=[[no,isNum?'n':'s',5],[c.date?xlSerial(c.date):'', 'n',6],[stTok(c.station).join('、'),'s',5],[c.item,'s',5],[c.vendor,'s',5],[c.lot,'s',5],[c.expiry?xlSerial(c.expiry):'','n',6],[c.desc,'s',7],['','s',5],['','s',5],[c.note,'s',5],[c.method,'s',8],[c.closeDate?xlSerial(c.closeDate):'','n',6],[c.cat1,'s',9],[c2Tok(c.cat2).join('、'),'s',9]];
+    rowsXml+=`<row r="${r}" ht="${ht}" customHeight="1">${v.map(([val,kind,s],i)=>cell(colL(i)+r,s,val,kind)).join('')}</row>`;
+    for(let j=0;j<ph.length;j++){ const im=await expPhoto(ph[j]).catch(()=>null); if(!im) continue; media.push(im.bytes); const id=media.length;
+      const cw=colPx(EXP_W[8+j]), rh=Math.round(ht*96/72), box=Math.min(cw,rh)-8, sc=Math.min(box/im.w,box/im.h), w=Math.round(im.w*sc), h=Math.round(im.h*sc);
+      anchors.push(`<xdr:oneCellAnchor><xdr:from><xdr:col>${8+j}</xdr:col><xdr:colOff>${Math.round((cw-w)/2)*pxEmu}</xdr:colOff><xdr:row>${r-1}</xdr:row><xdr:rowOff>${Math.round((rh-h)/2)*pxEmu}</xdr:rowOff></xdr:from><xdr:ext cx="${w*pxEmu}" cy="${h*pxEmu}"/><xdr:pic><xdr:nvPicPr><xdr:cNvPr id="${id+1}" name="圖片 ${id}"/><xdr:cNvPicPr><a:picLocks noChangeAspect="1"/></xdr:cNvPicPr></xdr:nvPicPr><xdr:blipFill><a:blip r:embed="rId${id}"/><a:stretch><a:fillRect/></a:stretch></xdr:blipFill><xdr:spPr><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr></xdr:pic><xdr:clientData/></xdr:oneCellAnchor>`); } }
+  const last=L.length+2;
+  const sheet=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheetPr><pageSetUpPr fitToPage="1"/></sheetPr><dimension ref="A1:O${last}"/><sheetViews><sheetView workbookViewId="0" zoomScale="85"><pane ySplit="2" topLeftCell="A3" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><sheetFormatPr defaultRowHeight="16.5"/><cols>${EXP_W.map((w,i)=>`<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join('')}</cols><sheetData>${rowsXml}</sheetData><mergeCells count="1"><mergeCell ref="B1:M1"/></mergeCells><pageMargins left="0.2" right="0.2" top="0.2" bottom="0.2" header="0.1" footer="0.1"/><pageSetup paperSize="9" orientation="landscape" fitToWidth="1" fitToHeight="0"/>${media.length?'<drawing r:id="rIdD"/>':''}</worksheet>`;
+  const styles=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="6"><font><sz val="12"/><name val="新細明體"/><family val="1"/><charset val="136"/></font><font><sz val="16"/><name val="標楷體"/><family val="4"/><charset val="136"/></font><font><sz val="14"/><name val="標楷體"/><family val="4"/><charset val="136"/></font><font><sz val="11"/><name val="新細明體"/><family val="1"/><charset val="136"/></font><font><sz val="10"/><name val="新細明體"/><family val="1"/><charset val="136"/></font><font><sz val="12"/><name val="新細明體"/><family val="1"/><charset val="136"/></font></fonts><fills count="4"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFFFFF00"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FF00B0F0"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"/><right style="thin"/><top style="thin"/><bottom style="thin"/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="10">`+
+    `<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>`+
+    `<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>`+
+    `<xf numFmtId="0" fontId="2" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>`+
+    `<xf numFmtId="0" fontId="2" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" wrapText="1"/></xf>`+
+    `<xf numFmtId="0" fontId="5" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>`+
+    `<xf numFmtId="0" fontId="3" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>`+
+    `<xf numFmtId="14" fontId="3" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>`+
+    `<xf numFmtId="0" fontId="4" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>`+
+    `<xf numFmtId="0" fontId="4" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>`+
+    `<xf numFmtId="0" fontId="3" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>`+
+    `</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
+  const sn=xmlEsc(sheetName.slice(0,31));
+  const files=[['[Content_Types].xml',`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="jpeg" ContentType="image/jpeg"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${media.length?'<Override PartName="/xl/drawings/drawing1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>':''}</Types>`],
+    ['_rels/.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'],
+    ['xl/workbook.xml',`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="${sn}" sheetId="1" r:id="rId1"/></sheets><definedNames><definedName name="_xlnm.Print_Titles" localSheetId="0">'${sn}'!$1:$2</definedName></definedNames></workbook>`],
+    ['xl/_rels/workbook.xml.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>'],
+    ['xl/styles.xml',styles],['xl/worksheets/sheet1.xml',sheet]];
+  if(media.length){ files.push(['xl/worksheets/_rels/sheet1.xml.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdD" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing1.xml"/></Relationships>']);
+    files.push(['xl/drawings/drawing1.xml',`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">${anchors.join('')}</xdr:wsDr>`]);
+    files.push(['xl/drawings/_rels/drawing1.xml.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+media.map((_,i)=>`<Relationship Id="rId${i+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/image${i+1}.jpeg"/>`).join('')+'</Relationships>']);
+    media.forEach((b,i)=>files.push([`xl/media/image${i+1}.jpeg`,b])); }
+  const blob=new Blob([zipStore(files)],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  download(blob,`CAPA_${sheetName}_${today().replace(/-/g,'')}.xlsx`); toast(`已匯出 ${L.length} 件 ✦`);
+  }catch(e){ say('Excel 匯出失敗，請再試一次。'); } }
 function dlImpTemplate(){ const H=['案件編號','發現日期','工作站','品項','廠商','批號','效期','異常','圖片(1)','圖片(2)','備註','處理辦法','結案日期','分類一：供應商、廠內異常','分類二：天然異物、非天然異物'];
   const col=i=>String.fromCharCode(65+i), cell=(v,i)=>`<c r="${col(i)}1" t="inlineStr" s="1"><is><t>${wx(v)}</t></is></c>`;
   const sheet=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols><col min="1" max="15" width="16" customWidth="1"/></cols><sheetData><row r="1">${H.map(cell).join('')}</row></sheetData></worksheet>`;
