@@ -544,9 +544,9 @@ const KIC={
 /* 清單上方四格（點了就篩出那些案件） */
 function listKpis(){ const a=live(), nd=a.filter(c=>statusOf(c)!=='done').length, ov=a.filter(c=>statusOf(c)==='over').length, so=a.filter(c=>statusOf(c)==='soon').length, t=today(), nm=a.filter(c=>(c.date||'').startsWith(t.slice(0,7))).length;
   return `<div class="kpis">
-    <div class="kpi go" onclick="F.status='notdone';F.sort='urgent';renderList()"><span class="kic" aria-hidden="true">${KIC.doc}</span><div class="l">未結案</div><div class="n">${nd}<small>件</small></div><div class="d">${nd?'含逾期和即將到期':'目前沒有未結案件'}</div></div>
-    <div class="kpi warn go" onclick="F.status='over';renderList()"><span class="kic kw" aria-hidden="true">${KIC.clock}</span><div class="l">逾期未結</div><div class="n">${ov}<small>件</small></div><div class="d">${ov?'已超過預計完成日期':'目前沒有逾期'}</div></div>
-    <div class="kpi amber go" onclick="F.status='soon';renderList()"><span class="kic kam" aria-hidden="true">${KIC.cal}</span><div class="l">3 天內到期</div><div class="n">${so}<small>件</small></div><div class="d">${so?'請優先處理':'3 天內沒有要到期的'}</div></div>
+    <div class="kpi go" onclick="F.status='notdone';F.year='';F.month='';F.sort='urgent';renderList()"><span class="kic" aria-hidden="true">${KIC.doc}</span><div class="l">未結案</div><div class="n">${nd}<small>件</small></div><div class="d">${nd?'含逾期和即將到期':'目前沒有未結案件'}</div></div>
+    <div class="kpi warn go" onclick="F.status='over';F.year='';F.month='';renderList()"><span class="kic kw" aria-hidden="true">${KIC.clock}</span><div class="l">逾期未結</div><div class="n">${ov}<small>件</small></div><div class="d">${ov?'已超過預計完成日期':'目前沒有逾期'}</div></div>
+    <div class="kpi amber go" onclick="F.status='soon';F.year='';F.month='';renderList()"><span class="kic kam" aria-hidden="true">${KIC.cal}</span><div class="l">3 天內到期</div><div class="n">${so}<small>件</small></div><div class="d">${so?'請優先處理':'3 天內沒有要到期的'}</div></div>
     <div class="kpi info go" onclick="Object.assign(F,{status:'',year:'${t.slice(0,4)}',month:'${t.slice(5,7)}'});renderList()"><span class="kic kin" aria-hidden="true">${KIC.plus}</span><div class="l">本月新增</div><div class="n">${nm}<small>件</small></div><div class="d">${+t.slice(5,7)} 月發現的異常</div></div>
   </div>`; }
 function drawList(){
@@ -735,11 +735,11 @@ function guideBox(k,title,body){ const key='casevoraCAPA_v1_guide_'+k; let open=
 const gBadge=(t,c)=>`<span class="st ${c}">${t}</span>`, gIn=t=>`<span class="gin">${t}</span>`, gBtn=t=>`<span class="gin dk">${t}</span>`;
 function listGuide(){ return guideBox('list','異常案件清單使用說明',
   gS(1,'一打開先看四格數字',`<span class="gk">5<small>未結案</small></span>${gN(1)}<span class="gk bad">2<small>逾期未結</small></span><span class="gk warn">1<small>3 天內到期</small></span><span class="gk">3<small>本月新增</small></span>`,
-    `<p>最上面四格告訴你：還有幾件沒結、幾件逾期、幾件 3 天內到期、這個月新增幾件。</p><p>點任一格${gN(1)}，清單就只列出那些案件。</p>`)+
+    `<p>最上面四格告訴你：還有幾件沒結、幾件逾期、幾件 3 天內到期（這三格算<b>所有年份</b>，去年還沒結的也算進來）、這個月新增幾件。</p><p>點任一格${gN(1)}，清單就只列出那些案件；點前三格會自動看<b>全部年度</b>，件數會跟格子上的數字一樣。</p>`)+
   gS(2,'依狀態切換',`${gBtn('未結案')}${gIn('未處理')}${gIn('改善追蹤中')}${gIn('逾期未結')}${gIn('即將到期')}${gIn('已結案')}${gIn('全部')}`,
-    `<p>一打開清單<b>預設只顯示「未結案」</b>（跟衛生追蹤一樣），要看全部請按最右邊的「全部」；按「清除篩選」也會回到未結案。</p><p>狀態是系統<b>自動判斷</b>的，不用自己改：</p><p>${gBadge('已結案','done')} 有填結案日期<br>${gBadge('逾期未結','over')} 過了預計完成日期還沒結案<br>${gBadge('即將到期','soon')} 3 天內到期<br>${gBadge('改善追蹤中','track')} 有填處理辦法<br>${gBadge('未處理','open')} 其他</p>`)+
-  gS(3,'搜尋與篩選',`${gIn('🔍 包裝區 黑色異物')}${gN(1)}${gIn('全部年度 ▾')}${gIn('全部廠商 ▾')}${gN(2)}`,
-    `<p>搜尋欄${gN(1)}可以打案件編號、產品品項、廠商、批號、異常描述、處理辦法等；用<b>空格</b>分開可以同時找多個關鍵字。</p><p>下拉選單${gN(2)}可以依年度、月份、工作站、廠商、分類一、分類二篩選；<b>年度預設是今年</b>（跨年後自動變成新的一年），其他年份還有符合的案件時，上方會出現黃色提醒和「看全部年度」；一件有兩個工作站或兩個異常原因的，選其中任一個都找得到；選項後面的（數字）是全部案件裡有幾件。如果篩完沒有結果，但「全部」裡有，會出現「看全部 N 件」按鈕，按一下就切過去。按「清除篩選」會回到預設：今年、未結案。</p>`)+
+    `<p>一打開清單<b>預設只顯示今年的「未結案」</b>（跟衛生追蹤一樣），要看已結案的請按「已結案」或最右邊的「全部」；按「清除篩選」也會回到今年、未結案。</p><p>狀態是系統<b>自動判斷</b>的，不用自己改：</p><p>${gBadge('已結案','done')} 有填結案日期<br>${gBadge('逾期未結','over')} 過了預計完成日期還沒結案<br>${gBadge('即將到期','soon')} 3 天內到期<br>${gBadge('改善追蹤中','track')} 有填處理辦法<br>${gBadge('未處理','open')} 其他</p>`)+
+  gS(3,'搜尋與篩選',`${gIn('🔍 包裝區 黑色異物')}${gN(1)}</div><div class="gx-row">${gIn('2026 年 ▾')}${gIn('打漿組（11） ▾')}${gN(2)}</div><div class="gx-row"><span class="gin" style="background:#fff4e0;color:#7a3d06;border-color:#f1c88b">⚠ 其他年份還有 3 件　看全部年度</span>${gN(3)}`,
+    `<p>搜尋欄${gN(1)}可以打案件編號、產品品項、廠商、批號、異常描述、處理辦法等；用<b>空格</b>分開可以同時找多個關鍵字。</p><p>下拉選單${gN(2)}可以依年度、月份、工作站、廠商、分類一、分類二篩選；<b>年度預設是今年</b>（跨年後自動變成新的一年）；其他年份還有符合的案件時，上方會出現黃色提醒${gN(3)}，按「看全部年度」就能看到，避免漏掉去年還沒結案的；一件有兩個工作站或兩個異常原因的，選其中任一個都找得到；選項後面的（數字）是全部案件裡有幾件。如果篩完沒有結果，但「全部」裡有，會出現「看全部 N 件」按鈕，按一下就切過去。按「清除篩選」會回到預設：今年、未結案。</p>`)+
   gS(4,'排序',`<span class="small">排序：</span>${gIn('緊急程度（預設） ▾')}${gN(1)}<span class="small">→ 發現日期：新 → 舊</span>`,
     `<p>預設依<b>緊急程度</b>排：逾期未結 → 即將到期 → 其他，最急的在最上面。</p><p>表格上方的「排序」選單${gN(1)}可以改成<b>發現日期（新 → 舊／舊 → 新）</b>、案件編號、預計完成日期，看這一次用。<b>重新打開網頁，或點左邊的「異常案件清單」，就會回到緊急程度（預設）</b>；從案件按「返回」回清單時，維持剛剛選的排序。</p><p>電腦版也可以直接點表格的<b>欄位標題</b>排序，再點一次反過來。</p>`)+
   gS(5,'點一列直接編輯',`${gIn('← 返回')}<span class="gin" style="color:#b42318">刪除</span>${gBtn('儲存')}`,
