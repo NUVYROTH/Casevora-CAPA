@@ -149,6 +149,7 @@ table.lt th.ck,table.lt td.ck{padding:7px 4px;text-align:center;cursor:default}
 table.lt input[type=checkbox],.cck{width:17px;height:17px;cursor:pointer;accent-color:var(--brand)}
 table.lt tr.sel td{background:#fff6df}.ccard.sel{background:#fff6df}
 .cck{flex:none;margin-top:2px}
+.expq{display:flex;flex-direction:column;gap:4px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:13.5px}.expq label{display:flex;gap:6px;align-items:center;cursor:pointer}.expq input{width:auto}
 .selbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:#fff6df;border:1px solid #e8d27a;border-radius:8px;padding:7px 12px;margin-bottom:8px;font-size:14px}
 .stpick{display:flex;gap:6px;flex-wrap:wrap}
 .stpick button{border-radius:999px;padding:4px 12px;font-size:13.5px}
@@ -758,7 +759,7 @@ function listGuide(){ return guideBox('list','異常案件清單使用說明',
   gS(5,'點一列直接編輯',`${gIn('← 返回')}<span class="gin" style="color:#b42318">刪除</span>${gBtn('儲存')}`,
     `<p>點任一列（手機是點卡片）會<b>直接打開編輯表單</b>，改完按最下面的「儲存」。</p><p>儲存後會回到清單。<b>點清單上的小圖可以看大圖</b>（不會進入編輯），同一件有兩張以上用 ◀ ▶ 或鍵盤左右鍵切換，Esc 關閉；上方「刪除」會先問一次，再移到「最近刪除」，30 天內都能救回來。</p>`)+
   gS(6,'從 Excel 匯入、匯出 Excel',`${gIn('從 Excel 匯入')}${gN(1)}${gIn('下載匯入範本')}${gN(2)}</div><div class="gx-row">${gBtn('匯出 Excel')}${gN(3)}${gIn('2026 年 ▾')}${gIn('11 月 ▾')}</div><div class="gx-row"><span class="gin" style="background:#fff6df;border-color:#e8d27a">☑ 已勾選 3 件　📤 匯出勾選的 3 件</span>`,
-    `<p>按上方「從 Excel 匯入」${gN(1)}，會先看到<b>匯入表格要放哪些欄位</b>：案件編號、發現日期、工作站、品項、廠商、批號、效期、異常、圖片(1)、圖片(2)、備註、處理辦法、結案日期、分類一、分類二。不確定就按「下載匯入範本」${gN(2)}照著填。</p><p>匯入只會<b>新增</b>，不會覆蓋原本的案件；分好幾個檔案匯入也可以，重複的會自動略過。</p><p>「<b>匯出 Excel</b>」${gN(3)}有三種：<b>勾選匯出</b>（在清單最左邊打勾，表格上方會出現「📤 匯出勾選的 N 件」，表頭的勾選框可以全選），<b>選期間匯出</b>（選年度，例如 2026 年；也可以再選月份，例如 2026 年 11 月，依發現日期、已結案和未結案都會匯出），或<b>匯出目前清單上篩出來的</b>（例：2026 年、未結案、打漿組）。格式跟原本的「事件記錄表」一樣：第一列標題、15 欄表頭、分類一黃底、分類二藍底，<b>圖片(1)、圖片(2) 直接放在格子裡</b>，日期是 Excel 日期格式，A4 橫印、每頁都有表頭，依發現日期排序。匯出的檔案也可以再用「從 Excel 匯入」讀回來（編號重複的會略過）。</p>`)+
+    `<p>按上方「從 Excel 匯入」${gN(1)}，會先看到<b>匯入表格要放哪些欄位</b>：案件編號、發現日期、工作站、品項、廠商、批號、效期、異常、圖片(1)、圖片(2)、備註、處理辦法、結案日期、分類一、分類二。不確定就按「下載匯入範本」${gN(2)}照著填。</p><p>匯入只會<b>新增</b>，不會覆蓋原本的案件；分好幾個檔案匯入也可以，重複的會自動略過。</p><p>「<b>匯出 Excel</b>」${gN(3)}有三種：<b>勾選匯出</b>（在清單最左邊打勾，表格上方會出現「📤 匯出勾選的 N 件」，表頭的勾選框可以全選），<b>選期間匯出</b>（選年度，例如 2026 年；也可以再選月份，例如 2026 年 11 月，依發現日期、已結案和未結案都會匯出），或<b>匯出目前清單上篩出來的</b>（例：2026 年、未結案、打漿組）。格式跟原本的「事件記錄表」一樣：第一列標題、15 欄表頭、分類一黃底、分類二藍底，<b>圖片(1)、圖片(2) 直接放在格子裡</b>（「圖片清晰度」選<b>清晰</b>會放原圖，在 Excel 把圖片拉大或按右鍵「另存成圖片」都清楚；選<b>一般</b>檔案較小），日期是 Excel 日期格式，A4 橫印、每頁都有表頭，依發現日期排序。匯出的檔案也可以再用「從 Excel 匯入」讀回來（編號重複的會略過）。</p>`)+
   gS(7,'電腦和手機',`<span class="small">電腦：表格　手機：卡片</span>`,
     `<p>電腦版表格最左邊、手機版卡片左上角有<b>勾選框</b>，勾起來可以匯出；點勾選框不會打開編輯。</p><p>電腦看到的是表格，表頭跟 Excel 同一個順序，最後多了「預計完成日期」和「狀態」；欄寬固定，一般螢幕一頁就看得完。每一列看最右邊的<b>狀態</b>標籤：<span class="st over">逾期未結</span>、<span class="st soon">即將到期</span>…。手機會自動改成卡片，左邊的色條代表一樣的意思。</p>`)); }
 function formGuide(){ return guideBox('form','新增／編輯案件使用說明',
@@ -1201,6 +1202,7 @@ const EXP_W=[15.4,11.5,10.8,10.8,13,12.8,10.8,26,22,22,14.4,20,11.5,14,22];
 function expIntro(){ const rows=filtered(), ys=[...new Set([curYear(),...yearsOf()])].sort().reverse(); const m=document.createElement('div'); m.className='modal';
   m.innerHTML=`<div class="box" style="max-width:540px"><h2 style="margin:0 0 6px;font-size:17px">📤 匯出 Excel</h2>
     <div class="small muted" style="margin-bottom:10px">格式跟原本的「事件記錄表」一樣：15 欄表頭、分類一黃底、分類二藍底，圖片(1)、圖片(2) 直接放在格子裡，A4 橫印。依發現日期排序。</div>
+    <div class="expq"><b>圖片清晰度：</b><label><input type="radio" name="expq" value="hi" ${expHi()?'checked':''} onchange="setExpHi(true)"> 清晰（原圖，在 Excel 放大不會糊，檔案較大）</label><label><input type="radio" name="expq" value="low" ${expHi()?'':'checked'} onchange="setExpHi(false)"> 一般（檔案較小，適合傳 LINE／Email）</label></div>
     <div class="card" style="margin:0 0 10px;padding:12px"><b>① 選期間匯出</b><div class="small muted" style="margin:2px 0 8px">依「發現日期」，包含已結案和未結案的全部案件</div>
       <div class="row"><select id="exY" style="width:auto">${ys.map(y=>`<option value="${y}" ${y===curYear()?'selected':''}>${y} 年</option>`).join('')}<option value="">全部年度</option></select>
       <select id="exM" style="width:auto"><option value="">全年</option>${[...Array(12)].map((_,i)=>`<option value="${p2(i+1)}">${i+1} 月</option>`).join('')}</select></div>
@@ -1220,14 +1222,19 @@ function expSelected(){ const L=C.filter(c=>SEL.has(c.id)&&!c.deleted); if(!L.le
 function fDesc(){ const a=[]; a.push(F.year?F.year+' 年':'全部年度'); if(F.month) a.push(+F.month+' 月'); const st={notdone:'未結案',open:'未處理',track:'改善追蹤中',over:'逾期未結',soon:'即將到期',done:'已結案'}[F.status]; a.push(st||'全部狀態');
   ['station','vendor','cat1','cat2'].forEach(k=>{ if(F[k]) a.push(F[k]); }); if(F.q) a.push('搜尋「'+F.q+'」'); return a.join('、'); }
 /* 照片縮小後放進 Excel（最長邊 480px），檔案才不會太大 */
-async function expPhoto(id){ const v=await phGet(id); if(!v) return null; const img=new Image(); img.src=v; await img.decode();
-  const k=Math.min(1,480/Math.max(img.width,img.height)), c=document.createElement('canvas'); c.width=Math.round(img.width*k); c.height=Math.round(img.height*k);
+/* 匯出圖片清晰度：清晰＝放系統裡的原圖（最長邊 1600px，放大不糊）；一般＝縮成 480px（檔案小） */
+const EXPQ_KEY='casevoraCAPA_v1_expq';
+function expHi(){ try{ return localStorage.getItem(EXPQ_KEY)!=='low'; }catch(e){ return true; } }
+function setExpHi(v){ try{ localStorage.setItem(EXPQ_KEY,v?'hi':'low'); }catch(e){} }
+async function expPhoto(id,hi){ const v=await phGet(id); if(!v) return null; const img=new Image(); img.src=v; await img.decode();
+  if(hi&&/^data:image\/jpeg;base64,/.test(v)){ const bin=atob(v.slice(v.indexOf(',')+1)), u=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i); return {bytes:u,w:img.width,h:img.height}; }
+  const k=Math.min(1,(hi?1600:480)/Math.max(img.width,img.height)), c=document.createElement('canvas'); c.width=Math.round(img.width*k); c.height=Math.round(img.height*k);
   const g=c.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,c.width,c.height); g.drawImage(img,0,0,c.width,c.height);
-  const b=await new Promise(r=>c.toBlob(r,'image/jpeg',0.82)); return {bytes:new Uint8Array(await b.arrayBuffer()),w:c.width,h:c.height}; }
+  const b=await new Promise(r=>c.toBlob(r,'image/jpeg',hi?0.9:0.82)); return {bytes:new Uint8Array(await b.arrayBuffer()),w:c.width,h:c.height}; }
 const xmlEsc=t=>String(t??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,'');
 const colL=i=>{ let s=''; i++; while(i){ const r=(i-1)%26; s=String.fromCharCode(65+r)+s; i=Math.floor((i-1)/26); } return s; };
 const xlSerial=d=>{ const [y,m,dd]=d.split('-').map(Number); return Math.round((Date.UTC(y,m-1,dd)-Date.UTC(1899,11,30))/86400000); };
-async function dlExportXlsx(list,year,month){ if(!list.length){ await say('沒有可以匯出的案件。'); return; }
+async function dlExportXlsx(list,year,month){ const hi=expHi(); if(!list.length){ await say('沒有可以匯出的案件。'); return; }
   toast('正在產生 Excel…'); try{
   const L=list.slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))||String(a.no).localeCompare(String(b.no)));
   const Y=year||(()=>{ const ys=[...new Set(L.map(c=>(c.date||'').slice(0,4)).filter(Boolean))].sort(); return ys.length===1?ys[0]:''; })();
@@ -1240,7 +1247,7 @@ async function dlExportXlsx(list,year,month){ if(!list.length){ await say('沒�
     const no=String(c.no||''), isNum=/^\d{1,15}$/.test(no);
     const v=[[no,isNum?'n':'s',5],[c.date?xlSerial(c.date):'', 'n',6],[stTok(c.station).join('、'),'s',5],[c.item,'s',5],[c.vendor,'s',5],[c.lot,'s',5],[c.expiry?xlSerial(c.expiry):'','n',6],[c.desc,'s',7],['','s',5],['','s',5],[c.note,'s',5],[c.method,'s',8],[c.closeDate?xlSerial(c.closeDate):'','n',6],[c.cat1,'s',9],[c2Tok(c.cat2).join('、'),'s',9]];
     rowsXml+=`<row r="${r}" ht="${ht}" customHeight="1">${v.map(([val,kind,s],i)=>cell(colL(i)+r,s,val,kind)).join('')}</row>`;
-    for(let j=0;j<ph.length;j++){ const im=await expPhoto(ph[j]).catch(()=>null); if(!im) continue; media.push(im.bytes); const id=media.length;
+    for(let j=0;j<ph.length;j++){ const im=await expPhoto(ph[j],hi).catch(()=>null); if(!im) continue; media.push(im.bytes); const id=media.length;
       const cw=colPx(EXP_W[8+j]), rh=Math.round(ht*96/72), box=Math.min(cw,rh)-8, sc=Math.min(box/im.w,box/im.h), w=Math.round(im.w*sc), h=Math.round(im.h*sc);
       anchors.push(`<xdr:oneCellAnchor><xdr:from><xdr:col>${8+j}</xdr:col><xdr:colOff>${Math.round((cw-w)/2)*pxEmu}</xdr:colOff><xdr:row>${r-1}</xdr:row><xdr:rowOff>${Math.round((rh-h)/2)*pxEmu}</xdr:rowOff></xdr:from><xdr:ext cx="${w*pxEmu}" cy="${h*pxEmu}"/><xdr:pic><xdr:nvPicPr><xdr:cNvPr id="${id+1}" name="圖片 ${id}"/><xdr:cNvPicPr><a:picLocks noChangeAspect="1"/></xdr:cNvPicPr></xdr:nvPicPr><xdr:blipFill><a:blip r:embed="rId${id}"/><a:stretch><a:fillRect/></a:stretch></xdr:blipFill><xdr:spPr><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr></xdr:pic><xdr:clientData/></xdr:oneCellAnchor>`); } }
   const last=L.length+2;
